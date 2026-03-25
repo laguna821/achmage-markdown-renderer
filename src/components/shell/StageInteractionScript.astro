@@ -1,0 +1,53 @@
+<script is:inline>
+  (() => {
+    const sections = Array.from(document.querySelectorAll('[data-stage-target="true"]'));
+    if (sections.length === 0) return;
+
+    let activeIndex = 0;
+
+    const setActive = (nextIndex) => {
+      activeIndex = Math.max(0, Math.min(nextIndex, sections.length - 1));
+      sections.forEach((section, index) => {
+        section.classList.toggle('is-active', index === activeIndex);
+        section.classList.toggle('is-dimmed', index !== activeIndex);
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+
+        if (!visible) return;
+        const nextIndex = sections.indexOf(visible.target);
+        if (nextIndex >= 0) {
+          setActive(nextIndex);
+        }
+      },
+      {
+        rootMargin: '-20% 0px -55% 0px',
+        threshold: [0, 1],
+      },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    setActive(0);
+
+    window.addEventListener('keydown', (event) => {
+      if (!['ArrowDown', 'ArrowRight', 'j', 'J', 'ArrowUp', 'ArrowLeft', 'k', 'K'].includes(event.key)) {
+        return;
+      }
+
+      const direction =
+        event.key === 'ArrowDown' || event.key === 'ArrowRight' || event.key === 'j' || event.key === 'J' ? 1 : -1;
+      const nextIndex = Math.max(0, Math.min(activeIndex + direction, sections.length - 1));
+      const nextSection = sections[nextIndex];
+      if (!nextSection) return;
+
+      event.preventDefault();
+      setActive(nextIndex);
+      nextSection.scrollIntoView({behavior: 'smooth', block: 'start'});
+    });
+  })();
+</script>

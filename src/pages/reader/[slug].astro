@@ -1,0 +1,14 @@
+---
+import {getDocumentsForOutput} from '../../lib/content';
+import ReaderLayout from '../../layouts/ReaderLayout.astro';
+
+export const getStaticPaths = () =>
+  getDocumentsForOutput('reader').map((doc) => ({
+    params: {slug: doc.slug},
+    props: {doc},
+  }));
+
+const {doc} = Astro.props;
+---
+
+<ReaderLayout doc={doc} />

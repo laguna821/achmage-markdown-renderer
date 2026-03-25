@@ -1,0 +1,44 @@
+.mode-stage .layout-shell__main {
+  max-width: 62rem;
+}
+
+.mode-stage .doc-article {
+  max-width: 100%;
+}
+
+.mode-stage .doc-header {
+  border-bottom-width: 1px;
+}
+
+.mode-stage .doc-section {
+  padding: 1.2rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.mode-stage .doc-section.is-active {
+  border-color: var(--color-accent);
+  background: rgba(120, 168, 255, 0.08);
+  transform: translateY(-0.1rem);
+}
+
+.mode-stage .doc-section.is-dimmed {
+  opacity: 0.58;
+}
+
+.mode-newsletter .doc-header {
+  border-bottom-style: dashed;
+}
+
+.mode-newsletter .doc-header__meta {
+  gap: 0.4rem;
+}
+
+.mode-newsletter .doc-section__title {
+  border-top-style: dashed;
+}

@@ -1,0 +1,14 @@
+---
+import {getDocumentsForOutput} from '../../lib/content';
+import NewsletterLayout from '../../layouts/NewsletterLayout.astro';
+
+export const getStaticPaths = () =>
+  getDocumentsForOutput('newsletter').map((doc) => ({
+    params: {slug: doc.slug},
+    props: {doc},
+  }));
+
+const {doc} = Astro.props;
+---
+
+<NewsletterLayout doc={doc} />

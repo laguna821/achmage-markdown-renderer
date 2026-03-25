@@ -1,0 +1,26 @@
+---
+import type {NormalizedDoc} from '../../lib/content';
+
+interface Props {
+  doc?: NormalizedDoc;
+  variant?: 'reader' | 'stage' | 'newsletter' | 'home';
+}
+
+const {doc, variant = 'reader'} = Astro.props;
+---
+
+<header class:list={['site-header', `site-header--${variant}`]}>
+  <div class="site-header__brand">
+    <a href="/">Achmage Markdown Renderer</a>
+  </div>
+  <div class="site-header__context">
+    {doc ? (
+      <>
+        <span class="site-header__mode">{variant.toUpperCase()}</span>
+        <span class="site-header__title">{doc.meta.title}</span>
+      </>
+    ) : (
+      <span class="site-header__mode">STATIC-FIRST DOC ENGINE</span>
+    )}
+  </div>
+</header>

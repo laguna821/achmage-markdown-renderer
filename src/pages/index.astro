@@ -1,0 +1,47 @@
+---
+import SiteHeader from '../components/shell/SiteHeader.astro';
+import {getContentRootInfo, loadNormalizedDocuments} from '../lib/content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const docs = loadNormalizedDocuments();
+const contentRoot = getContentRootInfo();
+const contentLabel = contentRoot.source === 'default' ? 'Sample Documents' : 'Workspace Documents';
+---
+
+<BaseLayout pageTitle="Achmage Markdown Renderer" theme="light" bodyClass="mode-home">
+  <SiteHeader variant="home" />
+  <main class="home-shell">
+    <section class="home-hero">
+      <div class="home-hero__eyebrow">Markdown Source-of-Truth</div>
+      <h1>Scroll-first document workspace with deterministic block rendering.</h1>
+      <p>
+        Reader, Stage, Newsletter views all compile from the same Markdown source. The engine keeps TOC, thesis,
+        evidence, compare tables, provenance, and log panels aligned without manual HTML work.
+      </p>
+      <p>
+        Current source: <code>{contentRoot.root}</code> ({contentRoot.source})
+      </p>
+    </section>
+
+    <section class="home-list">
+      <h2>{contentLabel}</h2>
+      <div class="home-list__grid">
+        {docs.map((doc) => (
+          <article class="home-card">
+            <div class="home-card__meta">
+              <span>{doc.meta.docType}</span>
+              {doc.meta.date && <span>{doc.meta.date}</span>}
+            </div>
+            <h3>{doc.meta.title}</h3>
+            {doc.meta.summary && <p>{doc.meta.summary}</p>}
+            <div class="home-card__links">
+              {doc.meta.outputs.map((output) => (
+                <a href={`/${output}/${doc.slug}`}>{output}</a>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  </main>
+</BaseLayout>

@@ -1,0 +1,154 @@
+.thesis-block,
+.provenance-panel,
+.evidence-panel,
+.log-block {
+  margin: 0 0 var(--space-5);
+}
+
+.thesis-block {
+  padding: 1.4rem;
+  border: 2px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-accent-soft) 56%, var(--color-surface));
+  box-shadow: 0.55rem 0.55rem 0 0 var(--color-shadow);
+}
+
+.thesis-block__label,
+.provenance-panel__eyebrow,
+.log-block__label {
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.thesis-block__content {
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  line-height: 1.45;
+}
+
+.question-reset {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: var(--space-5);
+}
+
+.question-reset__card,
+.evidence-card,
+.evidence-panel,
+.provenance-panel {
+  padding: 1.15rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: 0.4rem 0.4rem 0 0 var(--color-shadow);
+}
+
+.question-reset__index,
+.evidence-card__tag,
+.evidence-panel__tag {
+  display: inline-flex;
+  margin-bottom: var(--space-3);
+  padding: 0.2rem 0.5rem;
+  border: 1px solid rgba(23, 23, 23, 0.16);
+  background: var(--color-accent-soft);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.question-reset__title,
+.evidence-card__title,
+.evidence-panel__title {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+}
+
+.evidence-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  margin-bottom: var(--space-5);
+}
+
+.axis-table__wrap {
+  overflow-x: auto;
+  margin: 0 0 var(--space-5);
+}
+
+.axis-table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  border: 2px solid var(--color-border);
+}
+
+.axis-table__head,
+.axis-table__cell {
+  padding: 0.9rem;
+  border: 1px solid rgba(23, 23, 23, 0.16);
+  vertical-align: top;
+}
+
+.axis-table__head {
+  background: color-mix(in srgb, var(--color-accent-soft) 45%, var(--color-surface));
+  font-family: var(--font-display);
+}
+
+.axis-table__head--axis,
+.axis-table__cell--axis {
+  width: 11rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.doc-quote {
+  margin: 0 0 var(--space-5);
+  padding: 1rem 1.1rem;
+  border-left: 4px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+}
+
+.log-block {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 84%, transparent);
+}
+
+.log-block pre {
+  margin: 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+}
+
+.provenance-panel {
+  background: color-mix(in srgb, var(--color-ai) 45%, var(--color-surface));
+}
+
+.provenance-panel__grid {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.provenance-panel__grid dt {
+  margin-bottom: 0.15rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.provenance-panel__grid dd {
+  margin: 0;
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 720px) {
+  .question-reset {
+    grid-template-columns: 1fr;
+  }
+}

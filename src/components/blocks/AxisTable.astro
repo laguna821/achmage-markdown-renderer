@@ -1,0 +1,33 @@
+---
+interface Props {
+  headers: string[];
+  rows: string[][];
+}
+
+const {headers, rows} = Astro.props;
+---
+
+<div class="axis-table__wrap">
+  <table class="axis-table">
+    <thead>
+      <tr>
+        {headers.map((header, index) => (
+          <th class:list={['axis-table__head', index === 0 && 'axis-table__head--axis']}>
+            <Fragment set:html={header} />
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row) => (
+        <tr>
+          {row.map((cell, index) => (
+            <td class:list={['axis-table__cell', index === 0 && 'axis-table__cell--axis']}>
+              <Fragment set:html={cell} />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

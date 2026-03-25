@@ -1,0 +1,135 @@
+export type OutputMode = 'reader' | 'stage' | 'newsletter';
+export type DocType = 'lecture' | 'newsletter' | 'note' | 'handout';
+export type ThemeMode = 'light' | 'dark' | 'auto';
+export type TocDepthOption = 'auto' | 1 | 2 | 3;
+export type SourceConfidence = 'low' | 'medium' | 'high';
+
+export type DocFrontmatter = {
+  title: string;
+  slug?: string;
+  docType: DocType;
+  outputs: OutputMode[];
+  theme: ThemeMode;
+  author?: string;
+  date?: string;
+  tags: string[];
+  summary?: string;
+  heroLabel?: string;
+  toc: 'auto' | 'none';
+  tocMaxDepth: TocDepthOption;
+  tocTitle: string;
+  stage: {
+    enabled: boolean;
+    focusMode: boolean;
+    keyboardNav: boolean;
+    revealLists: boolean;
+  };
+  ai?: {
+    assisted: boolean;
+    model?: string;
+    generatedAt?: string;
+    sourceConfidence?: SourceConfidence;
+    basedOn: string[];
+  };
+  rail: {
+    showMetadata: boolean;
+    showTags: boolean;
+    showToc: boolean;
+  };
+};
+
+export type SourceDocument = {
+  filePath: string;
+  relativePath: string;
+  sourceRoot: string;
+  sourceDir: string;
+  body: string;
+  rawFrontmatter: Record<string, unknown>;
+  meta: DocFrontmatter;
+  warnings: string[];
+};
+
+export type HeadingRecord = {
+  id: string;
+  text: string;
+  depth: number;
+  level: number;
+  index: number;
+};
+
+export type HeadingCollection = {
+  baseDepth: number | null;
+  items: HeadingRecord[];
+};
+
+export type TocItem = {
+  text: string;
+  slug: string;
+  depth: number;
+  level: number;
+  children?: TocItem[];
+};
+
+export type QuestionResetItem = {
+  id?: string;
+  title: string;
+  body: string;
+};
+
+export type EvidenceItem = {
+  id?: string;
+  title: string;
+  body: string;
+  tag?: string;
+};
+
+export type NormalizedBlock =
+  | {kind: 'thesis'; content: string}
+  | {kind: 'questionReset'; items: QuestionResetItem[]}
+  | {kind: 'evidenceGrid'; items: EvidenceItem[]}
+  | {kind: 'evidencePanel'; item: EvidenceItem}
+  | {kind: 'axisTable'; headers: string[]; rows: string[][]}
+  | {kind: 'docQuote'; content: string}
+  | {kind: 'log'; language?: string; code: string}
+  | {kind: 'provenance'; ai: NonNullable<DocFrontmatter['ai']>}
+  | {kind: 'prose'; html: string}
+  | {kind: 'image'; src: string; alt?: string; caption?: string};
+
+export type NormalizedSection = {
+  id: string;
+  title: string;
+  depth: number;
+  anchorId?: string;
+  blocks: NormalizedBlock[];
+};
+
+export type NormalizedDoc = {
+  filePath: string;
+  relativePath: string;
+  slug: string;
+  meta: DocFrontmatter;
+  baseDepth: number | null;
+  headings: TocItem[];
+  sections: NormalizedSection[];
+  warnings: string[];
+};
+
+export type MdNode = {
+  type: string;
+  depth?: number;
+  lang?: string | null;
+  url?: string;
+  alt?: string | null;
+  value?: string;
+  children?: MdNode[];
+  align?: Array<'left' | 'right' | 'center' | null>;
+  ordered?: boolean;
+  data?: {
+    hProperties?: Record<string, unknown>;
+  };
+};
+
+export type MdRoot = {
+  type: 'root';
+  children: MdNode[];
+};

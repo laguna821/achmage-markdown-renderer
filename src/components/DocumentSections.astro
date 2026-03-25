@@ -1,0 +1,39 @@
+---
+import BlockRenderer from './BlockRenderer.astro';
+
+import type {NormalizedDoc} from '../lib/content';
+
+interface Props {
+  doc: NormalizedDoc;
+  variant?: 'reader' | 'stage' | 'newsletter';
+}
+
+const {doc, variant = 'reader'} = Astro.props;
+---
+
+<article class:list={['doc-article', `doc-article--${variant}`]}>
+  {doc.sections.map((section) => {
+    const sectionId = section.anchorId ?? section.id;
+    const headingLevel = Math.min(Math.max(section.depth || 2, 1), 6);
+
+    return (
+      <section
+        class:list={['doc-section', section.id === 'lead' && 'doc-section--lead']}
+        data-stage-target={section.id !== 'lead' ? 'true' : 'false'}
+        data-section-id={sectionId}
+      >
+        {section.id !== 'lead' && headingLevel === 1 && <h1 class="doc-section__title" id={sectionId}>{section.title}</h1>}
+        {section.id !== 'lead' && headingLevel === 2 && <h2 class="doc-section__title" id={sectionId}>{section.title}</h2>}
+        {section.id !== 'lead' && headingLevel === 3 && <h3 class="doc-section__title" id={sectionId}>{section.title}</h3>}
+        {section.id !== 'lead' && headingLevel === 4 && <h4 class="doc-section__title" id={sectionId}>{section.title}</h4>}
+        {section.id !== 'lead' && headingLevel === 5 && <h5 class="doc-section__title" id={sectionId}>{section.title}</h5>}
+        {section.id !== 'lead' && headingLevel >= 6 && <h6 class="doc-section__title" id={sectionId}>{section.title}</h6>}
+        <div class="doc-section__blocks">
+          {section.blocks.map((block) => (
+            <BlockRenderer block={block} variant={variant} />
+          ))}
+        </div>
+      </section>
+    );
+  })}
+</article>

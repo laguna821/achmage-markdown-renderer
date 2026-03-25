@@ -1,0 +1,34 @@
+---
+import DocumentHeader from '../components/DocumentHeader.astro';
+import DocumentSections from '../components/DocumentSections.astro';
+import ActiveHeadingScript from '../components/shell/ActiveHeadingScript.astro';
+import DocRail from '../components/shell/DocRail.astro';
+import MobileTocDrawer from '../components/shell/MobileTocDrawer.astro';
+import SiteHeader from '../components/shell/SiteHeader.astro';
+import StageInteractionScript from '../components/shell/StageInteractionScript.astro';
+import BaseLayout from './BaseLayout.astro';
+
+import type {NormalizedDoc} from '../lib/content';
+
+interface Props {
+  doc: NormalizedDoc;
+}
+
+const {doc} = Astro.props;
+---
+
+<BaseLayout pageTitle={`${doc.meta.title} | Stage`} theme="dark" bodyClass="mode-stage">
+  <SiteHeader doc={doc} variant="stage" />
+  <div class="layout-shell layout-shell--stage">
+    <div class="layout-shell__rail">
+      <DocRail doc={doc} />
+    </div>
+    <main class="layout-shell__main">
+      <MobileTocDrawer doc={doc} />
+      <DocumentHeader doc={doc} variant="stage" />
+      <DocumentSections doc={doc} variant="stage" />
+    </main>
+  </div>
+  <ActiveHeadingScript />
+  <StageInteractionScript />
+</BaseLayout>

@@ -1,0 +1,13 @@
+---
+interface Props {
+  language?: string;
+  code: string;
+}
+
+const {language = 'log', code} = Astro.props;
+---
+
+<section class="log-block">
+  <div class="log-block__label">{language.toUpperCase()}</div>
+  <pre><code>{code}</code></pre>
+</section>

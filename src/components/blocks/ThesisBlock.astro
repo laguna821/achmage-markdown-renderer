@@ -1,0 +1,13 @@
+---
+interface Props {
+  content: string;
+  variant?: 'reader' | 'stage' | 'newsletter';
+}
+
+const {content, variant = 'reader'} = Astro.props;
+---
+
+<aside class:list={['thesis-block', `thesis-block--${variant}`]}>
+  <div class="thesis-block__label">THESIS</div>
+  <div class="thesis-block__content" set:html={content} />
+</aside>

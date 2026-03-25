@@ -1,0 +1,38 @@
+:root {
+  --font-display: "Bahnschrift", "Aptos Display", "Segoe UI Variable Display", sans-serif;
+  --font-body: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  --font-mono: "Cascadia Code", "Consolas", monospace;
+  --color-canvas: #f4efe6;
+  --color-surface: #fffdf7;
+  --color-ink: #171717;
+  --color-muted: #5d5a52;
+  --color-border: #171717;
+  --color-accent: #0f4ec9;
+  --color-accent-soft: #dfe8ff;
+  --color-ai: #c9d9ff;
+  --color-shadow: rgba(23, 23, 23, 0.14);
+  --radius-sm: 0.35rem;
+  --radius-md: 0.75rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --site-width: 90rem;
+  --reader-width: 46rem;
+  --newsletter-width: 40rem;
+}
+
+:root[data-theme='dark'] {
+  --color-canvas: #09111f;
+  --color-surface: #0f1b30;
+  --color-ink: #edf3ff;
+  --color-muted: #b6c4da;
+  --color-border: #b3c3db;
+  --color-accent: #78a8ff;
+  --color-accent-soft: rgba(120, 168, 255, 0.12);
+  --color-ai: rgba(120, 168, 255, 0.18);
+  --color-shadow: rgba(0, 0, 0, 0.3);
+}

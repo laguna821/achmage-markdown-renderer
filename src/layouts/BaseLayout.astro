@@ -1,0 +1,27 @@
+---
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/prose.css';
+import '../styles/blocks.css';
+import '../styles/stage.css';
+
+interface Props {
+  pageTitle: string;
+  theme?: 'light' | 'dark';
+  bodyClass?: string;
+}
+
+const {pageTitle, theme = 'light', bodyClass = ''} = Astro.props;
+---
+
+<!doctype html>
+<html lang="ko" data-theme={theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+  </head>
+  <body class={bodyClass}>
+    <slot />
+  </body>
+</html>

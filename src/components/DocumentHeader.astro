@@ -1,0 +1,20 @@
+---
+import type {NormalizedDoc} from '../lib/content';
+
+interface Props {
+  doc: NormalizedDoc;
+  variant?: 'reader' | 'stage' | 'newsletter';
+}
+
+const {doc, variant = 'reader'} = Astro.props;
+---
+
+<header class:list={['doc-header', `doc-header--${variant}`]}>
+  <div class="doc-header__meta">
+    <span class="doc-header__type">{doc.meta.docType}</span>
+    {doc.meta.heroLabel && <span class="doc-header__hero">{doc.meta.heroLabel}</span>}
+    {doc.meta.date && <span class="doc-header__date">{doc.meta.date}</span>}
+  </div>
+  <h1 class="doc-header__title">{doc.meta.title}</h1>
+  {doc.meta.author && <p class="doc-header__author">{doc.meta.author}</p>}
+</header>

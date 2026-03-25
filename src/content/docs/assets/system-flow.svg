@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" fill="none">
+  <rect width="960" height="420" fill="#FFFDF7"/>
+  <rect x="32" y="32" width="896" height="356" rx="12" stroke="#171717" stroke-width="4"/>
+  <g font-family="Consolas, monospace" font-size="22" fill="#171717">
+    <text x="84" y="114">Markdown Source</text>
+    <text x="318" y="114">Parse + Validate</text>
+    <text x="556" y="114">Normalize + Classify</text>
+    <text x="781" y="114">Render Modes</text>
+  </g>
+  <rect x="70" y="146" width="180" height="126" fill="#E7EEFF" stroke="#171717" stroke-width="3"/>
+  <rect x="298" y="146" width="180" height="126" fill="#FFF7E0" stroke="#171717" stroke-width="3"/>
+  <rect x="526" y="146" width="180" height="126" fill="#EAF7F2" stroke="#171717" stroke-width="3"/>
+  <rect x="754" y="146" width="140" height="126" fill="#F3EFFF" stroke="#171717" stroke-width="3"/>
+  <g stroke="#171717" stroke-width="3">
+    <path d="M250 209H298"/>
+    <path d="M478 209H526"/>
+    <path d="M706 209H754"/>
+  </g>
+  <g font-family="Consolas, monospace" font-size="18" fill="#171717">
+    <text x="94" y="197">Obsidian</text>
+    <text x="94" y="224">vault docs</text>
+    <text x="94" y="251">.md / .mdx</text>
+    <text x="323" y="197">Frontmatter</text>
+    <text x="323" y="224">heading tree</text>
+    <text x="323" y="251">slug rules</text>
+    <text x="549" y="197">thesis</text>
+    <text x="549" y="224">evidence</text>
+    <text x="549" y="251">compare</text>
+    <text x="776" y="197">Reader</text>
+    <text x="776" y="224">Stage</text>
+    <text x="776" y="251">Newsletter</text>
+  </g>
+</svg>

@@ -1,0 +1,32 @@
+---
+import DocumentHeader from '../components/DocumentHeader.astro';
+import DocumentSections from '../components/DocumentSections.astro';
+import ActiveHeadingScript from '../components/shell/ActiveHeadingScript.astro';
+import DocRail from '../components/shell/DocRail.astro';
+import MobileTocDrawer from '../components/shell/MobileTocDrawer.astro';
+import SiteHeader from '../components/shell/SiteHeader.astro';
+import BaseLayout from './BaseLayout.astro';
+
+import type {NormalizedDoc} from '../lib/content';
+
+interface Props {
+  doc: NormalizedDoc;
+}
+
+const {doc} = Astro.props;
+---
+
+<BaseLayout pageTitle={`${doc.meta.title} | Reader`} theme="light" bodyClass="mode-reader">
+  <SiteHeader doc={doc} variant="reader" />
+  <div class="layout-shell">
+    <div class="layout-shell__rail">
+      <DocRail doc={doc} />
+    </div>
+    <main class="layout-shell__main">
+      <MobileTocDrawer doc={doc} />
+      <DocumentHeader doc={doc} variant="reader" />
+      <DocumentSections doc={doc} variant="reader" />
+    </main>
+  </div>
+  <ActiveHeadingScript />
+</BaseLayout>

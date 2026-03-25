@@ -1,0 +1,47 @@
+---
+import TocList from './TocList.astro';
+
+import type {NormalizedDoc} from '../../lib/content';
+
+interface Props {
+  doc: NormalizedDoc;
+}
+
+const {doc} = Astro.props;
+---
+
+{
+  doc.headings.length > 0 && (
+    <div class="mobile-toc">
+      <button class="mobile-toc__trigger" type="button" data-mobile-toc-trigger aria-expanded="false">
+        Contents
+      </button>
+      <div class="mobile-toc__panel" data-mobile-toc-panel hidden>
+        <div class="mobile-toc__header">
+          <span>{doc.meta.tocTitle}</span>
+          <button type="button" data-mobile-toc-close aria-label="Close table of contents">
+            Close
+          </button>
+        </div>
+        <TocList items={doc.headings} />
+      </div>
+      <script is:inline>
+        (() => {
+          const trigger = document.querySelector('[data-mobile-toc-trigger]');
+          const panel = document.querySelector('[data-mobile-toc-panel]');
+          const close = document.querySelector('[data-mobile-toc-close]');
+          if (!trigger || !panel || !close) return;
+
+          const openPanel = (nextState) => {
+            panel.hidden = !nextState;
+            trigger.setAttribute('aria-expanded', String(nextState));
+          };
+
+          trigger.addEventListener('click', () => openPanel(panel.hidden));
+          close.addEventListener('click', () => openPanel(false));
+          panel.querySelectorAll('a').forEach((anchor) => anchor.addEventListener('click', () => openPanel(false)));
+        })();
+      </script>
+    </div>
+  )
+}

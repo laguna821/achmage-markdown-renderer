@@ -1,0 +1,32 @@
+---
+import AIProvenancePanel from './blocks/AIProvenancePanel.astro';
+import AxisTable from './blocks/AxisTable.astro';
+import DocQuote from './blocks/DocQuote.astro';
+import EvidenceGrid from './blocks/EvidenceGrid.astro';
+import EvidencePanel from './blocks/EvidencePanel.astro';
+import ImageBlock from './blocks/ImageBlock.astro';
+import LogBlock from './blocks/LogBlock.astro';
+import QuestionResetBlock from './blocks/QuestionResetBlock.astro';
+import ThesisBlock from './blocks/ThesisBlock.astro';
+import ProseRenderer from './prose/ProseRenderer.astro';
+
+import type {NormalizedBlock} from '../lib/content';
+
+interface Props {
+  block: NormalizedBlock;
+  variant?: 'reader' | 'stage' | 'newsletter';
+}
+
+const {block, variant = 'reader'} = Astro.props;
+---
+
+{block.kind === 'thesis' && <ThesisBlock content={block.content} variant={variant} />}
+{block.kind === 'questionReset' && <QuestionResetBlock items={block.items} />}
+{block.kind === 'evidenceGrid' && <EvidenceGrid items={block.items} />}
+{block.kind === 'evidencePanel' && <EvidencePanel item={block.item} />}
+{block.kind === 'axisTable' && <AxisTable headers={block.headers} rows={block.rows} />}
+{block.kind === 'docQuote' && <DocQuote content={block.content} />}
+{block.kind === 'log' && <LogBlock language={block.language} code={block.code} />}
+{block.kind === 'provenance' && <AIProvenancePanel ai={block.ai} />}
+{block.kind === 'prose' && <ProseRenderer html={block.html} />}
+{block.kind === 'image' && <ImageBlock src={block.src} alt={block.alt} caption={block.caption} />}

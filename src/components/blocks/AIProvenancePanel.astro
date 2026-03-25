@@ -1,0 +1,47 @@
+---
+interface Props {
+  ai: {
+    assisted: boolean;
+    model?: string;
+    generatedAt?: string;
+    sourceConfidence?: 'low' | 'medium' | 'high';
+    basedOn?: string[];
+  };
+}
+
+const {ai} = Astro.props;
+---
+
+<aside class="provenance-panel">
+  <div class="provenance-panel__eyebrow">AI PROVENANCE</div>
+  <dl class="provenance-panel__grid">
+    <div>
+      <dt>Assisted</dt>
+      <dd>{ai.assisted ? 'Yes' : 'No'}</dd>
+    </div>
+    {ai.model && (
+      <div>
+        <dt>Model</dt>
+        <dd>{ai.model}</dd>
+      </div>
+    )}
+    {ai.generatedAt && (
+      <div>
+        <dt>Generated</dt>
+        <dd>{ai.generatedAt}</dd>
+      </div>
+    )}
+    {ai.sourceConfidence && (
+      <div>
+        <dt>Confidence</dt>
+        <dd>{ai.sourceConfidence}</dd>
+      </div>
+    )}
+    {ai.basedOn && ai.basedOn.length > 0 && (
+      <div class="provenance-panel__sources">
+        <dt>Sources</dt>
+        <dd>{ai.basedOn.join(', ')}</dd>
+      </div>
+    )}
+  </dl>
+</aside>

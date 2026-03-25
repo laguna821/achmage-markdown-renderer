@@ -1,0 +1,22 @@
+---
+interface Item {
+  id?: string;
+  title: string;
+  body: string;
+  tag?: string;
+}
+
+interface Props {
+  item: Item;
+}
+
+const {item} = Astro.props;
+---
+
+<article class="evidence-panel">
+  {item.tag && <div class="evidence-panel__tag">{item.tag}</div>}
+  <h3 id={item.id} class="evidence-panel__title">
+    {item.title}
+  </h3>
+  <div class="evidence-panel__body" set:html={item.body} />
+</article>
