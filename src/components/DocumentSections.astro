@@ -21,6 +21,7 @@ const {doc, variant = 'reader'} = Astro.props;
         class:list={['doc-section', section.id === 'lead' && 'doc-section--lead']}
         data-stage-target={section.id !== 'lead' ? 'true' : 'false'}
         data-section-id={sectionId}
+        data-mega={section.id !== 'lead' ? section.title : undefined}
       >
         {section.id !== 'lead' && headingLevel === 1 && <h1 class="doc-section__title" id={sectionId}>{section.title}</h1>}
         {section.id !== 'lead' && headingLevel === 2 && <h2 class="doc-section__title" id={sectionId}>{section.title}</h2>}

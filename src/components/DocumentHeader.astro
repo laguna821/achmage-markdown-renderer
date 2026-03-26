@@ -9,7 +9,7 @@ interface Props {
 const {doc, variant = 'reader'} = Astro.props;
 ---
 
-<header class:list={['doc-header', `doc-header--${variant}`]}>
+<header class:list={['doc-header', `doc-header--${variant}`]} data-mega={doc.meta.docType.toUpperCase()}>
   <div class="doc-header__meta">
     <span class="doc-header__type">{doc.meta.docType}</span>
     {doc.meta.heroLabel && <span class="doc-header__hero">{doc.meta.heroLabel}</span>}

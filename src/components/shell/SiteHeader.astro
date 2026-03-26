@@ -22,5 +22,10 @@ const {doc, variant = 'reader'} = Astro.props;
     ) : (
       <span class="site-header__mode">STATIC-FIRST DOC ENGINE</span>
     )}
+    <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Current theme: light mode. Switch to dark mode.">
+      <span class="theme-toggle__orb" aria-hidden="true"></span>
+      <span class="theme-toggle__label" data-theme-label>LIGHT MODE</span>
+      <span class="theme-toggle__state" data-theme-state>ON</span>
+    </button>
   </div>
 </header>

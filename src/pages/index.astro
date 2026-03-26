@@ -11,14 +11,13 @@ const contentLabel = contentRoot.source === 'default' ? 'Sample Documents' : 'Wo
 <BaseLayout pageTitle="Achmage Markdown Renderer" theme="light" bodyClass="mode-home">
   <SiteHeader variant="home" />
   <main class="home-shell">
-    <section class="home-hero">
+    <section class="home-hero" data-mega="ACHMAGE">
       <div class="home-hero__eyebrow">Markdown Source-of-Truth</div>
-      <h1>Scroll-first document workspace with deterministic block rendering.</h1>
-      <p>
-        Reader, Stage, Newsletter views all compile from the same Markdown source. The engine keeps TOC, thesis,
-        evidence, compare tables, provenance, and log panels aligned without manual HTML work.
+      <h1>기록은 단순하게,<br />보여짐은 완벽하게.</h1>
+      <p class="home-hero__lede">
+        마크다운 하나면 충분합니다.  <br>코딩 없이도 모든 텍스트와 데이터가 제자리를 찾는 혁신적인 자동 정렬 시스템을 만나보세요.
       </p>
-      <p>
+      <p class="home-hero__source">
         Current source: <code>{contentRoot.root}</code> ({contentRoot.source})
       </p>
     </section>

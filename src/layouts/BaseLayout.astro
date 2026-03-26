@@ -19,9 +19,69 @@ const {pageTitle, theme = 'light', bodyClass = ''} = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
+    />
+    <script is:inline>
+      (() => {
+        const storageKey = 'achmage-theme';
+        try {
+          const storedTheme = window.localStorage.getItem(storageKey);
+          const nextTheme = storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : 'light';
+          document.documentElement.dataset.theme = nextTheme;
+          document.documentElement.style.colorScheme = nextTheme;
+        } catch {
+          document.documentElement.dataset.theme = 'light';
+          document.documentElement.style.colorScheme = 'light';
+        }
+      })();
+    </script>
     <title>{pageTitle}</title>
   </head>
   <body class={bodyClass}>
     <slot />
+    <script is:inline>
+      (() => {
+        const storageKey = 'achmage-theme';
+        const root = document.documentElement;
+
+        const applyTheme = (nextTheme) => {
+          root.dataset.theme = nextTheme;
+          root.style.colorScheme = nextTheme;
+
+          document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+            const isDark = nextTheme === 'dark';
+            button.setAttribute('aria-pressed', String(isDark));
+            button.setAttribute(
+              'aria-label',
+              isDark ? 'Current theme: dark mode. Switch to light mode.' : 'Current theme: light mode. Switch to dark mode.'
+            );
+
+            const label = button.querySelector('[data-theme-label]');
+            const state = button.querySelector('[data-theme-state]');
+            if (label) label.textContent = isDark ? 'DARK MODE' : 'LIGHT MODE';
+            if (state) state.textContent = 'ON';
+          });
+        };
+
+        document.addEventListener('click', (event) => {
+          const button = event.target instanceof Element ? event.target.closest('[data-theme-toggle]') : null;
+          if (!button) return;
+
+          const nextTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+          applyTheme(nextTheme);
+
+          try {
+            window.localStorage.setItem(storageKey, nextTheme);
+          } catch {
+            // Ignore storage failures and keep the in-memory theme.
+          }
+        });
+
+        applyTheme(root.dataset.theme === 'dark' ? 'dark' : 'light');
+      })();
+    </script>
   </body>
 </html>
