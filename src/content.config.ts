@@ -6,7 +6,7 @@ const docs = defineCollection({
     slug: z.string().optional(),
     docType: z.enum(['lecture', 'newsletter', 'note', 'handout']).optional(),
     outputs: z.array(z.enum(['reader', 'stage', 'newsletter'])).optional(),
-    theme: z.enum(['light', 'dark', 'auto']).optional(),
+    theme: z.enum(['light', 'dark', 'aurora', 'auto']).optional(),
     author: z.string().optional(),
     date: z.string().optional(),
     tags: z.array(z.string()).optional(),

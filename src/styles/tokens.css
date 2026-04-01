@@ -64,3 +64,29 @@
   --color-shadow-strong: rgba(0, 0, 0, 0.38);
   --color-focus-ring: rgba(120, 168, 255, 0.26);
 }
+
+:root[data-theme='aurora'] {
+  --font-display: "Newsreader", "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --color-canvas: #f7f9fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f2f4f6;
+  --color-surface-glass: rgba(255, 255, 255, 0.72);
+  --color-ink: #191c1e;
+  --color-ink-soft: #34445a;
+  --color-muted: #617089;
+  --color-muted-soft: #7f8ba0;
+  --color-border: rgba(194, 198, 214, 0.72);
+  --color-border-strong: rgba(107, 56, 212, 0.18);
+  --color-accent: #0058be;
+  --color-accent-strong: #4b31d8;
+  --color-accent-soft: rgba(0, 88, 190, 0.08);
+  --color-accent-tint: rgba(107, 56, 212, 0.14);
+  --color-ai: rgba(0, 219, 231, 0.14);
+  --color-code-bg: #1e1630;
+  --color-code-border: #584783;
+  --color-code-text: #faf6ff;
+  --color-grid: rgba(194, 198, 214, 0.46);
+  --color-shadow: rgba(0, 88, 190, 0.08);
+  --color-shadow-strong: rgba(71, 47, 134, 0.2);
+  --color-focus-ring: rgba(107, 56, 212, 0.2);
+}

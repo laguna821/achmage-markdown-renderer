@@ -3,6 +3,18 @@ import {describe, expect, test} from 'vitest';
 import {normalizeFrontmatter} from '../src/lib/content/schema';
 
 describe('normalizeFrontmatter', () => {
+  test('accepts the aurora theme mode', () => {
+    const {meta, warnings} = normalizeFrontmatter({
+      title: 'Phase 2 Lab',
+      docType: 'note',
+      outputs: ['reader'],
+      theme: 'aurora',
+    });
+
+    expect(warnings).toEqual([]);
+    expect(meta.theme).toBe('aurora');
+  });
+
   test('parses optional pretext overrides', () => {
     const {meta, warnings} = normalizeFrontmatter({
       title: 'Phase 2 Lab',

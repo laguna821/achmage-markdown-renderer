@@ -7,7 +7,7 @@ import '../styles/stage.css';
 
 interface Props {
   pageTitle: string;
-  theme?: 'light' | 'dark';
+  theme?: 'light' | 'dark' | 'aurora';
   bodyClass?: string;
   outputMode?: 'reader' | 'stage' | 'newsletter';
   docSlug?: string;
@@ -22,6 +22,12 @@ const {pageTitle, theme = 'light', bodyClass = '', outputMode, docSlug, pretextE
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..800&display=swap"
+    />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
     <link
       rel="stylesheet"
@@ -30,14 +36,20 @@ const {pageTitle, theme = 'light', bodyClass = '', outputMode, docSlug, pretextE
     <script is:inline>
       (() => {
         const storageKey = 'achmage-theme';
+        const supportedThemes = ['light', 'dark', 'aurora'];
+        const isSupportedTheme = (value) => typeof value === 'string' && supportedThemes.includes(value);
+        const resolveColorScheme = (themeName) => (themeName === 'dark' ? 'dark' : 'light');
+        const fallbackTheme = isSupportedTheme(document.documentElement.dataset.theme)
+          ? document.documentElement.dataset.theme
+          : 'light';
         try {
           const storedTheme = window.localStorage.getItem(storageKey);
-          const nextTheme = storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : 'light';
+          const nextTheme = isSupportedTheme(storedTheme) ? storedTheme : fallbackTheme;
           document.documentElement.dataset.theme = nextTheme;
-          document.documentElement.style.colorScheme = nextTheme;
+          document.documentElement.style.colorScheme = resolveColorScheme(nextTheme);
         } catch {
-          document.documentElement.dataset.theme = 'light';
-          document.documentElement.style.colorScheme = 'light';
+          document.documentElement.dataset.theme = fallbackTheme;
+          document.documentElement.style.colorScheme = resolveColorScheme(fallbackTheme);
         }
       })();
     </script>
@@ -54,23 +66,45 @@ const {pageTitle, theme = 'light', bodyClass = '', outputMode, docSlug, pretextE
       (() => {
         const storageKey = 'achmage-theme';
         const root = document.documentElement;
+        const themeOrder = ['light', 'dark', 'aurora'];
+        const themeMeta = {
+          light: {
+            label: 'LIGHT MODE',
+            state: '1 / 3',
+            announcement: 'Current theme: light mode. Switch to dark mode.',
+          },
+          dark: {
+            label: 'DARK MODE',
+            state: '2 / 3',
+            announcement: 'Current theme: dark mode. Switch to aurora glow mode.',
+          },
+          aurora: {
+            label: 'AURORA GLOW',
+            state: '3 / 3',
+            announcement: 'Current theme: aurora glow mode. Switch to light mode.',
+          },
+        };
+        const isSupportedTheme = (value) => typeof value === 'string' && themeOrder.includes(value);
+        const resolveColorScheme = (themeName) => (themeName === 'dark' ? 'dark' : 'light');
+        const getNextTheme = (currentTheme) => {
+          const currentIndex = themeOrder.indexOf(currentTheme);
+          return themeOrder[(currentIndex + 1 + themeOrder.length) % themeOrder.length];
+        };
 
         const applyTheme = (nextTheme) => {
-          root.dataset.theme = nextTheme;
-          root.style.colorScheme = nextTheme;
+          const themeName = isSupportedTheme(nextTheme) ? nextTheme : 'light';
+          const {label: themeLabel, state: themeState, announcement} = themeMeta[themeName];
+
+          root.dataset.theme = themeName;
+          root.style.colorScheme = resolveColorScheme(themeName);
 
           document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
-            const isDark = nextTheme === 'dark';
-            button.setAttribute('aria-pressed', String(isDark));
-            button.setAttribute(
-              'aria-label',
-              isDark ? 'Current theme: dark mode. Switch to light mode.' : 'Current theme: light mode. Switch to dark mode.'
-            );
+            button.setAttribute('aria-label', announcement);
 
-            const label = button.querySelector('[data-theme-label]');
-            const state = button.querySelector('[data-theme-state]');
-            if (label) label.textContent = isDark ? 'DARK MODE' : 'LIGHT MODE';
-            if (state) state.textContent = 'ON';
+            const labelNode = button.querySelector('[data-theme-label]');
+            const stateNode = button.querySelector('[data-theme-state]');
+            if (labelNode) labelNode.textContent = themeLabel;
+            if (stateNode) stateNode.textContent = themeState;
           });
         };
 
@@ -78,7 +112,7 @@ const {pageTitle, theme = 'light', bodyClass = '', outputMode, docSlug, pretextE
           const button = event.target instanceof Element ? event.target.closest('[data-theme-toggle]') : null;
           if (!button) return;
 
-          const nextTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+          const nextTheme = getNextTheme(isSupportedTheme(root.dataset.theme) ? root.dataset.theme : 'light');
           applyTheme(nextTheme);
 
           try {
@@ -88,7 +122,7 @@ const {pageTitle, theme = 'light', bodyClass = '', outputMode, docSlug, pretextE
           }
         });
 
-        applyTheme(root.dataset.theme === 'dark' ? 'dark' : 'light');
+        applyTheme(isSupportedTheme(root.dataset.theme) ? root.dataset.theme : 'light');
       })();
     </script>
   </body>

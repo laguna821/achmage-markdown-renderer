@@ -12,7 +12,7 @@ import type {
 
 const docTypeSchema = z.enum(['lecture', 'newsletter', 'note', 'handout']);
 const outputSchema = z.enum(['reader', 'stage', 'newsletter']);
-const themeSchema = z.enum(['light', 'dark', 'auto']);
+const themeSchema = z.enum(['light', 'dark', 'aurora', 'auto']);
 const tocSchema = z.enum(['auto', 'manual', 'none']);
 const tocMaxDepthSchema = z.union([z.literal('auto'), z.literal(1), z.literal(2), z.literal(3)]);
 const sourceConfidenceSchema = z.enum(['low', 'medium', 'high']);

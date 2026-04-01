@@ -225,3 +225,75 @@
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.94);
 }
+
+:root[data-theme='aurora'] .prose-block table,
+:root[data-theme='aurora'] .prose-block blockquote,
+:root[data-theme='aurora'] .image-block img,
+:root[data-theme='aurora'] .embed-block__frame {
+  border-color: rgba(107, 56, 212, 0.12);
+  box-shadow: 0 24px 44px -36px rgba(0, 88, 190, 0.24);
+}
+
+:root[data-theme='aurora'] .prose-block table,
+:root[data-theme='aurora'] .prose-block blockquote {
+  background:
+    linear-gradient(160deg, rgba(107, 56, 212, 0.07), rgba(255, 255, 255, 0.92) 42%, rgba(255, 255, 255, 0.82)),
+    rgba(255, 255, 255, 0.82);
+}
+
+:root[data-theme='aurora'] .prose-block th,
+:root[data-theme='aurora'] .prose-block td {
+  border-color: rgba(107, 56, 212, 0.1);
+}
+
+:root[data-theme='aurora'] .prose-block th {
+  background: rgba(107, 56, 212, 0.06);
+}
+
+:root[data-theme='aurora'] .prose-block code {
+  background: rgba(107, 56, 212, 0.08);
+  color: #3c4d73;
+}
+
+:root[data-theme='aurora'] .prose-block pre {
+  background:
+    linear-gradient(180deg, rgba(48, 34, 78, 0.98), rgba(30, 22, 48, 0.98)),
+    var(--color-code-bg);
+  border-color: rgba(136, 112, 197, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 22px 38px -32px rgba(56, 31, 119, 0.54);
+}
+
+:root[data-theme='aurora'] .prose-block pre code {
+  color: var(--color-code-text);
+}
+
+:root[data-theme='aurora'] .prose-block table,
+:root[data-theme='aurora'] .prose-block blockquote,
+:root[data-theme='aurora'] .image-block img,
+:root[data-theme='aurora'] .embed-block__frame {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.975), rgba(250, 251, 255, 0.93)) padding-box,
+    linear-gradient(135deg, rgba(0, 88, 190, 0.44), rgba(107, 56, 212, 0.3), rgba(0, 219, 231, 0.22)) border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    0 0 12px rgba(107, 56, 212, 0.05),
+    0 20px 34px -30px rgba(67, 85, 145, 0.14);
+}
+
+:root[data-theme='aurora'] .prose-block p,
+:root[data-theme='aurora'] .prose-block li {
+  font-size: 0.96rem;
+  line-height: 1.78;
+}
+
+:root[data-theme='aurora'] .prose-block h1,
+:root[data-theme='aurora'] .prose-block h2,
+:root[data-theme='aurora'] .prose-block h3,
+:root[data-theme='aurora'] .prose-block h4,
+:root[data-theme='aurora'] .prose-block h5,
+:root[data-theme='aurora'] .prose-block h6 {
+  line-height: 1.08;
+}
