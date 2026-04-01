@@ -1,4 +1,6 @@
 ---
+import {buildPretextTargetAttributes, resolveBlockLayoutHints} from '../../lib/pretext/hints';
+
 interface Item {
   id?: string;
   title: string;
@@ -8,12 +10,35 @@ interface Item {
 
 interface Props {
   items: Item[];
+  variant?: 'reader' | 'stage' | 'newsletter';
+  slug: string;
+  sectionId?: string;
+  blockIndex: number;
+  pretext?: {
+    disabled?: boolean;
+    heroPreferredLines?: 2 | 3 | 4 | 5;
+    thesisMaxLines?: 3 | 4 | 5 | 6;
+    evidenceMinColumns?: 1 | 2 | 3;
+    forceWrapFigure?: boolean;
+  };
 }
 
-const {items} = Astro.props;
+const {items, variant = 'reader', slug, sectionId = 'lead', blockIndex, pretext} = Astro.props;
+const [hint] = resolveBlockLayoutHints('evidenceGrid', variant, pretext ? {pretext} : undefined);
+const pretextAttributes = hint
+  ? buildPretextTargetAttributes({
+      slug,
+      hint,
+      keySuffix: `section:${sectionId}:block:${blockIndex}:evidence-grid`,
+      extras: {
+        'data-pretext-section-id': sectionId,
+        'data-pretext-block-index': blockIndex,
+      },
+    })
+  : {};
 ---
 
-<section class="evidence-grid">
+<section class:list={['evidence-grid', variant === 'newsletter' && 'evidence-grid--newsletter']} {...pretextAttributes}>
   {items.map((item) => (
     <article class="evidence-card">
       {item.tag && <div class="evidence-card__tag">{item.tag}</div>}

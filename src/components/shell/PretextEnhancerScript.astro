@@ -1,0 +1,11 @@
+---
+---
+
+<script>
+  import {initPretextEnhancer} from '../../lib/pretext/client';
+
+  const variant = document.body.dataset.outputMode;
+  if (variant === 'reader' || variant === 'stage' || variant === 'newsletter') {
+    initPretextEnhancer(variant);
+  }
+</script>

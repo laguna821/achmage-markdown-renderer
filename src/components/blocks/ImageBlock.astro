@@ -1,4 +1,6 @@
 ---
+import {resolveMediaEmbed} from '../../lib/content/media';
+
 interface Props {
   src: string;
   alt?: string;
@@ -6,9 +8,33 @@ interface Props {
 }
 
 const {src, alt, caption} = Astro.props;
+const embed = resolveMediaEmbed(src, alt ?? caption);
+const captionText = caption ?? alt;
 ---
 
-<figure class="image-block">
-  <img src={src} alt={alt ?? ''} loading="lazy" />
-  {caption && <figcaption>{caption}</figcaption>}
+<figure class:list={['image-block', embed && 'embed-block']} data-embed-provider={embed?.provider}>
+  {embed ? (
+    <>
+      <div class="embed-block__frame">
+        <iframe
+          src={embed.embedUrl}
+          title={embed.title}
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen
+        />
+      </div>
+      <figcaption class="embed-block__caption">
+        <a href={embed.url} target="_blank" rel="noreferrer">
+          {embed.title}
+        </a>
+      </figcaption>
+    </>
+  ) : (
+    <>
+      <img src={src} alt={alt ?? ''} loading="lazy" />
+      {captionText && <figcaption>{captionText}</figcaption>}
+    </>
+  )}
 </figure>

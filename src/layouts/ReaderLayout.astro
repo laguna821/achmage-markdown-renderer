@@ -4,6 +4,7 @@ import DocumentSections from '../components/DocumentSections.astro';
 import ActiveHeadingScript from '../components/shell/ActiveHeadingScript.astro';
 import DocRail from '../components/shell/DocRail.astro';
 import MobileTocDrawer from '../components/shell/MobileTocDrawer.astro';
+import PretextEnhancerScript from '../components/shell/PretextEnhancerScript.astro';
 import SiteHeader from '../components/shell/SiteHeader.astro';
 import BaseLayout from './BaseLayout.astro';
 
@@ -16,7 +17,14 @@ interface Props {
 const {doc} = Astro.props;
 ---
 
-<BaseLayout pageTitle={`${doc.meta.title} | Reader`} theme="light" bodyClass="mode-reader">
+<BaseLayout
+  pageTitle={`${doc.meta.title} | Reader`}
+  theme="light"
+  bodyClass="mode-reader"
+  outputMode="reader"
+  docSlug={doc.slug}
+  pretextEnabled={true}
+>
   <SiteHeader doc={doc} variant="reader" />
   <div class="layout-shell">
     <div class="layout-shell__rail">
@@ -29,4 +37,5 @@ const {doc} = Astro.props;
     </main>
   </div>
   <ActiveHeadingScript />
+  <PretextEnhancerScript />
 </BaseLayout>

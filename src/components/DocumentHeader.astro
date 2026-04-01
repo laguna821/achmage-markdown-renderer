@@ -1,5 +1,6 @@
 ---
-import type {NormalizedDoc} from '../lib/content';
+import {buildPretextTargetAttributes, resolveHeaderLayoutHints} from '../lib/pretext/hints';
+import type {InlineToken, NormalizedDoc, RichBlockContent} from '../lib/content';
 
 interface Props {
   doc: NormalizedDoc;
@@ -7,14 +8,56 @@ interface Props {
 }
 
 const {doc, variant = 'reader'} = Astro.props;
+const [titleHint] = resolveHeaderLayoutHints(variant, doc.meta);
+const titlePretextAttributes = titleHint
+  ? buildPretextTargetAttributes({
+      slug: doc.slug,
+      hint: titleHint,
+      keySuffix: 'header:title',
+    })
+  : {};
+const metaItems = [
+  {label: doc.meta.docType, className: 'doc-header__type'},
+  ...(doc.meta.heroLabel ? [{label: doc.meta.heroLabel, className: 'doc-header__hero'}] : []),
+  ...(doc.meta.date ? [{label: doc.meta.date, className: 'doc-header__date'}] : []),
+];
+const metaRich: RichBlockContent | null =
+  variant === 'reader' || metaItems.length === 0
+    ? null
+    : {
+        plainText: metaItems.map((item) => item.label).join(' '),
+        tokens: metaItems.flatMap((item, index): InlineToken[] =>
+          index === 0
+            ? [{kind: 'badge', value: item.label}]
+            : [{kind: 'text', value: ' '}, {kind: 'badge', value: item.label}],
+        ),
+      };
+const metaRichPayload = metaRich ? JSON.stringify(metaRich) : undefined;
 ---
 
-<header class:list={['doc-header', `doc-header--${variant}`]} data-mega={doc.meta.docType.toUpperCase()}>
-  <div class="doc-header__meta">
-    <span class="doc-header__type">{doc.meta.docType}</span>
-    {doc.meta.heroLabel && <span class="doc-header__hero">{doc.meta.heroLabel}</span>}
-    {doc.meta.date && <span class="doc-header__date">{doc.meta.date}</span>}
-  </div>
-  <h1 class="doc-header__title">{doc.meta.title}</h1>
+<header
+  class:list={['doc-header', `doc-header--${variant}`]}
+  data-mega={doc.meta.docType.toUpperCase()}
+  data-pretext-newsletter-cover={variant === 'newsletter' ? 'true' : undefined}
+  data-pretext-cover-preferred-lines={variant === 'newsletter' ? String(titleHint?.preferredLines ?? 3) : undefined}
+>
+  {metaRich ? (
+    <div class="doc-header__meta-shell pretext-rich-shell">
+      <div
+        class="doc-header__meta pretext-rich-source"
+        data-pretext-manual-lines="true"
+        data-pretext-rich-source="true"
+        data-pretext-rich={metaRichPayload}
+      >
+        {metaItems.map((item) => <span class={item.className}>{item.label}</span>)}
+      </div>
+      <div class="doc-header__meta pretext-rich-overlay" data-pretext-rich-overlay="true" aria-hidden="true" />
+    </div>
+  ) : (
+    <div class="doc-header__meta">
+      {metaItems.map((item) => <span class={item.className}>{item.label}</span>)}
+    </div>
+  )}
+  <h1 class="doc-header__title" {...titlePretextAttributes}>{doc.meta.title}</h1>
   {doc.meta.author && <p class="doc-header__author">{doc.meta.author}</p>}
 </header>

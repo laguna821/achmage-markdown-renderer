@@ -1,0 +1,50 @@
+---
+import {buildPretextTargetAttributes, resolveWrapFigureLayoutHints} from '../../lib/pretext/hints';
+
+interface Props {
+  image: {
+    kind: 'image';
+    src: string;
+    alt?: string;
+    caption?: string;
+  };
+  prose: {
+    kind: 'prose';
+    html: string;
+  };
+  variant?: 'reader' | 'stage' | 'newsletter';
+  slug: string;
+  sectionId?: string;
+  blockIndex: number;
+  pretext?: {
+    disabled?: boolean;
+    heroPreferredLines?: 2 | 3 | 4 | 5;
+    thesisMaxLines?: 3 | 4 | 5 | 6;
+    evidenceMinColumns?: 1 | 2 | 3;
+    forceWrapFigure?: boolean;
+  };
+}
+
+const {image, prose, variant = 'newsletter', slug, sectionId = 'lead', blockIndex, pretext} = Astro.props;
+const [hint] = resolveWrapFigureLayoutHints(variant, pretext ? {pretext} : undefined);
+const wrapAttributes = hint
+  ? buildPretextTargetAttributes({
+      slug,
+      hint,
+      keySuffix: `section:${sectionId}:block:${blockIndex}:wrap-figure`,
+      extras: {
+        'data-pretext-wrap-figure': 'true',
+        'data-pretext-section-id': sectionId,
+        'data-pretext-block-index': blockIndex,
+      },
+    })
+  : {};
+---
+
+<section class="wrap-figure" data-wrap-mode="stacked" {...wrapAttributes}>
+  <figure class="image-block image-block--wrap">
+    <img src={image.src} alt={image.alt ?? ''} loading="lazy" />
+    {image.caption && <figcaption>{image.caption}</figcaption>}
+  </figure>
+  <div class="wrap-figure__prose prose-block" data-pretext-wrap-prose="true" set:html={prose.html} />
+</section>

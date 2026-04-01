@@ -1,9 +1,59 @@
 ---
+import {buildPretextTargetAttributes, resolveBlockLayoutHints} from '../../lib/pretext/hints';
+import type {DocType, RichBlockContent} from '../../lib/content';
+
 interface Props {
   content: string;
+  rich?: RichBlockContent;
+  variant?: 'reader' | 'stage' | 'newsletter';
+  docType: DocType;
+  slug: string;
+  sectionId?: string;
+  blockIndex: number;
+  pretext?: {
+    disabled?: boolean;
+    heroPreferredLines?: 2 | 3 | 4 | 5;
+    thesisMaxLines?: 3 | 4 | 5 | 6;
+    evidenceMinColumns?: 1 | 2 | 3;
+    forceWrapFigure?: boolean;
+  };
 }
 
-const {content} = Astro.props;
+const {content, rich, variant = 'reader', docType, slug, sectionId = 'lead', blockIndex, pretext} = Astro.props;
+const [hint] = resolveBlockLayoutHints('docQuote', variant, {docType, pretext});
+const pretextAttributes = hint
+  ? buildPretextTargetAttributes({
+      slug,
+      hint,
+      keySuffix: `section:${sectionId}:block:${blockIndex}:quote`,
+      extras: {
+        'data-pretext-apply-closest': '.doc-quote',
+        'data-pretext-section-id': sectionId,
+        'data-pretext-block-index': blockIndex,
+      },
+    })
+  : {};
+const richPayload = rich ? JSON.stringify(rich) : undefined;
 ---
 
-<blockquote class="doc-quote" set:html={content} />
+<blockquote class="doc-quote" data-pretext-pull-quote={variant === 'newsletter' ? 'true' : undefined}>
+  {rich ? (
+    <div class="doc-quote__content-shell pretext-rich-shell">
+      <div
+        class="doc-quote__content pretext-rich-source"
+        data-pretext-manual-lines="true"
+        data-pretext-rich-source="true"
+        data-pretext-rich={richPayload}
+        {...pretextAttributes}
+        set:html={content}
+      />
+      <div
+        class="doc-quote__content pretext-rich-overlay"
+        data-pretext-rich-overlay="true"
+        aria-hidden="true"
+      />
+    </div>
+  ) : (
+    <div class="doc-quote__content" {...pretextAttributes} set:html={content} />
+  )}
+</blockquote>

@@ -10,22 +10,74 @@ import QuestionResetBlock from './blocks/QuestionResetBlock.astro';
 import ThesisBlock from './blocks/ThesisBlock.astro';
 import ProseRenderer from './prose/ProseRenderer.astro';
 
-import type {NormalizedBlock} from '../lib/content';
+import type {DocType, NormalizedBlock} from '../lib/content';
 
 interface Props {
   block: NormalizedBlock;
   variant?: 'reader' | 'stage' | 'newsletter';
+  docType: DocType;
+  slug: string;
+  sectionId?: string;
+  blockIndex: number;
+  pretext?: {
+    disabled?: boolean;
+    heroPreferredLines?: 2 | 3 | 4 | 5;
+    thesisMaxLines?: 3 | 4 | 5 | 6;
+    evidenceMinColumns?: 1 | 2 | 3;
+    forceWrapFigure?: boolean;
+  };
 }
 
-const {block, variant = 'reader'} = Astro.props;
+const {block, variant = 'reader', docType, slug, sectionId, blockIndex, pretext} = Astro.props;
 ---
 
-{block.kind === 'thesis' && <ThesisBlock content={block.content} variant={variant} />}
+{block.kind === 'thesis' && (
+  <ThesisBlock
+    content={block.content}
+    rich={block.rich}
+    variant={variant}
+    docType={docType}
+    slug={slug}
+    sectionId={sectionId}
+    blockIndex={blockIndex}
+    pretext={pretext}
+  />
+)}
 {block.kind === 'questionReset' && <QuestionResetBlock items={block.items} />}
-{block.kind === 'evidenceGrid' && <EvidenceGrid items={block.items} />}
+{block.kind === 'evidenceGrid' && (
+  <EvidenceGrid
+    items={block.items}
+    variant={variant}
+    slug={slug}
+    sectionId={sectionId}
+    blockIndex={blockIndex}
+    pretext={pretext}
+  />
+)}
 {block.kind === 'evidencePanel' && <EvidencePanel item={block.item} />}
-{block.kind === 'axisTable' && <AxisTable headers={block.headers} rows={block.rows} />}
-{block.kind === 'docQuote' && <DocQuote content={block.content} />}
+{block.kind === 'axisTable' && (
+  <AxisTable
+    headers={block.headers}
+    rows={block.rows}
+    variant={variant}
+    slug={slug}
+    sectionId={sectionId}
+    blockIndex={blockIndex}
+    pretext={pretext}
+  />
+)}
+{block.kind === 'docQuote' && (
+  <DocQuote
+    content={block.content}
+    rich={block.rich}
+    variant={variant}
+    docType={docType}
+    slug={slug}
+    sectionId={sectionId}
+    blockIndex={blockIndex}
+    pretext={pretext}
+  />
+)}
 {block.kind === 'log' && <LogBlock language={block.language} code={block.code} />}
 {block.kind === 'provenance' && <AIProvenancePanel ai={block.ai} />}
 {block.kind === 'prose' && <ProseRenderer html={block.html} />}

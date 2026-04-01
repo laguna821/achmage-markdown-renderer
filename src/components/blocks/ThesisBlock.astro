@@ -1,13 +1,67 @@
 ---
+import {buildPretextTargetAttributes, getHintByKind, resolveBlockLayoutHints} from '../../lib/pretext/hints';
+import type {DocType, RichBlockContent} from '../../lib/content';
+
 interface Props {
   content: string;
+  rich?: RichBlockContent;
   variant?: 'reader' | 'stage' | 'newsletter';
+  docType: DocType;
+  slug: string;
+  sectionId?: string;
+  blockIndex: number;
+  pretext?: {
+    disabled?: boolean;
+    heroPreferredLines?: 2 | 3 | 4 | 5;
+    thesisMaxLines?: 3 | 4 | 5 | 6;
+    evidenceMinColumns?: 1 | 2 | 3;
+    forceWrapFigure?: boolean;
+  };
 }
 
-const {content, variant = 'reader'} = Astro.props;
+const {content, rich, variant = 'reader', docType, slug, sectionId = 'lead', blockIndex, pretext} = Astro.props;
+const hints = resolveBlockLayoutHints('thesis', variant, {docType, pretext});
+const primaryHint = getHintByKind(hints, 'shrink-wrap');
+const balanceHint = getHintByKind(hints, 'balance-title');
+const pretextAttributes = primaryHint
+  ? buildPretextTargetAttributes({
+      slug,
+      hint: {
+        ...primaryHint,
+        minLines: balanceHint?.minLines ?? primaryHint.minLines,
+        maxLines: balanceHint?.maxLines ?? primaryHint.maxLines,
+        preferredLines: balanceHint?.preferredLines ?? primaryHint.preferredLines,
+      },
+      keySuffix: `section:${sectionId}:block:${blockIndex}:thesis`,
+      extras: {
+        'data-pretext-apply-closest': '.thesis-block',
+        'data-pretext-section-id': sectionId,
+        'data-pretext-block-index': blockIndex,
+      },
+    })
+  : {};
+const richPayload = rich ? JSON.stringify(rich) : undefined;
 ---
 
 <aside class:list={['thesis-block', `thesis-block--${variant}`]}>
   <div class="thesis-block__label">THESIS</div>
-  <div class="thesis-block__content" set:html={content} />
+  {rich ? (
+    <div class="thesis-block__content-shell pretext-rich-shell">
+      <div
+        class="thesis-block__content pretext-rich-source"
+        data-pretext-manual-lines="true"
+        data-pretext-rich-source="true"
+        data-pretext-rich={richPayload}
+        {...pretextAttributes}
+        set:html={content}
+      />
+      <div
+        class="thesis-block__content pretext-rich-overlay"
+        data-pretext-rich-overlay="true"
+        aria-hidden="true"
+      />
+    </div>
+  ) : (
+    <div class="thesis-block__content" {...pretextAttributes} set:html={content} />
+  )}
 </aside>

@@ -1,13 +1,33 @@
 ---
+import {resolveAxisTableLayoutHints} from '../../lib/pretext/hints';
+
 interface Props {
   headers: string[];
   rows: string[][];
+  variant?: 'reader' | 'stage' | 'newsletter';
+  slug: string;
+  sectionId?: string;
+  blockIndex: number;
+  pretext?: {
+    disabled?: boolean;
+    heroPreferredLines?: 2 | 3 | 4 | 5;
+    thesisMaxLines?: 3 | 4 | 5 | 6;
+    evidenceMinColumns?: 1 | 2 | 3;
+    forceWrapFigure?: boolean;
+  };
 }
 
-const {headers, rows} = Astro.props;
+const {headers, rows, variant = 'reader', sectionId = 'lead', blockIndex, pretext} = Astro.props;
+const hasPretext = resolveAxisTableLayoutHints(variant, pretext ? {pretext} : undefined).length > 0;
 ---
 
-<div class="axis-table__wrap">
+<div
+  class="axis-table__wrap"
+  data-pretext-axis-table={hasPretext ? 'true' : undefined}
+  data-pretext-section-id={hasPretext ? sectionId : undefined}
+  data-pretext-block-index={hasPretext ? String(blockIndex) : undefined}
+  data-axis-table-view="table"
+>
   <table class="axis-table">
     <thead>
       <tr>
@@ -30,4 +50,25 @@ const {headers, rows} = Astro.props;
       ))}
     </tbody>
   </table>
+  <div class="axis-table-cards">
+    {rows.map((row) => (
+      <article class="axis-table-card">
+        <h3 class="axis-table-card__title">
+          <Fragment set:html={row[0] ?? headers[0] ?? 'Axis'} />
+        </h3>
+        <dl class="axis-table-card__grid">
+          {row.slice(1).map((cell, index) => (
+            <div>
+              <dt>
+                <Fragment set:html={headers[index + 1] ?? `Column ${index + 2}`} />
+              </dt>
+              <dd>
+                <Fragment set:html={cell} />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </article>
+    ))}
+  </div>
 </div>

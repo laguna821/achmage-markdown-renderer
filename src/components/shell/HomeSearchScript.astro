@@ -1,0 +1,11 @@
+---
+---
+
+<script>
+  import {initHomeSearch} from '../../lib/content/home-search-client';
+
+  const root = document.querySelector('[data-home-search-root]');
+  if (root instanceof HTMLElement) {
+    initHomeSearch(root);
+  }
+</script>

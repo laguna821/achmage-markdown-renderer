@@ -3,18 +3,22 @@ import GithubSlugger from 'github-slugger';
 import {extractEvidenceTag, matchAlias} from './aliases';
 import {resolveAssetUrl} from './assets';
 import {generateToc} from './headings';
-import {annotateHeadingIds, getNodeText, parseMarkdown, renderInlineNodes, renderNodes} from './markdown';
+import {annotateHeadingIds, extractInlineTokens, getNodeText, parseMarkdown, renderInlineNodes, renderNodes} from './markdown';
+import {OBSIDIAN_CALLOUT_MARKER} from './obsidian';
 import {loadSourceDocuments} from './source';
 import type {
   EvidenceItem,
+  InlineToken,
   MdNode,
   MdRoot,
   NormalizedBlock,
   NormalizedDoc,
+  RichBlockContent,
   NormalizedSection,
   SourceDocument,
   TocItem,
 } from './types';
+import {richTextToPlainText} from '../pretext/rich-text';
 
 const isHeading = (node: MdNode, depth?: number): boolean => node.type === 'heading' && (depth === undefined || node.depth === depth);
 const isStandaloneImageParagraph = (node: MdNode): boolean =>
@@ -60,6 +64,75 @@ const flushProse = (nodes: MdNode[], blocks: NormalizedBlock[]): void => {
   nodes.length = 0;
 };
 
+const buildRichBlockContent = (nodes: MdNode[]): RichBlockContent | undefined => {
+  const tokens: InlineToken[] = [];
+
+  nodes.forEach((node, index) => {
+    if (node.type === 'paragraph' || node.type === 'heading') {
+      tokens.push(...extractInlineTokens(node.children ?? []));
+    } else if (node.type === 'text' && node.value) {
+      tokens.push({kind: 'text', value: node.value});
+    } else if (node.type === 'break') {
+      tokens.push({kind: 'br'});
+    } else if (node.children?.length) {
+      tokens.push(...extractInlineTokens(node.children));
+    } else if (node.value) {
+      tokens.push({kind: 'text', value: node.value});
+    }
+
+    if (index < nodes.length - 1 && tokens.length > 0) {
+      tokens.push({kind: 'br'});
+    }
+  });
+
+  if (tokens.length === 0) {
+    return undefined;
+  }
+
+  return {
+    plainText: richTextToPlainText(tokens),
+    tokens,
+  };
+};
+
+const obsidianCalloutPrefixPattern =
+  /^(?:note|tip|info|warning|summary|quote|abstract|success|question|fail|danger|bug|example|todo|check|help)(?:\s*[-:]\s*.+)?$/i;
+
+const getFirstMeaningfulLine = (nodes: MdNode[]): string => {
+  for (const node of nodes) {
+    const lines = getNodeText(node)
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length > 0) {
+      return lines[0] ?? '';
+    }
+  }
+
+  return '';
+};
+
+const nodeContainsObsidianCalloutMarker = (node: MdNode): boolean => {
+  if (node.type === 'html' && node.value?.includes(OBSIDIAN_CALLOUT_MARKER)) {
+    return true;
+  }
+
+  return (node.children ?? []).some((child) => nodeContainsObsidianCalloutMarker(child));
+};
+
+const isObsidianCalloutBlockquote = (node: MdNode): boolean => {
+  if (node.type !== 'blockquote') {
+    return false;
+  }
+
+  if (nodeContainsObsidianCalloutMarker(node)) {
+    return true;
+  }
+
+  return obsidianCalloutPrefixPattern.test(getFirstMeaningfulLine(node.children ?? []));
+};
+
 const classifyGenericNodes = (
   sectionNodes: MdNode[],
   source: SourceDocument,
@@ -71,12 +144,23 @@ const classifyGenericNodes = (
   for (const node of sectionNodes) {
     if (node.type === 'blockquote') {
       flushProse(proseBuffer, blocks);
-      const html = renderNodes([node]);
+
+      if (isObsidianCalloutBlockquote(node)) {
+        blocks.push({
+          kind: 'prose',
+          html: renderNodes([node]),
+        });
+        continue;
+      }
+
+      const contentNodes = node.children ?? [];
+      const html = renderNodes(contentNodes);
+      const rich = buildRichBlockContent(contentNodes);
 
       if (consumeThesis()) {
-        blocks.push({kind: 'thesis', content: html});
+        blocks.push({kind: 'thesis', content: html, rich});
       } else {
-        blocks.push({kind: 'docQuote', content: html});
+        blocks.push({kind: 'docQuote', content: html, rich});
       }
       continue;
     }
@@ -311,9 +395,11 @@ export const normalizeDocument = (source: SourceDocument): NormalizedDoc => {
   if (lead) {
     const prefixBlocks: NormalizedBlock[] = [];
     if (source.meta.summary) {
+      const summaryTree = parseMarkdown(source.meta.summary);
       prefixBlocks.push({
         kind: 'thesis',
-        content: `<p>${source.meta.summary}</p>`,
+        content: renderNodes(summaryTree.children),
+        rich: buildRichBlockContent(summaryTree.children),
       });
       thesisConsumed = true;
     }

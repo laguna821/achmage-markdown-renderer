@@ -1,4 +1,5 @@
 export * from './aliases';
+export * from './home-search';
 export * from './headings';
 export * from './normalize';
 export * from './obsidian';

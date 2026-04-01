@@ -9,3 +9,9 @@ if %ERRORLEVEL% EQU 0 (
 ) else (
   powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%launch-viewer.ps1" %*
 )
+
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo Launch failed. Press any key to close this window.
+  pause >nul
+)

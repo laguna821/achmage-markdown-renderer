@@ -8,7 +8,7 @@ import remarkRehype from 'remark-rehype';
 import {unified} from 'unified';
 import {visit} from 'unist-util-visit';
 
-import type {MdNode, MdRoot} from './types';
+import type {InlineToken, MdNode, MdRoot} from './types';
 
 const markdownParser = unified().use(remarkParse).use(remarkGfm);
 const mdxParser = unified().use(remarkParse).use(remarkMdx).use(remarkGfm);
@@ -48,3 +48,74 @@ export const renderInlineNodes = (nodes: MdNode[]): string =>
     .replace(/<\/p>\s*$/, '');
 
 export const getNodeText = (node: MdNode): string => toString(node as never);
+
+const normalizeTextNodeValue = (value?: string): string => value ?? '';
+
+export const extractInlineTokens = (nodes: MdNode[]): InlineToken[] => {
+  const tokens: InlineToken[] = [];
+
+  for (const node of nodes) {
+    switch (node.type) {
+      case 'text': {
+        const value = normalizeTextNodeValue(node.value);
+        if (value) {
+          tokens.push({kind: 'text', value});
+        }
+        break;
+      }
+      case 'strong':
+        tokens.push({kind: 'strong', children: extractInlineTokens(node.children ?? [])});
+        break;
+      case 'emphasis':
+        tokens.push({kind: 'em', children: extractInlineTokens(node.children ?? [])});
+        break;
+      case 'inlineCode': {
+        const value = normalizeTextNodeValue(node.value);
+        if (value) {
+          tokens.push({kind: 'code', value});
+        }
+        break;
+      }
+      case 'link':
+        tokens.push({
+          kind: 'link',
+          href: node.url ?? '',
+          children: extractInlineTokens(node.children ?? []),
+        });
+        break;
+      case 'break':
+        tokens.push({kind: 'br'});
+        break;
+      default:
+        if (node.children?.length) {
+          tokens.push(...extractInlineTokens(node.children));
+        } else if (node.value) {
+          tokens.push({kind: 'text', value: node.value});
+        }
+        break;
+    }
+  }
+
+  return tokens;
+};
+
+export const extractInlineTokensFromMarkdown = (markdown: string): InlineToken[] => {
+  const tree = parseMarkdown(markdown);
+  const tokens: InlineToken[] = [];
+
+  tree.children.forEach((node, index) => {
+    if (node.type === 'paragraph' || node.type === 'heading') {
+      tokens.push(...extractInlineTokens(node.children ?? []));
+    } else if (node.type === 'text') {
+      tokens.push({kind: 'text', value: normalizeTextNodeValue(node.value)});
+    } else if (node.children?.length) {
+      tokens.push(...extractInlineTokens(node.children));
+    }
+
+    if (index < tree.children.length - 1 && tokens.length > 0) {
+      tokens.push({kind: 'br'});
+    }
+  });
+
+  return tokens;
+};

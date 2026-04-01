@@ -11,3 +11,7 @@ public/_doc-assets
 .tmp-dev-server.log
 .tmp-dev-server.pid
 .tmp-shots
+.home
+.tmp
+.npm-cache
+.npm-tmp

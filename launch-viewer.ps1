@@ -21,14 +21,32 @@ function Resolve-WorkspaceRoot {
 }
 
 function Resolve-ShellExecutable {
+  try {
+    $currentProcess = Get-Process -Id $PID -ErrorAction Stop
+    if (-not [string]::IsNullOrWhiteSpace($currentProcess.Path) -and (Test-Path -LiteralPath $currentProcess.Path -PathType Leaf)) {
+      return $currentProcess.Path
+    }
+  } catch {
+  }
+
   $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
   if ($null -ne $pwsh) {
     return $pwsh.Source
   }
 
+  $programFilesPwsh = Join-Path ${env:ProgramFiles} 'PowerShell\7\pwsh.exe'
+  if (Test-Path -LiteralPath $programFilesPwsh -PathType Leaf) {
+    return $programFilesPwsh
+  }
+
   $powershell = Get-Command powershell -ErrorAction SilentlyContinue
   if ($null -ne $powershell) {
     return $powershell.Source
+  }
+
+  $windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+  if (Test-Path -LiteralPath $windowsPowerShell -PathType Leaf) {
+    return $windowsPowerShell
   }
 
   throw 'PowerShell executable not found. Install PowerShell or PowerShell 7 first.'
@@ -40,7 +58,39 @@ function Resolve-NpmExecutable {
     return $npm.Source
   }
 
+  $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
+  if ($null -ne $npmCmd) {
+    return $npmCmd.Source
+  }
+
+  $programFilesNpm = Join-Path ${env:ProgramFiles} 'nodejs\npm.cmd'
+  if (Test-Path -LiteralPath $programFilesNpm -PathType Leaf) {
+    return $programFilesNpm
+  }
+
   throw 'npm was not found. Install Node.js LTS first.'
+}
+
+function Resolve-NodeExecutable {
+  $node = Get-Command node -ErrorAction SilentlyContinue
+  if ($null -ne $node) {
+    return $node.Source
+  }
+
+  $npm = Get-Command npm -ErrorAction SilentlyContinue
+  if ($null -ne $npm) {
+    $siblingNode = Join-Path (Split-Path -Parent $npm.Source) 'node.exe'
+    if (Test-Path -LiteralPath $siblingNode -PathType Leaf) {
+      return $siblingNode
+    }
+  }
+
+  $programFilesNode = Join-Path ${env:ProgramFiles} 'nodejs\node.exe'
+  if (Test-Path -LiteralPath $programFilesNode -PathType Leaf) {
+    return $programFilesNode
+  }
+
+  throw 'node was not found. Install Node.js LTS first.'
 }
 
 function Resolve-AbsolutePath {
@@ -53,11 +103,16 @@ function Resolve-AbsolutePath {
     return $null
   }
 
-  if ([System.IO.Path]::IsPathRooted($PathValue)) {
-    return [System.IO.Path]::GetFullPath($PathValue)
+  $normalizedPath = $PathValue.Trim().Trim("'`"").Trim([char]0xFEFF)
+  if ([string]::IsNullOrWhiteSpace($normalizedPath)) {
+    return $null
   }
 
-  return [System.IO.Path]::GetFullPath((Join-Path $BasePath $PathValue))
+  if ([System.IO.Path]::IsPathRooted($normalizedPath)) {
+    return [System.IO.Path]::GetFullPath($normalizedPath)
+  }
+
+  return [System.IO.Path]::GetFullPath((Join-Path $BasePath $normalizedPath))
 }
 
 function Get-ContentRootFilePath {
@@ -77,7 +132,7 @@ function Read-SessionState {
     return $null
   }
 
-  $raw = Get-Content -LiteralPath $SessionFilePath -Raw
+  $raw = Get-Content -LiteralPath $SessionFilePath -Raw -Encoding UTF8
   if ([string]::IsNullOrWhiteSpace($raw)) {
     return $null
   }
@@ -97,7 +152,7 @@ function Resolve-ConfiguredVaultPath {
   )
 
   if (Test-Path -LiteralPath $ContentRootFilePath) {
-    $configured = (Get-Content -LiteralPath $ContentRootFilePath -Raw).Trim()
+    $configured = (Get-Content -LiteralPath $ContentRootFilePath -Raw -Encoding UTF8).Trim()
     if (-not [string]::IsNullOrWhiteSpace($configured)) {
       return Resolve-AbsolutePath -PathValue $configured -BasePath $WorkspaceRootPath
     }
@@ -228,19 +283,24 @@ function New-LaunchPlan {
   )
 
   $shellPath = Resolve-ShellExecutable
-  $npmPath = Resolve-NpmExecutable
   $needsInstall = -not (Test-DependenciesInstalled -WorkspaceRootPath $WorkspaceRootPath)
+  $npmPath = if ($needsInstall) { Resolve-NpmExecutable } else { $null }
+  $nodePath = Resolve-NodeExecutable
+  $nodeBinDir = Split-Path -Parent $nodePath
   $windowTitle = "Markdown Viewer ($ResolvedPort)"
   $escapedWorkspaceRoot = $WorkspaceRootPath.Replace("'", "''")
   $escapedVaultPath = $ResolvedVaultPath.Replace("'", "''")
   $escapedWindowTitle = $windowTitle.Replace("'", "''")
+  $escapedNodePath = $nodePath.Replace("'", "''")
+  $escapedNodeBinDir = $nodeBinDir.Replace("'", "''")
 
   $launchCommand = @(
     "`$Host.UI.RawUI.WindowTitle = '$escapedWindowTitle'"
     "Set-Location -LiteralPath '$escapedWorkspaceRoot'"
+    "`$env:PATH='$escapedNodeBinDir;' + `$env:PATH"
     "`$env:ASTRO_TELEMETRY_DISABLED='1'"
     "`$env:DOC_WORKSPACE_CONTENT_DIR='$escapedVaultPath'"
-    "npm run dev -- --host 127.0.0.1 --port $ResolvedPort"
+    "& '$escapedNodePath' '.\scripts\run-with-local-env.mjs' '.\node_modules\astro\astro.js' 'dev' '--host' '127.0.0.1' '--port' '$ResolvedPort'"
   ) -join '; '
 
   return [pscustomobject]@{
@@ -252,6 +312,8 @@ function New-LaunchPlan {
     sessionFile     = $SessionFilePath
     shellPath       = $shellPath
     npmPath         = $npmPath
+    nodePath        = $nodePath
+    nodeBinDir      = $nodeBinDir
     needsInstall    = $needsInstall
     windowTitle     = $windowTitle
     launchCommand   = $launchCommand
@@ -289,11 +351,17 @@ if ($DryRun) {
 }
 
 $null = Stop-PreviousViewerSession -SessionFilePath $sessionFile
-Set-Content -LiteralPath $contentRootFile -Value $resolvedVaultPath -NoNewline
+Set-Content -LiteralPath $contentRootFile -Value $resolvedVaultPath -NoNewline -Encoding UTF8
 
 if ($plan.needsInstall) {
   Write-Host 'First run detected. Installing project dependencies with npm install...' -ForegroundColor Yellow
-  & $plan.npmPath install
+  $originalPath = $env:PATH
+  try {
+    $env:PATH = "$($plan.nodeBinDir);$env:PATH"
+    & $plan.npmPath install
+  } finally {
+    $env:PATH = $originalPath
+  }
   if ($LASTEXITCODE -ne 0) {
     throw 'npm install failed. Check your internet connection and Node.js installation, then try again.'
   }
@@ -309,7 +377,7 @@ $sessionPayload = [pscustomobject]@{
   WorkspaceRoot       = $plan.workspaceRoot
   LaunchedAtUtc       = [DateTime]::UtcNow.ToString('O')
 }
-$sessionPayload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $sessionFile -NoNewline
+$sessionPayload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $sessionFile -NoNewline -Encoding UTF8
 
 Write-Host "Started Markdown viewer on $($plan.url)" -ForegroundColor Green
 Write-Host "Vault: $($plan.vaultPath)"

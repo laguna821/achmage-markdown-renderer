@@ -1,7 +1,9 @@
 ---
 import BlockRenderer from './BlockRenderer.astro';
+import WrapFigureBlock from './blocks/WrapFigureBlock.astro';
+import {buildPretextTargetAttributes, getHintByKind, resolveSectionLayoutHints} from '../lib/pretext/hints';
 
-import type {NormalizedDoc} from '../lib/content';
+import type {DocType, NormalizedBlock, NormalizedDoc} from '../lib/content';
 
 interface Props {
   doc: NormalizedDoc;
@@ -9,29 +11,130 @@ interface Props {
 }
 
 const {doc, variant = 'reader'} = Astro.props;
+type RenderItem =
+  | {kind: 'block'; block: NormalizedBlock; blockIndex: number}
+  | {
+      kind: 'wrapFigure';
+      image: Extract<NormalizedBlock, {kind: 'image'}>;
+      prose: Extract<NormalizedBlock, {kind: 'prose'}>;
+      blockIndex: number;
+    };
+
+const buildRenderItems = ({
+  blocks,
+  enableWrapFigure,
+}: {
+  blocks: NormalizedBlock[];
+  enableWrapFigure: boolean;
+}): RenderItem[] => {
+  const items: RenderItem[] = [];
+
+  for (let index = 0; index < blocks.length; index += 1) {
+    const block = blocks[index];
+    const next = blocks[index + 1];
+
+    if (
+      enableWrapFigure &&
+      block?.kind === 'image' &&
+      next?.kind === 'prose'
+    ) {
+      items.push({
+        kind: 'wrapFigure',
+        image: block,
+        prose: next,
+        blockIndex: index,
+      });
+      index += 1;
+      continue;
+    }
+
+    if (block) {
+      items.push({
+        kind: 'block',
+        block,
+        blockIndex: index,
+      });
+    }
+  }
+
+  return items;
+};
 ---
 
 <article class:list={['doc-article', `doc-article--${variant}`]}>
   {doc.sections.map((section) => {
     const sectionId = section.anchorId ?? section.id;
     const headingLevel = Math.min(Math.max(section.depth || 2, 1), 6);
+    const renderItems = buildRenderItems({
+      blocks: section.blocks,
+      enableWrapFigure: variant === 'newsletter' && Boolean(doc.meta.pretext?.forceWrapFigure),
+    });
+    const sectionHints = section.id !== 'lead' ? resolveSectionLayoutHints(variant, doc.meta) : [];
+    const sectionBalanceHint = getHintByKind(sectionHints, 'balance-title');
+    const sectionFitHint = getHintByKind(sectionHints, 'fit-screen');
+    const sectionPretextAttributes =
+      section.id !== 'lead' && sectionFitHint
+        ? {
+            'data-pretext-section-cover': 'true',
+            'data-pretext-section-id': sectionId,
+            'data-pretext-max-viewport-ratio': String(sectionFitHint.maxViewportRatio ?? 0.82),
+            'data-section-fit': 'stage-fit-ok',
+          }
+        : {};
+    const sectionTitlePretextAttributes =
+      section.id !== 'lead' && sectionBalanceHint
+        ? buildPretextTargetAttributes({
+            slug: doc.slug,
+            hint: sectionBalanceHint,
+            keySuffix: `section:${sectionId}:title`,
+            extras: {
+              'data-pretext-section-id': sectionId,
+              'data-pretext-apply-closest': '.doc-section__title',
+            },
+          })
+        : {};
 
     return (
       <section
-        class:list={['doc-section', section.id === 'lead' && 'doc-section--lead']}
+        class:list={[
+          'doc-section',
+          section.id === 'lead' && 'doc-section--lead',
+          Object.keys(sectionPretextAttributes).length > 0 && 'doc-section--cover',
+        ]}
         data-stage-target={section.id !== 'lead' ? 'true' : 'false'}
         data-section-id={sectionId}
         data-mega={section.id !== 'lead' ? section.title : undefined}
+        {...sectionPretextAttributes}
       >
-        {section.id !== 'lead' && headingLevel === 1 && <h1 class="doc-section__title" id={sectionId}>{section.title}</h1>}
-        {section.id !== 'lead' && headingLevel === 2 && <h2 class="doc-section__title" id={sectionId}>{section.title}</h2>}
-        {section.id !== 'lead' && headingLevel === 3 && <h3 class="doc-section__title" id={sectionId}>{section.title}</h3>}
-        {section.id !== 'lead' && headingLevel === 4 && <h4 class="doc-section__title" id={sectionId}>{section.title}</h4>}
-        {section.id !== 'lead' && headingLevel === 5 && <h5 class="doc-section__title" id={sectionId}>{section.title}</h5>}
-        {section.id !== 'lead' && headingLevel >= 6 && <h6 class="doc-section__title" id={sectionId}>{section.title}</h6>}
+        {section.id !== 'lead' && headingLevel === 1 && <h1 class="doc-section__title" id={sectionId} {...sectionTitlePretextAttributes}>{section.title}</h1>}
+        {section.id !== 'lead' && headingLevel === 2 && <h2 class="doc-section__title" id={sectionId} {...sectionTitlePretextAttributes}>{section.title}</h2>}
+        {section.id !== 'lead' && headingLevel === 3 && <h3 class="doc-section__title" id={sectionId} {...sectionTitlePretextAttributes}>{section.title}</h3>}
+        {section.id !== 'lead' && headingLevel === 4 && <h4 class="doc-section__title" id={sectionId} {...sectionTitlePretextAttributes}>{section.title}</h4>}
+        {section.id !== 'lead' && headingLevel === 5 && <h5 class="doc-section__title" id={sectionId} {...sectionTitlePretextAttributes}>{section.title}</h5>}
+        {section.id !== 'lead' && headingLevel >= 6 && <h6 class="doc-section__title" id={sectionId} {...sectionTitlePretextAttributes}>{section.title}</h6>}
         <div class="doc-section__blocks">
-          {section.blocks.map((block) => (
-            <BlockRenderer block={block} variant={variant} />
+          {renderItems.map((item) => (
+            item.kind === 'wrapFigure' ? (
+              <WrapFigureBlock
+                image={item.image}
+                prose={item.prose}
+                variant={variant}
+                slug={doc.slug}
+                sectionId={sectionId}
+                blockIndex={item.blockIndex}
+                pretext={doc.meta.pretext}
+              />
+            ) : (
+              <BlockRenderer
+                block={item.block}
+                variant={variant}
+                docType={doc.meta.docType as DocType}
+                slug={doc.slug}
+                sectionId={sectionId}
+                blockIndex={item.blockIndex}
+                pretext={doc.meta.pretext}
+              />
+            )
           ))}
         </div>
       </section>

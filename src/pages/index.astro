@@ -1,4 +1,5 @@
 ---
+import HomeSearchScript from '../components/shell/HomeSearchScript.astro';
 import SiteHeader from '../components/shell/SiteHeader.astro';
 import {getContentRootInfo, loadNormalizedDocuments} from '../lib/content';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -6,6 +7,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 const docs = loadNormalizedDocuments();
 const contentRoot = getContentRootInfo();
 const contentLabel = contentRoot.source === 'default' ? 'Sample Documents' : 'Workspace Documents';
+const searchIndexUrl = '/search-index.json';
 ---
 
 <BaseLayout pageTitle="Achmage Markdown Renderer" theme="light" bodyClass="mode-home">
@@ -15,24 +17,69 @@ const contentLabel = contentRoot.source === 'default' ? 'Sample Documents' : 'Wo
       <div class="home-hero__eyebrow">Markdown Source-of-Truth</div>
       <h1>기록은 단순하게,<br />보여짐은 완벽하게.</h1>
       <p class="home-hero__lede">
-        마크다운 하나면 충분합니다.  <br>코딩 없이도 모든 텍스트와 데이터가 제자리를 찾는 혁신적인 자동 정렬 시스템을 만나보세요.
+        마크다운 하나면 충분합니다. <br />코딩 없이도 모든 텍스트와 데이터가 제자리를 찾는
+        혁신적인 자동 정렬 시스템을 만나보세요.
       </p>
       <p class="home-hero__source">
         Current source: <code>{contentRoot.root}</code> ({contentRoot.source})
       </p>
     </section>
 
-    <section class="home-list">
-      <h2>{contentLabel}</h2>
-      <div class="home-list__grid">
+    <section
+      class="home-list"
+      data-home-search-root
+      data-home-search-total={docs.length}
+      data-home-search-url={searchIndexUrl}
+    >
+      <div class="home-list__toolbar">
+        <div class="home-list__heading">
+          <div class="home-list__eyebrow">Document Workbench</div>
+          <h2>{contentLabel}</h2>
+        </div>
+        <p class="home-list__status" data-home-search-status>{docs.length} docs / {docs.length} shown</p>
+        <div class="home-search" data-home-search-controls hidden>
+          <label class="home-search__field">
+            <span class="home-search__label">Omnisearch</span>
+            <input
+              class="home-search__input"
+              type="search"
+              placeholder="제목·본문·YAML·#태그 검색"
+              data-home-search-input
+            />
+          </label>
+          <div class="home-search__bar">
+            <div class="home-search__actions">
+              <p class="home-search__hint">
+                Use <code>#tag</code>, <code>AND</code>, <code>OR</code>. Example:
+                <code>AI 리터러시 AND #메타인지</code>
+              </p>
+              <button class="home-search__clear" type="button" data-home-search-clear hidden>
+                Clear filters
+              </button>
+            </div>
+            <div class="home-search__feedback" data-home-search-feedback hidden>
+              <p class="home-search__feedback-copy" data-home-search-feedback-copy></p>
+              <div class="home-search__feedback-chips" data-home-search-feedback-chips></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="home-search__empty" data-home-search-empty hidden>
+        <p>No matches. 검색어를 비우면 전체 문서 목록으로 돌아갑니다.</p>
+        <button type="button" data-home-search-clear>Clear filters</button>
+      </div>
+      <div class="home-list__grid" data-home-search-grid>
         {docs.map((doc) => (
-          <article class="home-card">
+          <article class="home-card" data-home-card={doc.slug}>
             <div class="home-card__meta">
               <span>{doc.meta.docType}</span>
               {doc.meta.date && <span>{doc.meta.date}</span>}
             </div>
-            <h3>{doc.meta.title}</h3>
-            {doc.meta.summary && <p>{doc.meta.summary}</p>}
+            <h3 data-home-card-title>{doc.meta.title}</h3>
+            <div class="home-card__match" data-home-card-match hidden></div>
+            <div class="home-card__active-tags" data-home-card-active-tags hidden></div>
+            {doc.meta.summary && <p data-home-card-summary>{doc.meta.summary}</p>}
+            <p class="home-card__excerpt" data-home-card-excerpt hidden></p>
             <div class="home-card__links">
               {doc.meta.outputs.map((output) => (
                 <a href={`/${output}/${doc.slug}`}>{output}</a>
@@ -43,4 +90,5 @@ const contentLabel = contentRoot.source === 'default' ? 'Sample Documents' : 'Wo
       </div>
     </section>
   </main>
+  <HomeSearchScript />
 </BaseLayout>

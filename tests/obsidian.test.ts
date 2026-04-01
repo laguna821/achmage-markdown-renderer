@@ -1,7 +1,7 @@
 import path from 'node:path';
 import {describe, expect, test} from 'vitest';
 
-import {createObsidianLinkLookup, preprocessObsidianMarkdown} from '../src/lib/content/obsidian';
+import {OBSIDIAN_CALLOUT_MARKER, createObsidianLinkLookup, preprocessObsidianMarkdown} from '../src/lib/content/obsidian';
 import {normalizeDocument, parseSourceFile} from '../src/lib/content';
 import type {SourceDocument} from '../src/lib/content';
 
@@ -67,6 +67,7 @@ describe('preprocessObsidianMarkdown', () => {
     expect(output).toContain('[jump](#section-heading)');
     expect(output).toContain('![](<image.png>)');
     expect(output).toContain('> **Tip - Useful**');
+    expect(output).toContain(`<!--${OBSIDIAN_CALLOUT_MARKER}-->`);
   });
 
   test('parses plain markdown files with obsidian templater syntax without treating them as mdx', () => {

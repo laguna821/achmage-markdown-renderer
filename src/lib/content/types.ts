@@ -3,6 +3,13 @@ export type DocType = 'lecture' | 'newsletter' | 'note' | 'handout';
 export type ThemeMode = 'light' | 'dark' | 'auto';
 export type TocDepthOption = 'auto' | 1 | 2 | 3;
 export type SourceConfidence = 'low' | 'medium' | 'high';
+export type PretextDocumentOverrides = {
+  disabled?: boolean;
+  heroPreferredLines?: 2 | 3 | 4 | 5;
+  thesisMaxLines?: 3 | 4 | 5 | 6;
+  evidenceMinColumns?: 1 | 2 | 3;
+  forceWrapFigure?: boolean;
+};
 
 export type DocFrontmatter = {
   title: string;
@@ -36,6 +43,7 @@ export type DocFrontmatter = {
     showTags: boolean;
     showToc: boolean;
   };
+  pretext?: PretextDocumentOverrides;
 };
 
 export type SourceDocument = {
@@ -83,13 +91,27 @@ export type EvidenceItem = {
   tag?: string;
 };
 
+export type InlineToken =
+  | {kind: 'text'; value: string}
+  | {kind: 'strong'; children: readonly InlineToken[]}
+  | {kind: 'em'; children: readonly InlineToken[]}
+  | {kind: 'code'; value: string}
+  | {kind: 'link'; href: string; children: readonly InlineToken[]}
+  | {kind: 'badge'; value: string}
+  | {kind: 'br'};
+
+export type RichBlockContent = {
+  plainText: string;
+  tokens: readonly InlineToken[];
+};
+
 export type NormalizedBlock =
-  | {kind: 'thesis'; content: string}
+  | {kind: 'thesis'; content: string; rich?: RichBlockContent}
   | {kind: 'questionReset'; items: QuestionResetItem[]}
   | {kind: 'evidenceGrid'; items: EvidenceItem[]}
   | {kind: 'evidencePanel'; item: EvidenceItem}
   | {kind: 'axisTable'; headers: string[]; rows: string[][]}
-  | {kind: 'docQuote'; content: string}
+  | {kind: 'docQuote'; content: string; rich?: RichBlockContent}
   | {kind: 'log'; language?: string; code: string}
   | {kind: 'provenance'; ai: NonNullable<DocFrontmatter['ai']>}
   | {kind: 'prose'; html: string}

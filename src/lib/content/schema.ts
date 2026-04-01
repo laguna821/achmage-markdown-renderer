@@ -1,6 +1,14 @@
 import {z} from 'zod';
 
-import type {DocFrontmatter, DocType, OutputMode, SourceConfidence, ThemeMode, TocDepthOption} from './types';
+import type {
+  DocFrontmatter,
+  DocType,
+  OutputMode,
+  PretextDocumentOverrides,
+  SourceConfidence,
+  ThemeMode,
+  TocDepthOption,
+} from './types';
 
 const docTypeSchema = z.enum(['lecture', 'newsletter', 'note', 'handout']);
 const outputSchema = z.enum(['reader', 'stage', 'newsletter']);
@@ -8,6 +16,15 @@ const themeSchema = z.enum(['light', 'dark', 'auto']);
 const tocSchema = z.enum(['auto', 'manual', 'none']);
 const tocMaxDepthSchema = z.union([z.literal('auto'), z.literal(1), z.literal(2), z.literal(3)]);
 const sourceConfidenceSchema = z.enum(['low', 'medium', 'high']);
+const pretextSchema = z
+  .object({
+    disabled: z.boolean().optional(),
+    heroPreferredLines: z.union([z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).optional(),
+    thesisMaxLines: z.union([z.literal(3), z.literal(4), z.literal(5), z.literal(6)]).optional(),
+    evidenceMinColumns: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    forceWrapFigure: z.boolean().optional(),
+  })
+  .strict();
 
 const parseOptional = <T>(
   field: string,
@@ -93,6 +110,7 @@ export const normalizeFrontmatter = (raw: Record<string, unknown>): {meta: DocFr
       .strict(),
     warnings,
   );
+  const pretextInput = parseOptional('pretext', raw.pretext, pretextSchema, warnings);
 
   const outputs = Array.from(new Set(outputsResult)) as OutputMode[];
   const normalizedTags = Array.isArray(tags) ? tags : [tags];
@@ -136,6 +154,18 @@ export const normalizeFrontmatter = (raw: Record<string, unknown>): {meta: DocFr
 
   if (slug) {
     meta.slug = slug;
+  }
+
+  if (pretextInput) {
+    const pretext: PretextDocumentOverrides = {
+      disabled: pretextInput.disabled ?? false,
+      heroPreferredLines: pretextInput.heroPreferredLines,
+      thesisMaxLines: pretextInput.thesisMaxLines,
+      evidenceMinColumns: pretextInput.evidenceMinColumns,
+      forceWrapFigure: pretextInput.forceWrapFigure,
+    };
+
+    meta.pretext = pretext;
   }
 
   return {meta, warnings};

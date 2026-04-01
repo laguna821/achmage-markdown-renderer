@@ -1,6 +1,7 @@
 import path from 'node:path';
 import {describe, expect, test} from 'vitest';
 
+import {createObsidianLinkLookup, preprocessObsidianMarkdown} from '../src/lib/content/obsidian';
 import {normalizeDocument} from '../src/lib/content/normalize';
 import {parseSourceFile} from '../src/lib/content/source';
 
@@ -97,6 +98,104 @@ vault -> parse -> classify -> render -> publish
     expect(kinds).toContain('axisTable');
     expect(kinds).toContain('log');
     expect(kinds).toContain('docQuote');
+  });
+
+  test('preserves rich inline tokens for thesis and docQuote blocks while keeping html fallback', () => {
+    const parsed = parseSourceFile({
+      filePath: path.join(fixturesRoot, 'rich-inline.md'),
+      raw: `---
+title: "Rich Inline"
+docType: "lecture"
+outputs: ["reader"]
+---
+
+# Rich Inline
+
+> **Bold** thesis with \`code\`, [docs](https://example.com), and emoji 😀.
+
+## Quote
+
+> _Layered_ quote with [a link](https://example.com) and \`inline\` code.
+`,
+      sourceRoot: fixturesRoot,
+    });
+
+    const doc = normalizeDocument(parsed);
+    const thesis = doc.sections[0]?.blocks.find((block) => block.kind === 'thesis');
+    const quote = doc.sections.find((section) => section.title === 'Quote')?.blocks[0];
+
+    expect(thesis).toMatchObject({
+      kind: 'thesis',
+      content: expect.stringContaining('<strong>Bold</strong>'),
+      rich: {
+        plainText: 'Bold thesis with code, docs, and emoji 😀.',
+        tokens: expect.arrayContaining([expect.objectContaining({kind: 'strong'})]),
+      },
+    });
+    expect(quote).toMatchObject({
+      kind: 'docQuote',
+      content: expect.stringContaining('<em>Layered</em>'),
+      rich: {
+        plainText: 'Layered quote with a link and inline code.',
+        tokens: expect.arrayContaining([
+          expect.objectContaining({kind: 'em'}),
+          expect.objectContaining({kind: 'link'}),
+          expect.objectContaining({kind: 'code'}),
+        ]),
+      },
+    });
+  });
+
+  test('treats Obsidian-style callout blockquotes as prose instead of pretext quote blocks', () => {
+    const parsed = parseSourceFile({
+      filePath: path.join(fixturesRoot, 'obsidian-callout.md'),
+      raw: `---
+title: "Obsidian Callout"
+docType: "note"
+outputs: ["reader"]
+---
+
+# Obsidian Callout
+
+## Section
+
+> **NOTE - Organizer**
+> This should stay full width.
+`,
+      sourceRoot: fixturesRoot,
+    });
+
+    const doc = normalizeDocument(parsed);
+    const section = doc.sections.find((entry) => entry.title === 'Section');
+
+    expect(section?.blocks).toHaveLength(1);
+    expect(section?.blocks[0]).toMatchObject({kind: 'prose'});
+  });
+
+  test('treats custom Obsidian callout types as prose instead of thesis blocks', () => {
+    const parsed = parseSourceFile({
+      filePath: path.join(fixturesRoot, 'obsidian-custom-callout.md'),
+      raw: `---
+title: "Custom Callout"
+docType: "note"
+outputs: ["reader"]
+---
+
+# Custom Callout
+
+> [!Professor Flow's AI Literacy Notes]
+> **Goal:** This should not become a thesis block.
+`,
+      sourceRoot: fixturesRoot,
+    });
+
+    const lookup = createObsidianLinkLookup([parsed]);
+    parsed.body = preprocessObsidianMarkdown(parsed.body, parsed, lookup);
+
+    const doc = normalizeDocument(parsed);
+    const lead = doc.sections[0];
+
+    expect(lead?.blocks[0]).toMatchObject({kind: 'prose'});
   });
 
   test('falls back to prose when question reset section has more than two child headings', () => {

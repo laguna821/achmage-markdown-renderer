@@ -4,6 +4,7 @@ import DocumentSections from '../components/DocumentSections.astro';
 import ActiveHeadingScript from '../components/shell/ActiveHeadingScript.astro';
 import DocRail from '../components/shell/DocRail.astro';
 import MobileTocDrawer from '../components/shell/MobileTocDrawer.astro';
+import PretextEnhancerScript from '../components/shell/PretextEnhancerScript.astro';
 import SiteHeader from '../components/shell/SiteHeader.astro';
 import StageInteractionScript from '../components/shell/StageInteractionScript.astro';
 import BaseLayout from './BaseLayout.astro';
@@ -17,13 +18,20 @@ interface Props {
 const {doc} = Astro.props;
 ---
 
-<BaseLayout pageTitle={`${doc.meta.title} | Stage`} theme="light" bodyClass="mode-stage">
+<BaseLayout
+  pageTitle={`${doc.meta.title} | Stage`}
+  theme="light"
+  bodyClass="mode-stage"
+  outputMode="stage"
+  docSlug={doc.slug}
+  pretextEnabled={true}
+>
   <SiteHeader doc={doc} variant="stage" />
   <div class="layout-shell layout-shell--stage">
     <div class="layout-shell__rail">
       <DocRail doc={doc} />
     </div>
-    <main class="layout-shell__main">
+    <main class="layout-shell__main" data-pretext-stage-hero="true" data-pretext-max-viewport-ratio="0.92" data-stage-fit="stage-fit-ok">
       <MobileTocDrawer doc={doc} />
       <DocumentHeader doc={doc} variant="stage" />
       <DocumentSections doc={doc} variant="stage" />
@@ -31,4 +39,5 @@ const {doc} = Astro.props;
   </div>
   <ActiveHeadingScript />
   <StageInteractionScript />
+  <PretextEnhancerScript />
 </BaseLayout>

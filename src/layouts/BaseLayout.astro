@@ -9,9 +9,12 @@ interface Props {
   pageTitle: string;
   theme?: 'light' | 'dark';
   bodyClass?: string;
+  outputMode?: 'reader' | 'stage' | 'newsletter';
+  docSlug?: string;
+  pretextEnabled?: boolean;
 }
 
-const {pageTitle, theme = 'light', bodyClass = ''} = Astro.props;
+const {pageTitle, theme = 'light', bodyClass = '', outputMode, docSlug, pretextEnabled = false} = Astro.props;
 ---
 
 <!doctype html>
@@ -40,7 +43,12 @@ const {pageTitle, theme = 'light', bodyClass = ''} = Astro.props;
     </script>
     <title>{pageTitle}</title>
   </head>
-  <body class={bodyClass}>
+  <body
+    class={bodyClass}
+    data-output-mode={outputMode}
+    data-doc-slug={docSlug}
+    data-pretext-enabled={String(pretextEnabled)}
+  >
     <slot />
     <script is:inline>
       (() => {

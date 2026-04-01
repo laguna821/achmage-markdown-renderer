@@ -220,6 +220,7 @@ const resolveWikiTarget = (
 };
 
 const calloutLinePattern = /^>\s*\[!([^\]]+)\](?:[+-])?\s*(.*)$/gm;
+export const OBSIDIAN_CALLOUT_MARKER = 'achmage-callout';
 
 export const preprocessObsidianMarkdown = (
   markdown: string,
@@ -227,7 +228,7 @@ export const preprocessObsidianMarkdown = (
   lookup: ObsidianLinkLookup,
 ): string => {
   const withCallouts = markdown.replace(calloutLinePattern, (_, type: string, title: string) =>
-    `> **${type}${title?.trim() ? ` - ${title.trim()}` : ''}**`,
+    `> **${type}${title?.trim() ? ` - ${title.trim()}` : ''}** <!--${OBSIDIAN_CALLOUT_MARKER}-->`,
   );
 
   const withoutBlockRefs = withCallouts.replace(/\s+\^[A-Za-z0-9-]+$/gm, '');
