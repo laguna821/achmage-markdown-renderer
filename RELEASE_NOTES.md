@@ -1,32 +1,33 @@
 # Release Notes
 
-## v2.0.0
+## v4.0.0
 
-이번 릴리스는 기존 viewer를 단순 유지보수 버전이 아니라, 구조적으로 분리된 V2 배포본으로 올리기 위한 첫 기준점입니다.
+이번 버전은 "Markdown을 다시 만들지 말고 그대로 보여주자"는 방향을 더 분명하게 다듬은 릴리스입니다.
 
 ### Added
 
-- Pretext 기반 제목 균형, thesis/quote 보정, evidence/stage heuristic
-- 홈 `Workspace Documents` Omnisearch
-- `#tag`, `AND`, `OR`를 지원하는 검색식 기반 필터
-- YouTube URL image-style markdown 자동 임베드 처리
-- Obsidian callout / custom callout 분류 보정
-- overflow 방지용 이미지/코드/콜아웃 레이아웃 보강
-- GitHub V2 배포용 `package:v2` 패키징 스크립트
+- 4번째 테마 `Cyber Sanctuary`
+- 긴 문서용 TOC active 유지 로직
+- 문서 하단 구간까지 자연스럽게 이어지는 TOC active 판정
+- 긴 TOC에서 현재 active 항목을 따라오는 rail auto-scroll
+- v4 기준 배포 패키징 흐름
 
 ### Improved
 
-- `launch-viewer.cmd` / `launch-viewer.ps1` 첫 실행 UX
-- Node.js LTS만 있으면 의존성 자동 설치 후 실행되는 배포 흐름
-- Windows 경로/인코딩 환경에서의 실행 안정성
-- 홈 검색 UX와 검색 결과 상태 표시
+- 4개 테마 순환 UX 정리
+- 데스크톱과 모바일 TOC 동작 일관성 개선
+- 긴 섹션과 짧은 하단 섹션에서의 읽기 흐름 개선
+- ZIP 다운로드 후 실행하는 사용자 기준 문서 전면 개편
+
+### Existing Core Features
+
+- Obsidian/Markdown vault 로컬 렌더링
+- Omnisearch
+- 자동 TOC
+- Reader / Stage / Newsletter 출력
+- 표, 코드 블록, 이미지, Obsidian callout, wiki link, YouTube embed 처리
 
 ### Packaging
 
-- 기존 GitHub 저장소를 백업 후 같은 저장소에 V2 기준으로 갱신
-- GitHub Release용 runtime ZIP 동시 제공
-
-### Notes
-
-- 이번 릴리스는 `pretext-main` 폴더를 앱 의존성으로 직접 포함하지 않습니다.
-- `public/_doc-assets`는 현재 vault를 기준으로 재생성되는 로컬 런타임 자산이므로 배포본에 포함하지 않습니다.
+- `npm run package:v4`로 GitHub 업로드용 소스 패키지와 런타임 ZIP 생성
+- 런타임 ZIP 이름은 `package.json` 버전을 기준으로 자동 생성

@@ -1,35 +1,122 @@
-<script is:inline>
+<script>
+  import {findActiveHeadingId, getActiveHeadingLine} from '../../lib/content/active-heading';
+
   (() => {
-    const tocLinks = Array.from(document.querySelectorAll('[data-toc-item]'));
-    const headings = Array.from(
-      document.querySelectorAll(
-        '.doc-article h1[id], .doc-article h2[id], .doc-article h3[id], .doc-article h4[id], .doc-article h5[id], .doc-article h6[id]',
+    const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-item]'));
+    const headingIds = Array.from(
+      new Set(
+        tocLinks
+          .map((link) => link.getAttribute('data-toc-item'))
+          .filter((id): id is string => Boolean(id)),
       ),
     );
+    const headings = headingIds
+      .map((id) => document.getElementById(id))
+      .filter((heading): heading is HTMLElement => heading instanceof HTMLElement);
 
     if (tocLinks.length === 0 || headings.length === 0) return;
 
-    const activate = (id) => {
-      tocLinks.forEach((link) => {
-        link.classList.toggle('is-active', link.getAttribute('data-toc-item') === id);
+    let activeId = '';
+    let frame = 0;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    const revealLinkInScrollRoot = (link: HTMLAnchorElement) => {
+      const scrollRoot = link.closest('[data-toc-scroll-root]');
+      if (!(scrollRoot instanceof HTMLElement)) {
+        return;
+      }
+
+      if (
+        scrollRoot.getClientRects().length === 0 ||
+        link.getClientRects().length === 0 ||
+        scrollRoot.scrollHeight <= scrollRoot.clientHeight
+      ) {
+        return;
+      }
+
+      const scrollRootRect = scrollRoot.getBoundingClientRect();
+      const linkRect = link.getBoundingClientRect();
+      const padding = Math.min(40, scrollRoot.clientHeight * 0.14);
+      const visibleTop = scrollRootRect.top + padding;
+      const visibleBottom = scrollRootRect.bottom - padding;
+
+      if (linkRect.top >= visibleTop && linkRect.bottom <= visibleBottom) {
+        return;
+      }
+
+      const delta = linkRect.top < visibleTop ? linkRect.top - visibleTop : linkRect.bottom - visibleBottom;
+      const maxScrollTop = Math.max(scrollRoot.scrollHeight - scrollRoot.clientHeight, 0);
+      const nextTop = Math.min(Math.max(scrollRoot.scrollTop + delta, 0), maxScrollTop);
+
+      scrollRoot.scrollTo({
+        top: nextTop,
+        behavior: reducedMotion.matches ? 'auto' : 'smooth',
       });
     };
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+    const revealActiveLinks = (id: string) => {
+      tocLinks.forEach((link) => {
+        if (link.getAttribute('data-toc-item') === id) {
+          revealLinkInScrollRoot(link);
+        }
+      });
+    };
 
-        if (!visible) return;
-        activate(visible.target.id);
-      },
-      {
-        rootMargin: '-20% 0px -60% 0px',
-        threshold: [0, 1],
-      },
-    );
+    const activate = (id: string) => {
+      const changed = activeId !== id;
+      activeId = id;
 
-    headings.forEach((heading) => observer.observe(heading));
+      if (changed) {
+        tocLinks.forEach((link) => {
+          link.classList.toggle('is-active', link.getAttribute('data-toc-item') === id);
+        });
+      }
+
+      revealActiveLinks(id);
+    };
+
+    const syncActiveHeading = () => {
+      frame = 0;
+
+      const viewportHeight = window.innerHeight;
+      const scrollTop = window.scrollY;
+      const maxScroll = Math.max(document.documentElement.scrollHeight - viewportHeight, 0);
+      const activationLine = getActiveHeadingLine({
+        viewportHeight,
+        scrollTop,
+        maxScroll,
+      });
+      const nextActiveId = findActiveHeadingId(
+        headings.map((heading) => ({
+          id: heading.id,
+          top: heading.getBoundingClientRect().top,
+        })),
+        activationLine,
+      );
+
+      if (nextActiveId) {
+        activate(nextActiveId);
+      }
+    };
+
+    const requestSync = () => {
+      if (frame !== 0) {
+        return;
+      }
+
+      frame = window.requestAnimationFrame(syncActiveHeading);
+    };
+
+    requestSync();
+
+    window.addEventListener('scroll', requestSync, {passive: true});
+    window.addEventListener('resize', requestSync);
+    window.addEventListener('hashchange', requestSync);
+    window.addEventListener('load', requestSync);
+    window.addEventListener('toc:reveal-active', () => {
+      if (activeId) {
+        revealActiveLinks(activeId);
+      }
+    });
   })();
 </script>

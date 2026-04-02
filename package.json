@@ -1,6 +1,6 @@
 {
   "name": "achmage-markdown-renderer",
-  "version": "2.0.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.22.0",
@@ -9,7 +9,8 @@
     "start": "node scripts/run-with-local-env.mjs ./node_modules/astro/astro.js dev",
     "build": "node scripts/run-with-local-env.mjs ./node_modules/astro/astro.js build",
     "preview": "node scripts/run-with-local-env.mjs ./node_modules/astro/astro.js preview",
-    "package:v2": "node scripts/package-v2.mjs",
+    "package:v4": "node scripts/package-v4.mjs",
+    "package:release": "node scripts/package-v4.mjs",
     "check": "node scripts/run-with-local-env.mjs ./node_modules/astro/astro.js check",
     "test": "node scripts/run-with-local-env.mjs ./node_modules/vitest/vitest.mjs run --pool forks",
     "test:watch": "node scripts/run-with-local-env.mjs ./node_modules/vitest/vitest.mjs --pool forks",

@@ -51,11 +51,11 @@ const runtimeEntries = [
 ];
 
 function log(message) {
-  console.log(`[package:v2] ${message}`);
+  console.log(`[package:v4] ${message}`);
 }
 
 function fail(message) {
-  console.error(`[package:v2] ${message}`);
+  console.error(`[package:v4] ${message}`);
   process.exit(1);
 }
 
@@ -192,7 +192,7 @@ function initializeSourceRepo() {
     stdio: 'inherit',
   });
   if (initResult.status !== 0) {
-    fail('git init failed for the V2 source package.');
+    fail('git init failed for the V4 source package.');
   }
 
   spawnSync('git', ['branch', '-M', 'main'], {
@@ -205,7 +205,7 @@ function initializeSourceRepo() {
     stdio: 'inherit',
   });
   if (addResult.status !== 0) {
-    fail('git add failed for the V2 source package.');
+    fail('git add failed for the V4 source package.');
   }
 
   const gitUserName = getGitConfig('user.name');
@@ -222,7 +222,7 @@ function initializeSourceRepo() {
   });
 
   if (commitResult.status !== 0) {
-    fail('git commit failed for the V2 source package.');
+    fail('git commit failed for the V4 source package.');
   }
 }
 

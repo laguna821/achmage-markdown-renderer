@@ -10,9 +10,9 @@ interface Props {
 const {doc} = Astro.props;
 ---
 
-<aside class="doc-rail" aria-label="Document rail">
+<aside class="doc-rail" aria-label="Document rail" data-toc-scroll-root="desktop">
   {doc.meta.rail.showToc && doc.headings.length > 0 && (
-    <section class="doc-rail__panel">
+    <section class:list={['doc-rail__panel', 'doc-rail__panel--toc']}>
       <h2>{doc.meta.tocTitle}</h2>
       <TocList items={doc.headings} />
     </section>
