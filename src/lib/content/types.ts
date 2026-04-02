@@ -1,6 +1,6 @@
 export type OutputMode = 'reader' | 'stage' | 'newsletter';
 export type DocType = 'lecture' | 'newsletter' | 'note' | 'handout';
-export type ThemeMode = 'light' | 'dark' | 'aurora' | 'auto';
+export type ThemeMode = 'light' | 'dark' | 'aurora' | 'cyber_sanctuary' | 'auto';
 export type TocDepthOption = 'auto' | 1 | 2 | 3;
 export type SourceConfidence = 'low' | 'medium' | 'high';
 export type PretextDocumentOverrides = {

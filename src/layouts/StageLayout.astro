@@ -20,7 +20,8 @@ const {doc} = Astro.props;
 
 <BaseLayout
   pageTitle={`${doc.meta.title} | Stage`}
-  theme="light"
+  theme={doc.meta.theme}
+  themeLocked={doc.meta.theme !== 'auto'}
   bodyClass="mode-stage"
   outputMode="stage"
   docSlug={doc.slug}

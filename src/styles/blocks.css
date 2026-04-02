@@ -432,3 +432,102 @@
   font-size: clamp(1.02rem, 1.35vw, 1.22rem);
   line-height: 1.52;
 }
+
+:root[data-theme='cyber_sanctuary'] .thesis-block,
+:root[data-theme='cyber_sanctuary'] .question-reset__card,
+:root[data-theme='cyber_sanctuary'] .evidence-card,
+:root[data-theme='cyber_sanctuary'] .evidence-panel,
+:root[data-theme='cyber_sanctuary'] .provenance-panel,
+:root[data-theme='cyber_sanctuary'] .axis-table__wrap,
+:root[data-theme='cyber_sanctuary'] .doc-quote,
+:root[data-theme='cyber_sanctuary'] .axis-table-card {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(24, 32, 47, 0.86), rgba(13, 19, 32, 0.82)) padding-box,
+    linear-gradient(
+      135deg,
+      rgba(83, 221, 252, 0.54),
+      rgba(186, 158, 255, 0.48) 42%,
+      rgba(255, 109, 175, 0.34) 78%,
+      rgba(83, 221, 252, 0.52)
+    ) border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(83, 221, 252, 0.06),
+    0 24px 46px -38px rgba(0, 0, 0, 0.92);
+}
+
+:root[data-theme='cyber_sanctuary'] .thesis-block__label,
+:root[data-theme='cyber_sanctuary'] .provenance-panel__eyebrow,
+:root[data-theme='cyber_sanctuary'] .log-block__label {
+  color: #91ebff;
+}
+
+:root[data-theme='cyber_sanctuary'] .thesis-block__content,
+:root[data-theme='cyber_sanctuary'] .question-reset__title,
+:root[data-theme='cyber_sanctuary'] .evidence-card__title,
+:root[data-theme='cyber_sanctuary'] .evidence-panel__title,
+:root[data-theme='cyber_sanctuary'] .axis-table-card__title {
+  color: #eef3ff;
+  font-family: var(--font-display);
+}
+
+:root[data-theme='cyber_sanctuary'] .thesis-block__content {
+  font-size: clamp(1.05rem, 1.4vw, 1.24rem);
+  line-height: 1.58;
+}
+
+:root[data-theme='cyber_sanctuary'] .question-reset__index,
+:root[data-theme='cyber_sanctuary'] .evidence-card__tag,
+:root[data-theme='cyber_sanctuary'] .evidence-panel__tag {
+  border-color: rgba(83, 221, 252, 0.2);
+  background: rgba(83, 221, 252, 0.08);
+  color: #95efff;
+  box-shadow: inset 0 0 12px rgba(83, 221, 252, 0.08);
+}
+
+:root[data-theme='cyber_sanctuary'] .question-reset__card,
+:root[data-theme='cyber_sanctuary'] .evidence-card,
+:root[data-theme='cyber_sanctuary'] .evidence-panel,
+:root[data-theme='cyber_sanctuary'] .doc-quote,
+:root[data-theme='cyber_sanctuary'] .axis-table-card__grid dd,
+:root[data-theme='cyber_sanctuary'] .provenance-panel__grid dd {
+  color: #c5cde0;
+}
+
+:root[data-theme='cyber_sanctuary'] .axis-table__head {
+  background: rgba(83, 221, 252, 0.08);
+  color: #9cefff;
+}
+
+:root[data-theme='cyber_sanctuary'] .axis-table__head,
+:root[data-theme='cyber_sanctuary'] .axis-table__cell {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='cyber_sanctuary'] .axis-table-card__grid dt,
+:root[data-theme='cyber_sanctuary'] .provenance-panel__grid dt {
+  color: #8591a8;
+}
+
+:root[data-theme='cyber_sanctuary'] .doc-quote {
+  border-left-color: rgba(255, 109, 175, 0.72);
+}
+
+:root[data-theme='cyber_sanctuary'] .log-block {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(10, 16, 29, 0.96), rgba(14, 20, 32, 0.96)) padding-box,
+    linear-gradient(
+      135deg,
+      rgba(83, 221, 252, 0.58),
+      rgba(186, 158, 255, 0.5) 42%,
+      rgba(255, 109, 175, 0.38) 78%,
+      rgba(83, 221, 252, 0.56)
+    ) border-box;
+  color: var(--color-code-text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(83, 221, 252, 0.07),
+    0 24px 46px -36px rgba(0, 0, 0, 0.94);
+}

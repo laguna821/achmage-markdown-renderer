@@ -12,7 +12,7 @@ import type {
 
 const docTypeSchema = z.enum(['lecture', 'newsletter', 'note', 'handout']);
 const outputSchema = z.enum(['reader', 'stage', 'newsletter']);
-const themeSchema = z.enum(['light', 'dark', 'aurora', 'auto']);
+const themeSchema = z.enum(['light', 'dark', 'aurora', 'cyber_sanctuary', 'auto']);
 const tocSchema = z.enum(['auto', 'manual', 'none']);
 const tocMaxDepthSchema = z.union([z.literal('auto'), z.literal(1), z.literal(2), z.literal(3)]);
 const sourceConfidenceSchema = z.enum(['low', 'medium', 'high']);
@@ -52,7 +52,7 @@ export const normalizeFrontmatter = (raw: Record<string, unknown>): {meta: DocFr
   const outputsResult = z.array(outputSchema).min(1, 'outputs is required').parse(raw.outputs);
 
   const slug = parseOptional('slug', raw.slug, z.string().trim().min(1), warnings);
-  const theme = (parseOptional('theme', raw.theme, themeSchema, warnings) ?? 'light') as ThemeMode;
+  const theme = (parseOptional('theme', raw.theme, themeSchema, warnings) ?? 'auto') as ThemeMode;
   const author = parseOptional('author', raw.author, z.string().trim().min(1), warnings);
   const date = parseOptional('date', raw.date, z.string().trim().min(1), warnings);
   const tags =

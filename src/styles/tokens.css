@@ -90,3 +90,30 @@
   --color-shadow-strong: rgba(71, 47, 134, 0.2);
   --color-focus-ring: rgba(107, 56, 212, 0.2);
 }
+
+:root[data-theme='cyber_sanctuary'] {
+  --font-display: "Space Grotesk", "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-body: "Inter", "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --color-canvas: #080e1a;
+  --color-surface: #0d1320;
+  --color-surface-muted: #131a28;
+  --color-surface-glass: rgba(8, 14, 26, 0.68);
+  --color-ink: #e0e5f6;
+  --color-ink-soft: #bcc5da;
+  --color-muted: #9ea8bf;
+  --color-muted-soft: #79839a;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(83, 221, 252, 0.2);
+  --color-accent: #53ddfc;
+  --color-accent-strong: #8ef0ff;
+  --color-accent-soft: rgba(83, 221, 252, 0.1);
+  --color-accent-tint: rgba(186, 158, 255, 0.16);
+  --color-ai: rgba(255, 109, 175, 0.12);
+  --color-code-bg: #0b1320;
+  --color-code-border: rgba(83, 221, 252, 0.2);
+  --color-code-text: #edf2ff;
+  --color-grid: rgba(83, 221, 252, 0.06);
+  --color-shadow: rgba(0, 0, 0, 0.42);
+  --color-shadow-strong: rgba(0, 0, 0, 0.7);
+  --color-focus-ring: rgba(83, 221, 252, 0.22);
+}

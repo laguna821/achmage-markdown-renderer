@@ -19,7 +19,8 @@ const {doc} = Astro.props;
 
 <BaseLayout
   pageTitle={`${doc.meta.title} | Newsletter`}
-  theme="light"
+  theme={doc.meta.theme}
+  themeLocked={doc.meta.theme !== 'auto'}
   bodyClass="mode-newsletter"
   outputMode="newsletter"
   docSlug={doc.slug}

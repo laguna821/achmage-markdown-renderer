@@ -15,6 +15,18 @@ describe('normalizeFrontmatter', () => {
     expect(meta.theme).toBe('aurora');
   });
 
+  test('accepts the cyber_sanctuary theme mode', () => {
+    const {meta, warnings} = normalizeFrontmatter({
+      title: 'Sanctuary Protocol',
+      docType: 'note',
+      outputs: ['reader'],
+      theme: 'cyber_sanctuary',
+    });
+
+    expect(warnings).toEqual([]);
+    expect(meta.theme).toBe('cyber_sanctuary');
+  });
+
   test('parses optional pretext overrides', () => {
     const {meta, warnings} = normalizeFrontmatter({
       title: 'Phase 2 Lab',

@@ -19,7 +19,8 @@ const {doc} = Astro.props;
 
 <BaseLayout
   pageTitle={`${doc.meta.title} | Reader`}
-  theme="light"
+  theme={doc.meta.theme}
+  themeLocked={doc.meta.theme !== 'auto'}
   bodyClass="mode-reader"
   outputMode="reader"
   docSlug={doc.slug}
