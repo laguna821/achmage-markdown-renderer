@@ -39,16 +39,17 @@ const findFirst = (dir, predicate) => {
 
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const next = path.join(dir, entry.name);
+
+    if (predicate(next, entry.name, entry)) {
+      return next;
+    }
+
     if (entry.isDirectory()) {
       const nested = findFirst(next, predicate);
       if (nested) {
         return nested;
       }
       continue;
-    }
-
-    if (predicate(next, entry.name)) {
-      return next;
     }
   }
 
@@ -136,8 +137,8 @@ if (platform === "macos") {
     throw new Error("macOS bundle directory not found. Run `npm run package:macos` first.");
   }
 
-  const dmgSource = findFirst(bundleRoot, (_, entryName) => entryName.endsWith(".dmg"));
-  const appSource = findFirst(bundleRoot, (_, entryName) => entryName.endsWith(".app"));
+  const dmgSource = findFirst(bundleRoot, (_, entryName, entry) => entry.isFile() && entryName.endsWith(".dmg"));
+  const appSource = findFirst(bundleRoot, (_, entryName, entry) => entry.isDirectory() && entryName.endsWith(".app"));
 
   if (!dmgSource || !appSource) {
     throw new Error("macOS DMG or .app bundle not found. Run `npm run package:macos` first.");
