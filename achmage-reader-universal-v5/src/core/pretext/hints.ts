@@ -44,6 +44,10 @@ export const resolveHeaderLayoutHints = (
     return [];
   }
 
+  if (isReaderNoteDoc(output, meta)) {
+    return [];
+  }
+
   const docPretext = getDocPretext(meta);
   const minLines = 2;
   const maxLines = output === 'newsletter' && appliedConfig.phase >= 2 ? 4 : 3;

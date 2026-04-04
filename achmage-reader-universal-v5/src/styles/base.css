@@ -406,6 +406,11 @@ samp {
   transition: width 180ms ease;
 }
 
+.doc-header--reader .doc-header__title[data-pretext-active='true'] {
+  width: 100%;
+  max-width: none;
+}
+
 .doc-header[data-pretext-newsletter-cover='true'][data-pretext-cover-active='true'] {
   width: min(100%, var(--pretext-cover-width, 100%));
   margin-right: auto;
@@ -513,6 +518,11 @@ samp {
 
 .doc-rail__panel--toc {
   min-height: fit-content;
+  max-height: min(40rem, calc(100vh - var(--doc-rail-top-offset) - 11rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-behavior: auto;
 }
 
 .doc-rail__panel h2 {
@@ -1423,8 +1433,8 @@ samp {
 
 :root:not([data-theme]) .doc-header__title,
 :root[data-theme='light'] .doc-header__title {
-  max-width: 12ch;
-  font-size: clamp(3.25rem, 5.6vw, 5.2rem);
+  max-width: none;
+  font-size: clamp(2.55rem, 4.1vw, 3.95rem);
   font-weight: 750;
   line-height: 1.1;
   letter-spacing: -0.03em;
@@ -1432,8 +1442,7 @@ samp {
 
 :root:not([data-theme]) .doc-header[data-doc-type='lecture'] .doc-header__title,
 :root[data-theme='light'] .doc-header[data-doc-type='lecture'] .doc-header__title {
-  max-width: 13ch;
-  font-size: clamp(2.7rem, 4.6vw, 4.2rem);
+  font-size: clamp(2.1rem, 3.35vw, 3.2rem);
 }
 
 :root:not([data-theme]) .doc-header__standfirst,
@@ -1680,12 +1689,12 @@ samp {
 
   :root:not([data-theme]) .doc-header__title,
   :root[data-theme='light'] .doc-header__title {
-    font-size: clamp(2.5rem, 13vw, 3.9rem);
+    font-size: clamp(2.1rem, 10vw, 3.1rem);
   }
 
   :root:not([data-theme]) .doc-header[data-doc-type='lecture'] .doc-header__title,
   :root[data-theme='light'] .doc-header[data-doc-type='lecture'] .doc-header__title {
-    font-size: clamp(2.2rem, 11vw, 3.4rem);
+    font-size: clamp(1.8rem, 8.8vw, 2.6rem);
   }
 
   :root:not([data-theme]) .doc-header__standfirst,

@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 
-import {findActiveHeadingId, getActiveHeadingLine, type NormalizedDoc, type OutputMode} from '../core/content';
+import {findActiveHeadingId, type NormalizedDoc, type OutputMode} from '../core/content';
 import {initPretextEnhancer} from '../core/pretext/client';
 import {openExternal} from '../lib/bridge';
 
@@ -27,17 +27,31 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
   }, [doc.slug, output]);
 
   useEffect(() => {
+    if (!window.location.hash) {
+      window.scrollTo({top: 0, behavior: 'auto'});
+      return;
+    }
+
+    const anchorId = decodeURIComponent(window.location.hash.slice(1));
+    const target = document.getElementById(anchorId);
+    if (target) {
+      target.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+  }, [doc.slug, output]);
+
+  useEffect(() => {
     const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-item]'));
-    const headingIds = Array.from(
-      new Set(
-        tocLinks
-          .map((link) => link.getAttribute('data-toc-item'))
-          .filter((id): id is string => Boolean(id)),
-      ),
+    const trackedHeadingIds = new Set(
+      tocLinks
+        .map((link) => link.getAttribute('data-toc-item'))
+        .filter((id): id is string => Boolean(id)),
     );
-    const headings = headingIds
-      .map((id) => document.getElementById(id))
-      .filter((heading): heading is HTMLElement => heading instanceof HTMLElement);
+    const article = document.querySelector<HTMLElement>('.doc-article');
+    const headings = article
+      ? Array.from(article.querySelectorAll<HTMLElement>('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]')).filter(
+          (heading) => trackedHeadingIds.has(heading.id),
+        )
+      : [];
 
     if (tocLinks.length === 0 || headings.length === 0) {
       return;
@@ -45,7 +59,6 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
 
     let activeId = '';
     let frame = 0;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const revealLinkInScrollRoot = (link: HTMLAnchorElement) => {
       const scrollRoot = link.closest('[data-toc-scroll-root]');
@@ -77,7 +90,7 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
 
       scrollRoot.scrollTo({
         top: nextTop,
-        behavior: reducedMotion.matches ? 'auto' : 'smooth',
+        behavior: 'auto',
       });
     };
 
@@ -108,19 +121,18 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       const viewportHeight = window.innerHeight;
       const scrollTop = window.scrollY;
       const maxScroll = Math.max(document.documentElement.scrollHeight - viewportHeight, 0);
-      const activationLine = getActiveHeadingLine({
-        viewportHeight,
-        scrollTop,
-        maxScroll,
-      });
-      const activationLineTop = scrollTop + activationLine;
-      const nextActiveId = findActiveHeadingId(
-        headings.map((heading) => ({
-          id: heading.id,
-          top: scrollTop + heading.getBoundingClientRect().top,
-        })),
-        activationLineTop,
-      );
+      const siteHeaderHeight = document.querySelector<HTMLElement>('.site-header')?.getBoundingClientRect().height ?? 0;
+      const activationOffset = Math.min(Math.max(siteHeaderHeight + 28, 88), Math.round(viewportHeight * 0.16));
+      const nextActiveId =
+        scrollTop >= maxScroll - 2
+          ? (headings[headings.length - 1]?.id ?? null)
+          : findActiveHeadingId(
+              headings.map((heading) => ({
+                id: heading.id,
+                top: scrollTop + heading.getBoundingClientRect().top,
+              })),
+              scrollTop + activationOffset,
+            );
 
       if (nextActiveId) {
         activate(nextActiveId);
@@ -221,19 +233,6 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       observer.disconnect();
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [doc.slug, output]);
-
-  useEffect(() => {
-    if (!window.location.hash) {
-      window.scrollTo({top: 0, behavior: 'auto'});
-      return;
-    }
-
-    const anchorId = decodeURIComponent(window.location.hash.slice(1));
-    const target = document.getElementById(anchorId);
-    if (target) {
-      target.scrollIntoView({behavior: 'smooth', block: 'start'});
-    }
   }, [doc.slug, output]);
 
   const onClickCapture = (event: React.MouseEvent<HTMLElement>) => {
