@@ -1,14 +1,11 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 
 import {parseHomeSearchState, type HomeSearchState, type OutputMode} from './core/content';
 import {SiteHeader} from './components/SiteHeader';
 import {DocumentView} from './components/DocumentView';
 import {HomeView} from './components/HomeView';
 import {useAchmageApp} from './hooks/useAchmageApp';
-
-type AppRoute =
-  | {screen: 'home'}
-  | {screen: 'doc'; output: OutputMode; slug: string; anchor?: string};
+import {APP_DISPLAY_NAME, clearLastOpenDoc, getInitialRestoreRoute, type AppRoute} from './lib/app-shell';
 
 const themeOrder = ['light', 'dark', 'aurora', 'cyber_sanctuary'] as const;
 const themeMeta = {
@@ -93,6 +90,7 @@ function App() {
     typeof window === 'undefined' ? {query: '', tags: []} : parseHomeSearchState(window.location.search),
   );
   const [themeName, setThemeName] = useState<keyof typeof themeMeta>('light');
+  const hasAttemptedInitialRestore = useRef(false);
 
   useEffect(() => {
     const syncFromLocation = () => {
@@ -118,32 +116,26 @@ function App() {
   }, [documents, route]);
 
   useEffect(() => {
-    if (!settings || route.screen !== 'home') {
+    if (loading || hasAttemptedInitialRestore.current) {
       return;
     }
 
-    if (new URLSearchParams(window.location.search).get('view')) {
+    const nextRoute = getInitialRestoreRoute({
+      hasAttemptedInitialRestore: hasAttemptedInitialRestore.current,
+      hasExplicitDocRoute: new URLSearchParams(window.location.search).get('view') !== null,
+      route,
+      settings,
+      documents,
+    });
+
+    hasAttemptedInitialRestore.current = true;
+    if (!nextRoute) {
       return;
     }
 
-    const lastOpenDoc = settings.lastOpenDoc;
-    if (!lastOpenDoc) {
-      return;
-    }
-
-    const matchingDoc = documents.find((document) => document.slug === lastOpenDoc.slug);
-    if (!matchingDoc) {
-      return;
-    }
-
-    const nextRoute: AppRoute = {
-      screen: 'doc',
-      output: lastOpenDoc.outputMode,
-      slug: lastOpenDoc.slug,
-    };
     setRoute(nextRoute);
     applyRouteToLocation(nextRoute, homeSearchState, true);
-  }, [documents, homeSearchState, route.screen, settings]);
+  }, [documents, homeSearchState, loading, route, settings]);
 
   useEffect(() => {
     if (!activeDoc || !settings || route.screen !== 'doc') {
@@ -208,9 +200,13 @@ function App() {
   };
 
   const navigateHome = () => {
+    hasAttemptedInitialRestore.current = true;
     const nextRoute: AppRoute = {screen: 'home'};
     setRoute(nextRoute);
     applyRouteToLocation(nextRoute, homeSearchState);
+    if (settings?.lastOpenDoc) {
+      void persistSettings((current) => clearLastOpenDoc(current));
+    }
   };
 
   const navigateDoc = (output: OutputMode, slug: string, anchor?: string) => {
@@ -231,6 +227,7 @@ function App() {
   return (
     <>
       <SiteHeader
+        appName={APP_DISPLAY_NAME}
         doc={activeDoc ?? undefined}
         modeLabel={modeLabel}
         themeState={themeState}

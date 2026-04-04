@@ -6,6 +6,7 @@ type ThemeState = {
 };
 
 type SiteHeaderProps = {
+  appName: string;
   doc?: NormalizedDoc;
   modeLabel: string;
   themeState: ThemeState;
@@ -28,6 +29,7 @@ const renderShortPath = (value: string | null): string => {
 };
 
 export function SiteHeader({
+  appName,
   doc,
   modeLabel,
   themeState,
@@ -42,7 +44,7 @@ export function SiteHeader({
     <header className="site-header">
       <div className="site-header__brand">
         <button className="site-header__brand-button" type="button" onClick={onHome}>
-          Achmage Reader
+          {appName}
         </button>
       </div>
       <div className="site-header__context">

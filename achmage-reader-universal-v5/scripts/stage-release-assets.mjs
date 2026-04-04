@@ -7,7 +7,7 @@ const root = process.cwd();
 const tauriConfig = JSON.parse(
   fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
 );
-const productName = tauriConfig.productName ?? "Achmage Reader";
+const productName = tauriConfig.productName ?? "Achmage Markdown Renderer";
 const version = tauriConfig.version;
 const productSlug = productName.replace(/\s+/g, "-");
 const args = process.argv.slice(2);
@@ -58,7 +58,7 @@ const findFirst = (dir, predicate) => {
 
 const writePortableReadme = (targetDir) => {
   const portableReadme = [
-    "Achmage Reader portable package",
+    "Achmage Markdown Renderer portable package",
     "",
     "1. Run achmage-reader-universal-v5.exe.",
     "2. On Windows, Microsoft Edge WebView2 Runtime must be available.",

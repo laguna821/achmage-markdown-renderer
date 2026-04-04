@@ -7,7 +7,7 @@ const root = process.cwd();
 const tauriConfig = JSON.parse(
   fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
 );
-const productName = tauriConfig.productName ?? "Achmage Reader";
+const productName = tauriConfig.productName ?? "Achmage Markdown Renderer";
 const version = tauriConfig.version;
 const productSlug = productName.replace(/\s+/g, "-");
 const args = process.argv.slice(2);

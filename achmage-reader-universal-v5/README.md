@@ -1,6 +1,6 @@
-# Achmage Reader v5 Universal Beta
+# Achmage Markdown Renderer v5 Universal Beta
 
-Achmage Reader is the desktop packaging line for the Markdown renderer. It keeps the existing `reader`, `stage`, and `newsletter` views, but removes the old "install dependencies on first launch" flow and moves distribution to a Tauri 2 desktop app.
+Achmage Markdown Renderer is the desktop packaging line for the Markdown renderer. It keeps the existing `reader`, `stage`, and `newsletter` views, but removes the old "install dependencies on first launch" flow and moves distribution to a Tauri 2 desktop app.
 
 ## Current scope
 

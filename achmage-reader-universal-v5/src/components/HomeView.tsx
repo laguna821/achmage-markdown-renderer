@@ -48,15 +48,15 @@ export function HomeView({
   return (
     <main className="home-shell">
       <section className="home-hero" data-mega="ACHMAGE">
-        <div className="home-hero__eyebrow">Universal Desktop Reader</div>
+        <div className="home-hero__eyebrow">Universal Desktop Renderer</div>
         <h1>
           Markdown source-of-truth,
           <br />
           native desktop runtime.
         </h1>
         <p className="home-hero__lede">
-          Windows와 macOS에서 동일하게 동작하는 독립 실행형 Achmage Reader 베타입니다.
-          Node, npm, PowerShell 런처 없이 vault를 직접 읽고, reader/stage/newsletter 뷰를 한 앱에서 처리합니다.
+          Windows와 macOS에서 동일하게 동작하는 독립 실행형 Achmage Markdown Renderer 베타입니다.
+          Node, npm, PowerShell 의존 없이 vault를 직접 읽고, reader/stage/newsletter 뷰를 앱 안에서 처리합니다.
         </p>
         <p className="home-hero__source">
           Current vault:{' '}
@@ -90,7 +90,7 @@ export function HomeView({
                 className="home-search__input"
                 type="search"
                 value={searchState.query}
-                placeholder="제목, 본문, YAML, #태그를 함께 검색"
+                placeholder="제목, 본문, YAML, #태그를 통합 검색"
                 onChange={(event) => onSearchStateChange({...searchState, query: event.currentTarget.value})}
               />
             </label>

@@ -115,10 +115,13 @@ export const openExternal = async (url: string): Promise<void> => {
 export const withRecentVault = (settings: AppSettings, rootPath: string): AppSettings => {
   const normalizedRoot = normalizePath(rootPath);
   const recentVaults = [normalizedRoot, ...settings.recentVaults.filter((entry) => normalizePath(entry) !== normalizedRoot)];
+  const sameVault =
+    settings.selectedVaultPath !== null && normalizePath(settings.selectedVaultPath) === normalizedRoot;
 
   return {
     ...settings,
     selectedVaultPath: normalizedRoot,
     recentVaults: recentVaults.slice(0, 8),
+    lastOpenDoc: sameVault ? settings.lastOpenDoc : null,
   };
 };

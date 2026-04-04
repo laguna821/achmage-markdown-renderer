@@ -1,7 +1,7 @@
 [package]
 name = "achmage-reader-universal-v5"
-version = "5.0.0-beta.3"
-description = "Achmage Reader v5 Universal Beta"
+version = "5.0.0-beta.4"
+description = "Achmage Markdown Renderer v5 Universal Beta"
 authors = ["Achmage"]
 edition = "2021"
 

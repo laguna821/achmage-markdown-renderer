@@ -153,4 +153,4 @@ jobs:
           fi
 
           printf 'Publishing release assets:\n%s\n' "${release_files[@]}"
-          gh release create "$GITHUB_REF_NAME" "${release_files[@]}" --title "Achmage Reader v5 Universal Beta" --notes-file achmage-reader-universal-v5/release-notes-beta.md --prerelease --verify-tag --repo "$GITHUB_REPOSITORY"
+          gh release create "$GITHUB_REF_NAME" "${release_files[@]}" --title "Achmage Markdown Renderer v5 Universal Beta" --notes-file achmage-reader-universal-v5/release-notes-beta.md --prerelease --verify-tag --repo "$GITHUB_REPOSITORY"

@@ -99,7 +99,7 @@ export const useAchmageApp = (): UseAchmageAppResult => {
         }
       } catch (caughtError) {
         if (!cancelled) {
-          setError(caughtError instanceof Error ? caughtError.message : 'Failed to load Achmage Reader.');
+          setError(caughtError instanceof Error ? caughtError.message : 'Failed to load Achmage Markdown Renderer.');
         }
       } finally {
         if (!cancelled) {

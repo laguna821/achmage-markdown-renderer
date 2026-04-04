@@ -1,4 +1,4 @@
-Achmage Reader v5 Universal Beta
+Achmage Markdown Renderer v5 Universal Beta
 
 - Windows installer `.exe`
 - Windows portable `.zip`
