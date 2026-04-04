@@ -143,6 +143,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | while read -r asset; do
+              gh release delete-asset "$GITHUB_REF_NAME" "$asset" --yes --repo "$GITHUB_REPOSITORY"
+            done
             gh release upload "$GITHUB_REF_NAME" achmage-reader-universal-v5/release-assets/* --clobber --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$GITHUB_REF_NAME" achmage-reader-universal-v5/release-assets/* --title "Achmage Reader v5 Universal Beta" --notes-file achmage-reader-universal-v5/release-notes-beta.md --prerelease --repo "$GITHUB_REPOSITORY"
