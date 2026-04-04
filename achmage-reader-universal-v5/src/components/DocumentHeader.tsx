@@ -1,5 +1,7 @@
 import {buildPretextTargetAttributes, resolveHeaderLayoutHints} from '../core/pretext/hints';
-import type {InlineToken, NormalizedDoc, RichBlockContent} from '../core/content';
+import type {NormalizedDoc} from '../core/content';
+
+import {deriveDocumentInsights} from '../lib/document-insights';
 
 type DocumentHeaderProps = {
   doc: NormalizedDoc;
@@ -15,23 +17,7 @@ export function DocumentHeader({doc, variant}: DocumentHeaderProps) {
         keySuffix: 'header:title',
       })
     : {};
-  const metaItems = [
-    {label: doc.meta.docType, className: 'doc-header__type'},
-    ...(doc.meta.heroLabel ? [{label: doc.meta.heroLabel, className: 'doc-header__hero'}] : []),
-    ...(doc.meta.date ? [{label: doc.meta.date, className: 'doc-header__date'}] : []),
-  ];
-  const metaRich: RichBlockContent | null =
-    variant === 'reader' || metaItems.length === 0
-      ? null
-      : {
-          plainText: metaItems.map((item) => item.label).join(' '),
-          tokens: metaItems.flatMap((item, index): InlineToken[] =>
-            index === 0
-              ? [{kind: 'badge', value: item.label}]
-              : [{kind: 'text', value: ' '}, {kind: 'badge', value: item.label}],
-          ),
-        };
-  const metaRichPayload = metaRich ? JSON.stringify(metaRich) : undefined;
+  const insights = deriveDocumentInsights(doc);
 
   return (
     <header
@@ -40,35 +26,19 @@ export function DocumentHeader({doc, variant}: DocumentHeaderProps) {
       data-pretext-newsletter-cover={variant === 'newsletter' ? 'true' : undefined}
       data-pretext-cover-preferred-lines={variant === 'newsletter' ? String(titleHint?.preferredLines ?? 3) : undefined}
     >
-      {metaRich ? (
-        <div className="doc-header__meta-shell pretext-rich-shell">
-          <div
-            className="doc-header__meta pretext-rich-source"
-            data-pretext-manual-lines="true"
-            data-pretext-rich-source="true"
-            data-pretext-rich={metaRichPayload}
-          >
-            {metaItems.map((item) => (
-              <span key={`${item.className}-${item.label}`} className={item.className}>
-                {item.label}
-              </span>
-            ))}
-          </div>
-          <div className="doc-header__meta pretext-rich-overlay" data-pretext-rich-overlay="true" aria-hidden="true" />
-        </div>
-      ) : (
-        <div className="doc-header__meta">
-          {metaItems.map((item) => (
-            <span key={`${item.className}-${item.label}`} className={item.className}>
-              {item.label}
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="doc-header__meta-top" aria-label="Document metadata">
+        {insights.metaTrail.map((item, index) => (
+          <span key={`${item}-${index}`} className="doc-header__meta-item">
+            {item}
+          </span>
+        ))}
+      </div>
+      <div className="doc-header__kicker">{insights.kicker}</div>
       <h1 className="doc-header__title" {...titlePretextAttributes}>
         {doc.meta.title}
       </h1>
-      {doc.meta.author ? <p className="doc-header__author">{doc.meta.author}</p> : null}
+      {insights.standfirst ? <p className="doc-header__standfirst">{insights.standfirst}</p> : null}
+      {doc.meta.author ? <p className="doc-header__author">by {doc.meta.author}</p> : null}
     </header>
   );
 }

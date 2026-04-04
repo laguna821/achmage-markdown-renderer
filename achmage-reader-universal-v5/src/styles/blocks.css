@@ -370,6 +370,107 @@
   }
 }
 
+:root:not([data-theme]) .thesis-block,
+:root:not([data-theme]) .callout-block,
+:root:not([data-theme]) .question-reset__card,
+:root:not([data-theme]) .evidence-card,
+:root:not([data-theme]) .evidence-panel,
+:root:not([data-theme]) .provenance-panel,
+:root:not([data-theme]) .axis-table__wrap,
+:root:not([data-theme]) .doc-quote,
+:root:not([data-theme]) .axis-table-card,
+:root[data-theme='light'] .thesis-block,
+:root[data-theme='light'] .callout-block,
+:root[data-theme='light'] .question-reset__card,
+:root[data-theme='light'] .evidence-card,
+:root[data-theme='light'] .evidence-panel,
+:root[data-theme='light'] .provenance-panel,
+:root[data-theme='light'] .axis-table__wrap,
+:root[data-theme='light'] .doc-quote,
+:root[data-theme='light'] .axis-table-card {
+  border: 1px solid var(--color-ink);
+  border-radius: 0;
+  background: #fff;
+  backdrop-filter: none;
+  box-shadow: 5px 5px 0 0 var(--color-border);
+}
+
+:root:not([data-theme]) .thesis-block,
+:root[data-theme='light'] .thesis-block {
+  padding: 18px 20px;
+}
+
+:root:not([data-theme]) .thesis-block__label,
+:root:not([data-theme]) .provenance-panel__eyebrow,
+:root:not([data-theme]) .log-block__label,
+:root[data-theme='light'] .thesis-block__label,
+:root[data-theme='light'] .provenance-panel__eyebrow,
+:root[data-theme='light'] .log-block__label {
+  color: var(--color-muted);
+}
+
+:root:not([data-theme]) .thesis-block__content,
+:root[data-theme='light'] .thesis-block__content {
+  color: var(--color-ink);
+  font-size: 1rem;
+  line-height: 1.72;
+}
+
+:root:not([data-theme]) .callout-block,
+:root[data-theme='light'] .callout-block {
+  padding: 18px 20px;
+  background: #f8fbff;
+}
+
+:root:not([data-theme]) .callout-block__title,
+:root[data-theme='light'] .callout-block__title {
+  margin-bottom: 12px;
+  color: var(--color-ink);
+}
+
+:root:not([data-theme]) .callout-block__icon,
+:root[data-theme='light'] .callout-block__icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+:root:not([data-theme]) .question-reset__index,
+:root:not([data-theme]) .evidence-card__tag,
+:root:not([data-theme]) .evidence-panel__tag,
+:root[data-theme='light'] .question-reset__index,
+:root[data-theme='light'] .evidence-card__tag,
+:root[data-theme='light'] .evidence-panel__tag {
+  border-color: var(--color-border-strong);
+  border-radius: 0;
+  background: var(--color-blue-soft, #edf5ff);
+  color: var(--color-accent);
+}
+
+:root:not([data-theme]) .axis-table__head,
+:root[data-theme='light'] .axis-table__head {
+  background: var(--color-surface-muted);
+}
+
+:root:not([data-theme]) .doc-quote,
+:root[data-theme='light'] .doc-quote {
+  border-left: 5px solid var(--color-accent);
+  background: #f8fafc;
+}
+
+:root:not([data-theme]) .axis-table__head,
+:root:not([data-theme]) .axis-table__cell,
+:root[data-theme='light'] .axis-table__head,
+:root[data-theme='light'] .axis-table__cell {
+  border-color: var(--color-border);
+}
+
+:root:not([data-theme]) .log-block,
+:root[data-theme='light'] .log-block {
+  border: 1px solid var(--color-ink);
+  border-radius: 0;
+  box-shadow: 5px 5px 0 0 var(--color-border);
+}
+
 :root[data-theme='dark'] .thesis-block,
 :root[data-theme='dark'] .callout-block,
 :root[data-theme='dark'] .question-reset__card,

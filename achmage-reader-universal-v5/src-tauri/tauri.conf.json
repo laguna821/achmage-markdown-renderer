@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Achmage Markdown Renderer",
-  "version": "5.0.0-beta.5",
+  "version": "5.0.0-beta.6",
   "identifier": "io.achmage.reader.beta",
   "build": {
     "beforeDevCommand": "npm run dev",

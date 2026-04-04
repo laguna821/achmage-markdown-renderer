@@ -301,8 +301,10 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
               </div>
             </div>
           ) : null}
-          <DocumentHeader doc={doc} variant={output} />
-          <DocumentSections doc={doc} variant={output} />
+          <div className={`doc-paper doc-paper--${output}`}>
+            <DocumentHeader doc={doc} variant={output} />
+            <DocumentSections doc={doc} variant={output} />
+          </div>
         </main>
       </div>
     </div>
