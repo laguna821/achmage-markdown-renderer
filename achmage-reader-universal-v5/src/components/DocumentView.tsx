@@ -118,21 +118,20 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     const syncActiveHeading = () => {
       frame = 0;
 
-      const viewportHeight = window.innerHeight;
       const scrollTop = window.scrollY;
+      const viewportHeight = window.innerHeight;
       const maxScroll = Math.max(document.documentElement.scrollHeight - viewportHeight, 0);
       const siteHeaderHeight = document.querySelector<HTMLElement>('.site-header')?.getBoundingClientRect().height ?? 0;
-      const activationOffset = Math.min(Math.max(siteHeaderHeight + 28, 88), Math.round(viewportHeight * 0.16));
+      const activationOffset = Math.min(Math.max(siteHeaderHeight + 24, 76), Math.round(viewportHeight * 0.14));
+      const headingPositions = headings.map((heading, index) => ({
+        id: heading.id,
+        top: heading.getBoundingClientRect().top,
+        index,
+      }));
       const nextActiveId =
         scrollTop >= maxScroll - 2
           ? (headings[headings.length - 1]?.id ?? null)
-          : findActiveHeadingId(
-              headings.map((heading) => ({
-                id: heading.id,
-                top: scrollTop + heading.getBoundingClientRect().top,
-              })),
-              scrollTop + activationOffset,
-            );
+          : findActiveHeadingId(headingPositions, activationOffset);
 
       if (nextActiveId) {
         activate(nextActiveId);

@@ -26,5 +26,17 @@ describe('active heading helpers', () => {
       ),
     ).toBe('h3-current');
   });
-});
 
+  it('advances through mixed h2 and h3 headings in visual order without skipping ahead', () => {
+    const headings = [
+      {id: 'chapter-1', top: -120},
+      {id: 'chapter-1-1', top: 170},
+      {id: 'chapter-1-2', top: 480},
+      {id: 'chapter-2', top: 900},
+    ];
+
+    expect(findActiveHeadingId(headings, 120)).toBe('chapter-1');
+    expect(findActiveHeadingId(headings, 220)).toBe('chapter-1-1');
+    expect(findActiveHeadingId(headings, 560)).toBe('chapter-1-2');
+  });
+});

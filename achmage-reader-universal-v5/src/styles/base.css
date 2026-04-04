@@ -1374,25 +1374,24 @@ samp {
 
 :root:not([data-theme]) .layout-shell,
 :root[data-theme='light'] .layout-shell {
-  width: min(calc(100% - 2.75rem), 1380px);
+  width: min(calc(100% - 1.5rem), 96rem);
   grid-template-columns: 280px minmax(0, 1fr);
-  gap: 48px;
+  gap: clamp(1.3rem, 2vw, 1.9rem);
   padding-top: 32px;
 }
 
 :root:not([data-theme]) .layout-shell__main,
 :root[data-theme='light'] .layout-shell__main {
   width: 100%;
-  max-width: 72rem;
-  margin-right: auto;
+  max-width: none;
 }
 
 :root:not([data-theme]) .doc-paper,
 :root[data-theme='light'] .doc-paper {
   --doc-paper-shadow: #dfe4ea;
-  --doc-measure: 90ch;
+  --doc-measure: 100%;
   gap: 0;
-  padding: 44px 52px 60px;
+  padding: 44px 40px 60px;
   border: 1px solid var(--color-ink);
   background: var(--color-surface);
   box-shadow: 8px 8px 0 0 var(--doc-paper-shadow);
@@ -1434,7 +1433,7 @@ samp {
 :root:not([data-theme]) .doc-header__title,
 :root[data-theme='light'] .doc-header__title {
   max-width: none;
-  font-size: clamp(2.55rem, 4.1vw, 3.95rem);
+  font-size: clamp(2.35rem, 3.7vw, 3.55rem);
   font-weight: 750;
   line-height: 1.1;
   letter-spacing: -0.03em;
@@ -1442,12 +1441,12 @@ samp {
 
 :root:not([data-theme]) .doc-header[data-doc-type='lecture'] .doc-header__title,
 :root[data-theme='light'] .doc-header[data-doc-type='lecture'] .doc-header__title {
-  font-size: clamp(2.1rem, 3.35vw, 3.2rem);
+  font-size: clamp(1.9rem, 2.85vw, 2.7rem);
 }
 
 :root:not([data-theme]) .doc-header__standfirst,
 :root[data-theme='light'] .doc-header__standfirst {
-  max-width: 34ch;
+  max-width: 44ch;
   margin: 20px 0 28px;
   padding: 10px 0 10px 18px;
   font-size: clamp(1.26rem, 2.05vw, 1.45rem);
@@ -1635,7 +1634,7 @@ samp {
 
   :root:not([data-theme]) .doc-paper,
   :root[data-theme='light'] .doc-paper {
-    padding: 32px 26px 42px;
+    padding: 32px 24px 42px;
   }
 }
 
