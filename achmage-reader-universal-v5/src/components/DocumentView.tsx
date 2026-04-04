@@ -43,25 +43,63 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
 
   useEffect(() => {
     const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-item]'));
-    const tocItemIds = flattenTocItems(doc.headings).map((item) => item.slug);
     const article = document.querySelector<HTMLElement>('.doc-article');
+    const tocItemIdSet = new Set(flattenTocItems(doc.headings).map((item) => item.slug));
     const headings = article
-      ? tocItemIds
-          .map((id) => {
-            const heading = document.getElementById(id);
-            return heading instanceof HTMLElement && article.contains(heading) ? heading : null;
-          })
-          .filter((heading): heading is HTMLElement => Boolean(heading))
+      ? Array.from(article.querySelectorAll<HTMLElement>('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]')).filter((heading) =>
+          tocItemIdSet.has(heading.id),
+        )
       : [];
 
     if (tocLinks.length === 0 || headings.length === 0) {
       return;
     }
 
+    const tocLinksById = tocLinks.reduce<Map<string, HTMLAnchorElement[]>>((map, link) => {
+      const id = link.getAttribute('data-toc-item');
+      if (!id) {
+        return map;
+      }
+
+      const entries = map.get(id);
+      if (entries) {
+        entries.push(link);
+      } else {
+        map.set(id, [link]);
+      }
+
+      return map;
+    }, new Map());
+
     let activeId = '';
-    let frame = 0;
-    const imageListeners: Array<{element: HTMLElement; handler: () => void}> = [];
+    let syncFrame = 0;
+    let refreshFrame = 0;
+    let settleTimer = 0;
+    let measuredHeadings = headings.map((heading) => ({id: heading.id, top: 0}));
+    const resourceListeners: Array<{element: HTMLElement; handler: () => void}> = [];
     let resizeObserver: ResizeObserver | null = null;
+    let mutationObserver: MutationObserver | null = null;
+    let intersectionObserver: IntersectionObserver | null = null;
+    const headingOrder = new Map(headings.map((heading, index) => [heading.id, index]));
+    const intersectionState = new Map<string, {top: number; isIntersecting: boolean}>();
+
+    const getScrollElement = () => document.scrollingElement ?? document.documentElement;
+    const getScrollTop = () =>
+      window.scrollY ??
+      window.pageYOffset ??
+      document.documentElement.scrollTop ??
+      document.body.scrollTop ??
+      getScrollElement().scrollTop;
+    const getViewportHeight = () => window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight || 0;
+    const getSiteHeaderHeight = () => document.querySelector<HTMLElement>('.site-header')?.getBoundingClientRect().height ?? 0;
+
+    const measureHeadings = () => {
+      const scrollTop = getScrollTop();
+      measuredHeadings = headings.map((heading) => ({
+        id: heading.id,
+        top: heading.getBoundingClientRect().top + scrollTop,
+      }));
+    };
 
     const revealLinkInScrollRoot = (link: HTMLAnchorElement) => {
       const scrollRoot = link.closest('[data-toc-scroll-root]');
@@ -98,90 +136,213 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     };
 
     const revealActiveLinks = (id: string) => {
-      tocLinks.forEach((link) => {
-        if (link.getAttribute('data-toc-item') === id) {
-          revealLinkInScrollRoot(link);
-        }
-      });
+      tocLinksById.get(id)?.forEach((link) => revealLinkInScrollRoot(link));
     };
 
     const activate = (id: string) => {
-      const changed = activeId !== id;
-      activeId = id;
-
-      if (changed) {
-        tocLinks.forEach((link) => {
-          link.classList.toggle('is-active', link.getAttribute('data-toc-item') === id);
-        });
+      if (activeId === id) {
+        return;
       }
 
+      activeId = id;
+      tocLinks.forEach((link) => {
+        link.classList.toggle('is-active', link.getAttribute('data-toc-item') === id);
+      });
       revealActiveLinks(id);
     };
 
-    const syncActiveHeading = () => {
-      frame = 0;
-
-      const scrollElement = document.scrollingElement ?? document.documentElement;
-      const scrollTop = scrollElement.scrollTop;
-      const viewportHeight = window.innerHeight;
-      const maxScroll = Math.max(scrollElement.scrollHeight - viewportHeight, 0);
-      const siteHeaderHeight = document.querySelector<HTMLElement>('.site-header')?.getBoundingClientRect().height ?? 0;
-      const activationOffset = Math.min(Math.max(siteHeaderHeight + 18, 68), Math.round(viewportHeight * 0.12));
-      const headingPositions = headings.map((heading, index) => ({
-        id: heading.id,
-        top: heading.getBoundingClientRect().top,
-        index,
-      }));
+    const syncFromMeasuredPositions = () => {
+      measureHeadings();
+      const scrollElement = getScrollElement();
+      const scrollTop = getScrollTop();
+      const activationTop = scrollTop + getSiteHeaderHeight() + 24;
+      const maxScroll = Math.max(scrollElement.scrollHeight - getViewportHeight(), 0);
       const nextActiveId =
         scrollTop >= maxScroll - 2
           ? (headings[headings.length - 1]?.id ?? null)
-          : findActiveHeadingId(headingPositions, activationOffset);
+          : findActiveHeadingId(measuredHeadings, activationTop);
 
       if (nextActiveId) {
         activate(nextActiveId);
       }
     };
 
-    const requestSync = () => {
-      if (frame !== 0) {
+    const syncFromIntersections = () => {
+      const visibleEntries = Array.from(intersectionState.entries())
+        .filter(([, state]) => state.isIntersecting)
+        .sort((left, right) => {
+          const leftOrder = headingOrder.get(left[0]) ?? Number.MAX_SAFE_INTEGER;
+          const rightOrder = headingOrder.get(right[0]) ?? Number.MAX_SAFE_INTEGER;
+          if (leftOrder === rightOrder) {
+            return left[1].top - right[1].top;
+          }
+          return leftOrder - rightOrder;
+        });
+
+      const nextActiveId = visibleEntries[0]?.[0] ?? null;
+      if (!nextActiveId) {
         return;
       }
 
-      frame = window.requestAnimationFrame(syncActiveHeading);
+      activate(nextActiveId);
     };
 
-    requestSync();
+    const flushIntersectionSync = () => {
+      syncFrame = 0;
+      syncFromIntersections();
+    };
+
+    const requestIntersectionSync = () => {
+      if (syncFrame !== 0) {
+        return;
+      }
+
+      syncFrame = window.requestAnimationFrame(flushIntersectionSync);
+    };
+
+    const scheduleFallbackSync = () => {
+      if (settleTimer !== 0) {
+        window.clearTimeout(settleTimer);
+      }
+
+      settleTimer = window.setTimeout(() => {
+        settleTimer = 0;
+        syncFromMeasuredPositions();
+      }, 96);
+    };
+
+    const rebuildIntersectionObserver = () => {
+      measureHeadings();
+      intersectionState.clear();
+      intersectionObserver?.disconnect();
+
+      if (typeof IntersectionObserver === 'undefined') {
+        syncFromMeasuredPositions();
+        return;
+      }
+
+      const bandTop = Math.max(Math.round(getSiteHeaderHeight() + 24), 1);
+      const bandBottom = Math.max(getViewportHeight() - bandTop - 2, 1);
+      intersectionObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const heading = entry.target as HTMLElement;
+            intersectionState.set(heading.id, {
+              top: heading.getBoundingClientRect().top + getScrollTop(),
+              isIntersecting: entry.isIntersecting,
+            });
+          });
+
+          requestIntersectionSync();
+        },
+        {
+          root: null,
+          threshold: 0,
+          rootMargin: `-${bandTop}px 0px -${bandBottom}px 0px`,
+        },
+      );
+
+      headings.forEach((heading, index) => {
+        intersectionState.set(heading.id, {
+          top: measuredHeadings[index]?.top ?? 0,
+          isIntersecting: false,
+        });
+        intersectionObserver?.observe(heading);
+      });
+
+      syncFromMeasuredPositions();
+    };
+
+    const requestObserverRefresh = () => {
+      if (refreshFrame !== 0) {
+        return;
+      }
+
+      refreshFrame = window.requestAnimationFrame(() => {
+        refreshFrame = 0;
+        rebuildIntersectionObserver();
+      });
+    };
+
+    requestObserverRefresh();
 
     if (typeof ResizeObserver !== 'undefined' && article) {
       resizeObserver = new ResizeObserver(() => {
-        requestSync();
+        requestObserverRefresh();
       });
       resizeObserver.observe(article);
+      headings.forEach((heading) => resizeObserver?.observe(heading));
+    }
+
+    if (typeof MutationObserver !== 'undefined' && article) {
+      mutationObserver = new MutationObserver(() => {
+        requestObserverRefresh();
+      });
+      mutationObserver.observe(article, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['style', 'class', 'open', 'hidden'],
+      });
     }
 
     article?.querySelectorAll<HTMLElement>('img, iframe, video').forEach((element) => {
-      const handler = () => requestSync();
+      const handler = () => {
+        requestObserverRefresh();
+      };
       element.addEventListener('load', handler, {passive: true});
-      imageListeners.push({element, handler});
+      resourceListeners.push({element, handler});
     });
 
-    window.addEventListener('scroll', requestSync, {passive: true});
-    window.addEventListener('resize', requestSync);
-    window.addEventListener('hashchange', requestSync);
-    window.addEventListener('load', requestSync);
+    const onScroll = () => {
+      const scrollElement = getScrollElement();
+      const scrollTop = getScrollTop();
+      const maxScroll = Math.max(scrollElement.scrollHeight - getViewportHeight(), 0);
+
+      if (scrollTop >= maxScroll - 2) {
+        const lastHeadingId = headings[headings.length - 1]?.id;
+        if (lastHeadingId) {
+          activate(lastHeadingId);
+        }
+      }
+
+      scheduleFallbackSync();
+    };
+    const onResize = () => {
+      requestObserverRefresh();
+    };
+    const onHashChange = () => {
+      requestObserverRefresh();
+    };
+    const onLoad = () => {
+      requestObserverRefresh();
+    };
+
+    window.addEventListener('scroll', onScroll, {passive: true});
+    window.addEventListener('resize', onResize);
+    window.addEventListener('hashchange', onHashChange);
+    window.addEventListener('load', onLoad);
 
     return () => {
-      if (frame) {
-        window.cancelAnimationFrame(frame);
+      if (syncFrame !== 0) {
+        window.cancelAnimationFrame(syncFrame);
+      }
+      if (refreshFrame !== 0) {
+        window.cancelAnimationFrame(refreshFrame);
+      }
+      if (settleTimer !== 0) {
+        window.clearTimeout(settleTimer);
       }
       resizeObserver?.disconnect();
-      imageListeners.forEach(({element, handler}) => {
+      mutationObserver?.disconnect();
+      intersectionObserver?.disconnect();
+      resourceListeners.forEach(({element, handler}) => {
         element.removeEventListener('load', handler);
       });
-      window.removeEventListener('scroll', requestSync);
-      window.removeEventListener('resize', requestSync);
-      window.removeEventListener('hashchange', requestSync);
-      window.removeEventListener('load', requestSync);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('hashchange', onHashChange);
+      window.removeEventListener('load', onLoad);
     };
   }, [doc.headings, doc.slug]);
 

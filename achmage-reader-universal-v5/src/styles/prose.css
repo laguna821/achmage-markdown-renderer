@@ -82,10 +82,10 @@
   word-break: inherit;
 }
 
-.prose-block pre ::selection {
-  background: rgba(148, 163, 184, 0.34);
+.prose-block pre::selection,
+.prose-block pre *::selection {
+  background: transparent;
   color: inherit;
-  -webkit-text-fill-color: currentColor;
 }
 
 .prose-block table {
@@ -287,29 +287,46 @@
 :root[data-theme='dark'] .prose-block blockquote,
 :root[data-theme='dark'] .image-block img,
 :root[data-theme='dark'] .embed-block__frame {
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 24px 44px -36px rgba(0, 0, 0, 0.92);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(204, 254, 3, 0.028), rgba(204, 254, 3, 0) 42%),
+    var(--color-surface);
+  box-shadow: 5px 5px 0 0 var(--color-paper-shadow);
 }
 
 :root[data-theme='dark'] .prose-block table,
 :root[data-theme='dark'] .prose-block blockquote {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
-    rgba(14, 20, 32, 0.78);
+    linear-gradient(180deg, rgba(204, 254, 3, 0.05), rgba(204, 254, 3, 0.02)),
+    var(--color-surface);
 }
 
 :root[data-theme='dark'] .prose-block th,
 :root[data-theme='dark'] .prose-block td {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-border);
 }
 
 :root[data-theme='dark'] .prose-block th {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-surface-muted);
 }
 
 :root[data-theme='dark'] .prose-block code {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.94);
+  background: var(--color-accent-soft);
+  color: var(--color-ink);
+}
+
+:root[data-theme='dark'] .prose-block pre {
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0;
+  background: var(--color-code-bg);
+  color: var(--color-code-text);
+  box-shadow: 5px 5px 0 0 var(--color-paper-shadow);
+}
+
+:root[data-theme='dark'] .prose-block blockquote {
+  border-left-color: var(--color-accent);
+  color: var(--color-ink-soft);
 }
 
 :root[data-theme='aurora'] .prose-block table,
