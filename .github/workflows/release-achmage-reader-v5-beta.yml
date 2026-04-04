@@ -142,11 +142,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          mapfile -t release_files < <(find achmage-reader-universal-v5/release-assets -type f | sort)
+          if [ "${#release_files[@]}" -eq 0 ]; then
+            echo "No release files found under achmage-reader-universal-v5/release-assets" >&2
+            exit 1
+          fi
+
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | while read -r asset; do
               gh release delete-asset "$GITHUB_REF_NAME" "$asset" --yes --repo "$GITHUB_REPOSITORY"
             done
-            gh release upload "$GITHUB_REF_NAME" achmage-reader-universal-v5/release-assets/* --clobber --repo "$GITHUB_REPOSITORY"
+            gh release upload "$GITHUB_REF_NAME" "${release_files[@]}" --clobber --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "$GITHUB_REF_NAME" achmage-reader-universal-v5/release-assets/* --title "Achmage Reader v5 Universal Beta" --notes-file achmage-reader-universal-v5/release-notes-beta.md --prerelease --repo "$GITHUB_REPOSITORY"
+            gh release create "$GITHUB_REF_NAME" "${release_files[@]}" --title "Achmage Reader v5 Universal Beta" --notes-file achmage-reader-universal-v5/release-notes-beta.md --prerelease --repo "$GITHUB_REPOSITORY"
           fi
