@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 
-import {findActiveHeadingId, type NormalizedDoc, type OutputMode} from '../core/content';
+import {findActiveHeadingId, type NormalizedDoc, type OutputMode, type TocItem} from '../core/content';
 import {initPretextEnhancer} from '../core/pretext/client';
 import {openExternal} from '../lib/bridge';
 
@@ -16,6 +16,8 @@ type DocumentViewProps = {
 };
 
 const isDocRouteHref = (href: string): boolean => href.startsWith('?view=');
+const flattenTocItems = (items: TocItem[]): TocItem[] =>
+  items.flatMap((item) => [item, ...(item.children ? flattenTocItems(item.children) : [])]);
 
 export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
   const [mobileTocOpen, setMobileTocOpen] = useState(false);
@@ -41,16 +43,15 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
 
   useEffect(() => {
     const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-item]'));
-    const trackedHeadingIds = new Set(
-      tocLinks
-        .map((link) => link.getAttribute('data-toc-item'))
-        .filter((id): id is string => Boolean(id)),
-    );
+    const tocItemIds = flattenTocItems(doc.headings).map((item) => item.slug);
     const article = document.querySelector<HTMLElement>('.doc-article');
     const headings = article
-      ? Array.from(article.querySelectorAll<HTMLElement>('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]')).filter(
-          (heading) => trackedHeadingIds.has(heading.id),
-        )
+      ? tocItemIds
+          .map((id) => {
+            const heading = document.getElementById(id);
+            return heading instanceof HTMLElement && article.contains(heading) ? heading : null;
+          })
+          .filter((heading): heading is HTMLElement => Boolean(heading))
       : [];
 
     if (tocLinks.length === 0 || headings.length === 0) {
@@ -59,6 +60,8 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
 
     let activeId = '';
     let frame = 0;
+    const imageListeners: Array<{element: HTMLElement; handler: () => void}> = [];
+    let resizeObserver: ResizeObserver | null = null;
 
     const revealLinkInScrollRoot = (link: HTMLAnchorElement) => {
       const scrollRoot = link.closest('[data-toc-scroll-root]');
@@ -118,11 +121,12 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     const syncActiveHeading = () => {
       frame = 0;
 
-      const scrollTop = window.scrollY;
+      const scrollElement = document.scrollingElement ?? document.documentElement;
+      const scrollTop = scrollElement.scrollTop;
       const viewportHeight = window.innerHeight;
-      const maxScroll = Math.max(document.documentElement.scrollHeight - viewportHeight, 0);
+      const maxScroll = Math.max(scrollElement.scrollHeight - viewportHeight, 0);
       const siteHeaderHeight = document.querySelector<HTMLElement>('.site-header')?.getBoundingClientRect().height ?? 0;
-      const activationOffset = Math.min(Math.max(siteHeaderHeight + 24, 76), Math.round(viewportHeight * 0.14));
+      const activationOffset = Math.min(Math.max(siteHeaderHeight + 18, 68), Math.round(viewportHeight * 0.12));
       const headingPositions = headings.map((heading, index) => ({
         id: heading.id,
         top: heading.getBoundingClientRect().top,
@@ -148,6 +152,19 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
 
     requestSync();
 
+    if (typeof ResizeObserver !== 'undefined' && article) {
+      resizeObserver = new ResizeObserver(() => {
+        requestSync();
+      });
+      resizeObserver.observe(article);
+    }
+
+    article?.querySelectorAll<HTMLElement>('img, iframe, video').forEach((element) => {
+      const handler = () => requestSync();
+      element.addEventListener('load', handler, {passive: true});
+      imageListeners.push({element, handler});
+    });
+
     window.addEventListener('scroll', requestSync, {passive: true});
     window.addEventListener('resize', requestSync);
     window.addEventListener('hashchange', requestSync);
@@ -157,12 +174,16 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       if (frame) {
         window.cancelAnimationFrame(frame);
       }
+      resizeObserver?.disconnect();
+      imageListeners.forEach(({element, handler}) => {
+        element.removeEventListener('load', handler);
+      });
       window.removeEventListener('scroll', requestSync);
       window.removeEventListener('resize', requestSync);
       window.removeEventListener('hashchange', requestSync);
       window.removeEventListener('load', requestSync);
     };
-  }, [doc.slug]);
+  }, [doc.headings, doc.slug]);
 
   useEffect(() => {
     if (output !== 'stage') {

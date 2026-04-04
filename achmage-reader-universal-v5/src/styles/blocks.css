@@ -325,8 +325,18 @@
   margin: 0;
   min-width: 0;
   max-width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
   font-family: var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.log-block pre::selection,
+.log-block pre *::selection {
+  background: rgba(148, 163, 184, 0.34);
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
 }
 
 :root[data-theme='aurora'] .log-block {
