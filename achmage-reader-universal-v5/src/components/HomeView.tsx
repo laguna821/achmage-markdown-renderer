@@ -48,18 +48,19 @@ export function HomeView({
   return (
     <main className="home-shell">
       <section className="home-hero" data-mega="ACHMAGE">
-        <div className="home-hero__eyebrow">Universal Desktop Renderer</div>
+        <div className="home-hero__eyebrow">Markdown Source-of-Truth</div>
         <h1>
-          Markdown source-of-truth,
+          기록은 단순하게,
           <br />
-          native desktop runtime.
+          보여짐은 완벽하게.
         </h1>
         <p className="home-hero__lede">
-          Windows와 macOS에서 동일하게 동작하는 독립 실행형 Achmage Markdown Renderer 베타입니다.
-          Node, npm, PowerShell 의존 없이 vault를 직접 읽고, reader/stage/newsletter 뷰를 앱 안에서 처리합니다.
+          마크다운 하나면 충분합니다.
+          <br />
+          코딩 없이도 모든 텍스트와 데이터가 제자리를 찾는 혁신적인 자동 정렬 시스템을 만나보세요.
         </p>
         <p className="home-hero__source">
-          Current vault:{' '}
+          Current source:{' '}
           <code>{selectedVaultPath ?? 'No vault selected yet'}</code>
         </p>
         <div className="home-card__links">
@@ -161,7 +162,7 @@ export function HomeView({
 
         {active && results.length === 0 ? (
           <div className="home-search__empty">
-            <p>No matches for the current query.</p>
+            <p>현재 조건에 맞는 문서가 없습니다.</p>
             <button type="button" onClick={() => onSearchStateChange({query: '', tags: []})}>
               Clear filters
             </button>
@@ -213,7 +214,7 @@ export function HomeView({
         </div>
       </section>
 
-      {loading ? <p className="home-search__hint">Refreshing vault snapshot...</p> : null}
+      {loading ? <p className="home-search__hint">Vault snapshot을 다시 불러오는 중입니다...</p> : null}
     </main>
   );
 }

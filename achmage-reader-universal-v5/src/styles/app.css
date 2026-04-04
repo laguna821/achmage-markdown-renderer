@@ -3,16 +3,21 @@
 }
 
 .site-header__brand-button {
+  appearance: none;
   border: 0;
   padding: 0;
   background: transparent;
-  color: var(--color-ink);
   cursor: pointer;
-  font: inherit;
+  line-height: 1;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    filter 180ms ease;
 }
 
 .site-header__brand-button:hover {
-  color: var(--color-accent);
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .home-card__links button,
