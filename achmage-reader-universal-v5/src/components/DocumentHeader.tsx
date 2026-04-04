@@ -23,6 +23,7 @@ export function DocumentHeader({doc, variant}: DocumentHeaderProps) {
     <header
       className={`doc-header doc-header--${variant}`}
       data-mega={doc.meta.docType.toUpperCase()}
+      data-doc-type={doc.meta.docType}
       data-pretext-newsletter-cover={variant === 'newsletter' ? 'true' : undefined}
       data-pretext-cover-preferred-lines={variant === 'newsletter' ? String(titleHint?.preferredLines ?? 3) : undefined}
     >

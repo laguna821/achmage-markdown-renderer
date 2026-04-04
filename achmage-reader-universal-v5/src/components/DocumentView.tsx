@@ -113,12 +113,13 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
         scrollTop,
         maxScroll,
       });
+      const activationLineTop = scrollTop + activationLine;
       const nextActiveId = findActiveHeadingId(
         headings.map((heading) => ({
           id: heading.id,
-          top: heading.getBoundingClientRect().top,
+          top: scrollTop + heading.getBoundingClientRect().top,
         })),
-        activationLine,
+        activationLineTop,
       );
 
       if (nextActiveId) {

@@ -44,9 +44,19 @@ export const findActiveHeadingId = (
     return null;
   }
 
-  let activeId = headings[0]?.id ?? null;
+  const orderedHeadings = headings
+    .map((heading, index) => ({...heading, index}))
+    .sort((left, right) => {
+      if (left.top === right.top) {
+        return left.index - right.index;
+      }
 
-  for (const heading of headings) {
+      return left.top - right.top;
+    });
+
+  let activeId = orderedHeadings[0]?.id ?? null;
+
+  for (const heading of orderedHeadings) {
     if (heading.top <= activationLine) {
       activeId = heading.id;
       continue;

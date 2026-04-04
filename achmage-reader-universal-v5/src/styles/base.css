@@ -1372,14 +1372,15 @@ samp {
 
 :root:not([data-theme]) .layout-shell__main,
 :root[data-theme='light'] .layout-shell__main {
-  width: min(100%, 54rem);
+  width: 100%;
+  max-width: 72rem;
   margin-right: auto;
 }
 
 :root:not([data-theme]) .doc-paper,
 :root[data-theme='light'] .doc-paper {
   --doc-paper-shadow: #dfe4ea;
-  --doc-measure: 72ch;
+  --doc-measure: 90ch;
   gap: 0;
   padding: 44px 52px 60px;
   border: 1px solid var(--color-ink);
@@ -1427,6 +1428,12 @@ samp {
   font-weight: 750;
   line-height: 1.1;
   letter-spacing: -0.03em;
+}
+
+:root:not([data-theme]) .doc-header[data-doc-type='lecture'] .doc-header__title,
+:root[data-theme='light'] .doc-header[data-doc-type='lecture'] .doc-header__title {
+  max-width: 13ch;
+  font-size: clamp(2.7rem, 4.6vw, 4.2rem);
 }
 
 :root:not([data-theme]) .doc-header__standfirst,
@@ -1491,7 +1498,7 @@ samp {
 :root[data-theme='light'] .doc-section__blocks > .axis-table__wrap,
 :root[data-theme='light'] .doc-section__blocks > .evidence-grid,
 :root[data-theme='light'] .doc-section__blocks > .question-reset {
-  max-width: min(100%, 78ch);
+  max-width: 100%;
 }
 
 :root:not([data-theme]) .doc-rail,
@@ -1674,6 +1681,11 @@ samp {
   :root:not([data-theme]) .doc-header__title,
   :root[data-theme='light'] .doc-header__title {
     font-size: clamp(2.5rem, 13vw, 3.9rem);
+  }
+
+  :root:not([data-theme]) .doc-header[data-doc-type='lecture'] .doc-header__title,
+  :root[data-theme='light'] .doc-header[data-doc-type='lecture'] .doc-header__title {
+    font-size: clamp(2.2rem, 11vw, 3.4rem);
   }
 
   :root:not([data-theme]) .doc-header__standfirst,
