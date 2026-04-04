@@ -149,10 +149,8 @@ jobs:
           fi
 
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | while read -r asset; do
-              gh release delete-asset "$GITHUB_REF_NAME" "$asset" --yes --repo "$GITHUB_REPOSITORY"
-            done
-            gh release upload "$GITHUB_REF_NAME" "${release_files[@]}" --clobber --repo "$GITHUB_REPOSITORY"
-          else
-            gh release create "$GITHUB_REF_NAME" "${release_files[@]}" --title "Achmage Reader v5 Universal Beta" --notes-file achmage-reader-universal-v5/release-notes-beta.md --prerelease --repo "$GITHUB_REPOSITORY"
+            gh release delete "$GITHUB_REF_NAME" --yes --repo "$GITHUB_REPOSITORY"
           fi
+
+          printf 'Publishing release assets:\n%s\n' "${release_files[@]}"
+          gh release create "$GITHUB_REF_NAME" "${release_files[@]}" --title "Achmage Reader v5 Universal Beta" --notes-file achmage-reader-universal-v5/release-notes-beta.md --prerelease --verify-tag --repo "$GITHUB_REPOSITORY"
