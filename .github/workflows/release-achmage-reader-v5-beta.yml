@@ -1,0 +1,144 @@
+name: release-achmage-reader-v5-beta
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v5.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: achmage-reader-universal-v5/package-lock.json
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./achmage-reader-universal-v5/src-tauri -> target"
+
+      - name: Install frontend dependencies
+        working-directory: achmage-reader-universal-v5
+        run: npm ci
+
+      - name: Build Windows release assets
+        working-directory: achmage-reader-universal-v5
+        run: npm run package:windows
+
+      - name: Stage Windows release assets
+        working-directory: achmage-reader-universal-v5
+        run: npm run stage:release-assets -- --platform windows
+
+      - name: Verify Windows release assets
+        working-directory: achmage-reader-universal-v5
+        run: npm run verify:release-assets -- --platform windows
+
+      - name: Upload Windows release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-windows
+          path: achmage-reader-universal-v5/release-assets/*
+          if-no-files-found: error
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: achmage-reader-universal-v5/package-lock.json
+
+      - name: Install Rust stable with universal targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./achmage-reader-universal-v5/src-tauri -> target"
+
+      - name: Install frontend dependencies
+        working-directory: achmage-reader-universal-v5
+        run: npm ci
+
+      - name: Build macOS universal release assets
+        working-directory: achmage-reader-universal-v5
+        run: npm run package:macos
+
+      - name: Stage macOS release assets
+        working-directory: achmage-reader-universal-v5
+        run: npm run stage:release-assets -- --platform macos
+
+      - name: Verify macOS release assets
+        working-directory: achmage-reader-universal-v5
+        run: npm run verify:release-assets -- --platform macos
+
+      - name: Upload macOS release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-macos
+          path: achmage-reader-universal-v5/release-assets/*
+          if-no-files-found: error
+
+  publish-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - build-windows
+      - build-macos
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: achmage-reader-universal-v5/package-lock.json
+
+      - name: Download Windows assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets-windows
+          path: achmage-reader-universal-v5/release-assets
+
+      - name: Download macOS assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets-macos
+          path: achmage-reader-universal-v5/release-assets
+
+      - name: Generate release checksums
+        working-directory: achmage-reader-universal-v5
+        run: node scripts/write-release-manifest.mjs release-assets
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Achmage Reader v5 Universal Beta
+          body_path: achmage-reader-universal-v5/release-notes-beta.md
+          draft: true
+          prerelease: true
+          files: |
+            achmage-reader-universal-v5/release-assets/*

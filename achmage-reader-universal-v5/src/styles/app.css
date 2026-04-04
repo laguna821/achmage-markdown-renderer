@@ -1,0 +1,21 @@
+#root {
+  min-height: 100vh;
+}
+
+.site-header__brand-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  font: inherit;
+}
+
+.site-header__brand-button:hover {
+  color: var(--color-accent);
+}
+
+.home-card__links button,
+.home-search__feedback-chips button {
+  font: inherit;
+}

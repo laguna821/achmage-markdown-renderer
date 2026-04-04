@@ -1,0 +1,119 @@
+:root {
+  --font-display: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-body: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-mono: "Cascadia Code", "Consolas", monospace;
+  --color-canvas: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f4f5f6;
+  --color-surface-glass: rgba(248, 249, 250, 0.78);
+  --color-ink: #2c3e50;
+  --color-ink-soft: #485667;
+  --color-muted: #666e79;
+  --color-muted-soft: #888e95;
+  --color-border: #e2e4e8;
+  --color-border-strong: #c1c6cd;
+  --color-accent: #0066b3;
+  --color-accent-strong: #00519b;
+  --color-accent-soft: rgba(0, 102, 179, 0.08);
+  --color-accent-tint: rgba(0, 102, 179, 0.16);
+  --color-ai: rgba(0, 181, 173, 0.12);
+  --color-code-bg: #1e293b;
+  --color-code-border: #334155;
+  --color-code-text: #e2e8f0;
+  --color-grid: rgba(226, 228, 232, 0.9);
+  --color-shadow: rgba(44, 62, 80, 0.06);
+  --color-shadow-strong: rgba(44, 62, 80, 0.12);
+  --color-focus-ring: rgba(0, 102, 179, 0.22);
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.4rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --site-width: 92rem;
+  --reader-width: 48rem;
+  --newsletter-width: 42rem;
+  --blur-md: 14px;
+}
+
+:root[data-theme='dark'] {
+  --color-canvas: #0f1724;
+  --color-surface: #172233;
+  --color-surface-muted: #1e2c41;
+  --color-surface-glass: rgba(15, 23, 36, 0.74);
+  --color-ink: #edf3ff;
+  --color-ink-soft: #cad7ec;
+  --color-muted: #a8b8cf;
+  --color-muted-soft: #90a0b5;
+  --color-border: rgba(179, 195, 219, 0.24);
+  --color-border-strong: rgba(179, 195, 219, 0.38);
+  --color-accent: #78a8ff;
+  --color-accent-strong: #9cc0ff;
+  --color-accent-soft: rgba(120, 168, 255, 0.12);
+  --color-accent-tint: rgba(120, 168, 255, 0.22);
+  --color-ai: rgba(72, 213, 204, 0.14);
+  --color-code-bg: #0b1320;
+  --color-code-border: #2a405e;
+  --color-code-text: #e6eefc;
+  --color-grid: rgba(179, 195, 219, 0.08);
+  --color-shadow: rgba(0, 0, 0, 0.22);
+  --color-shadow-strong: rgba(0, 0, 0, 0.38);
+  --color-focus-ring: rgba(120, 168, 255, 0.26);
+}
+
+:root[data-theme='aurora'] {
+  --font-display: "Newsreader", "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --color-canvas: #f7f9fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f2f4f6;
+  --color-surface-glass: rgba(255, 255, 255, 0.72);
+  --color-ink: #191c1e;
+  --color-ink-soft: #34445a;
+  --color-muted: #617089;
+  --color-muted-soft: #7f8ba0;
+  --color-border: rgba(194, 198, 214, 0.72);
+  --color-border-strong: rgba(107, 56, 212, 0.18);
+  --color-accent: #0058be;
+  --color-accent-strong: #4b31d8;
+  --color-accent-soft: rgba(0, 88, 190, 0.08);
+  --color-accent-tint: rgba(107, 56, 212, 0.14);
+  --color-ai: rgba(0, 219, 231, 0.14);
+  --color-code-bg: #1e1630;
+  --color-code-border: #584783;
+  --color-code-text: #faf6ff;
+  --color-grid: rgba(194, 198, 214, 0.46);
+  --color-shadow: rgba(0, 88, 190, 0.08);
+  --color-shadow-strong: rgba(71, 47, 134, 0.2);
+  --color-focus-ring: rgba(107, 56, 212, 0.2);
+}
+
+:root[data-theme='cyber_sanctuary'] {
+  --font-display: "Space Grotesk", "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-body: "Inter", "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --color-canvas: #080e1a;
+  --color-surface: #0d1320;
+  --color-surface-muted: #131a28;
+  --color-surface-glass: rgba(8, 14, 26, 0.68);
+  --color-ink: #e0e5f6;
+  --color-ink-soft: #bcc5da;
+  --color-muted: #9ea8bf;
+  --color-muted-soft: #79839a;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(83, 221, 252, 0.2);
+  --color-accent: #53ddfc;
+  --color-accent-strong: #8ef0ff;
+  --color-accent-soft: rgba(83, 221, 252, 0.1);
+  --color-accent-tint: rgba(186, 158, 255, 0.16);
+  --color-ai: rgba(255, 109, 175, 0.12);
+  --color-code-bg: #0b1320;
+  --color-code-border: rgba(83, 221, 252, 0.2);
+  --color-code-text: #edf2ff;
+  --color-grid: rgba(83, 221, 252, 0.06);
+  --color-shadow: rgba(0, 0, 0, 0.42);
+  --color-shadow-strong: rgba(0, 0, 0, 0.7);
+  --color-focus-ring: rgba(83, 221, 252, 0.22);
+}
