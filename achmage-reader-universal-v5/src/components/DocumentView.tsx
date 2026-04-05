@@ -4,6 +4,7 @@ import {findActiveHeadingId, getActiveHeadingLine, type NormalizedDoc, type Outp
 import {initPretextEnhancer} from '../core/pretext/client';
 import {openExternal} from '../lib/bridge';
 
+import {buildLiveHeadingSnapshot, flattenTocIds, type TocDebugHeading} from './document-toc-sync';
 import {DocRail} from './DocRail';
 import {DocumentHeader} from './DocumentHeader';
 import {DocumentSections} from './DocumentSections';
@@ -14,6 +15,16 @@ type DocumentViewProps = {
   output: OutputMode;
   onNavigateDoc: (output: OutputMode, slug: string, anchor?: string) => void;
 };
+
+declare global {
+  interface Window {
+    __ACHMAGE_TOC_DEBUG__?: {
+      activeLine: number;
+      chosenId: string | null;
+      headings: TocDebugHeading[];
+    };
+  }
+}
 
 const isDocRouteHref = (href: string): boolean => href.startsWith('?view=');
 
@@ -40,29 +51,24 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
   }, [doc.slug, output]);
 
   useEffect(() => {
-    const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-item]'));
     const article = document.querySelector<HTMLElement>('.doc-article');
-    const headingIds = Array.from(
-      new Set(
-        tocLinks
-          .map((link) => link.getAttribute('data-toc-item'))
-          .filter((id): id is string => Boolean(id)),
-      ),
-    );
-    const headings = headingIds
-      .map((id) => document.getElementById(id))
-      .filter((heading): heading is HTMLElement => heading instanceof HTMLElement);
+    const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-item]'));
+    const tocHeadingIds = new Set(flattenTocIds(doc.headings));
+    const articleHeadings = article
+      ? Array.from(article.querySelectorAll<HTMLElement>('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]'))
+      : [];
 
-    if (tocLinks.length === 0 || headings.length === 0) {
+    if (!article || tocLinks.length === 0 || articleHeadings.length === 0 || tocHeadingIds.size === 0) {
       return;
     }
 
     let activeId = '';
     let frame = 0;
+    let pendingForcedReveal = true;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const resourceListeners: Array<{element: HTMLElement; handler: () => void}> = [];
 
-    const revealLinkInScrollRoot = (link: HTMLAnchorElement) => {
+    const revealLinkInScrollRoot = (link: HTMLAnchorElement, force = false) => {
       const scrollRoot = link.closest('[data-toc-scroll-root]');
       if (!(scrollRoot instanceof HTMLElement)) {
         return;
@@ -89,22 +95,26 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       const delta = linkRect.top < visibleTop ? linkRect.top - visibleTop : linkRect.bottom - visibleBottom;
       const maxScrollTop = Math.max(scrollRoot.scrollHeight - scrollRoot.clientHeight, 0);
       const nextTop = Math.min(Math.max(scrollRoot.scrollTop + delta, 0), maxScrollTop);
+      const behavior =
+        reducedMotion.matches || scrollRoot.getAttribute('data-toc-scroll-root') === 'desktop' || !force
+          ? 'auto'
+          : 'smooth';
 
       scrollRoot.scrollTo({
         top: nextTop,
-        behavior: reducedMotion.matches ? 'auto' : 'smooth',
+        behavior,
       });
     };
 
-    const revealActiveLinks = (id: string) => {
+    const revealActiveLinks = (id: string, force = false) => {
       tocLinks.forEach((link) => {
         if (link.getAttribute('data-toc-item') === id) {
-          revealLinkInScrollRoot(link);
+          revealLinkInScrollRoot(link, force);
         }
       });
     };
 
-    const activate = (id: string) => {
+    const activate = (id: string): boolean => {
       const changed = activeId !== id;
       activeId = id;
 
@@ -114,7 +124,7 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
         });
       }
 
-      revealActiveLinks(id);
+      return changed;
     };
 
     const syncActiveHeading = () => {
@@ -128,17 +138,25 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
         scrollTop,
         maxScroll,
       });
-      const nextActiveId = findActiveHeadingId(
-        headings.map((heading) => ({
-          id: heading.id,
-          top: heading.getBoundingClientRect().top,
-        })),
-        activationLine,
-      );
+      const {candidates, debugHeadings} = buildLiveHeadingSnapshot(articleHeadings, tocHeadingIds);
+      const nextActiveId = findActiveHeadingId(candidates, activationLine);
+
+      if (import.meta.env.DEV) {
+        window.__ACHMAGE_TOC_DEBUG__ = {
+          activeLine: activationLine,
+          chosenId: nextActiveId ?? null,
+          headings: debugHeadings,
+        };
+      }
 
       if (nextActiveId) {
-        activate(nextActiveId);
+        const changed = activate(nextActiveId);
+        if (changed || pendingForcedReveal) {
+          revealActiveLinks(nextActiveId, pendingForcedReveal);
+        }
       }
+
+      pendingForcedReveal = false;
     };
 
     const requestSync = () => {
@@ -151,10 +169,26 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
 
     const onRevealActive = () => {
       if (activeId) {
-        revealActiveLinks(activeId);
+        revealActiveLinks(activeId, true);
         return;
       }
 
+      pendingForcedReveal = true;
+      requestSync();
+    };
+
+    const onHashChange = () => {
+      pendingForcedReveal = true;
+      requestSync();
+    };
+
+    const onLoad = () => {
+      pendingForcedReveal = true;
+      requestSync();
+    };
+
+    const onResize = () => {
+      pendingForcedReveal = true;
       requestSync();
     };
 
@@ -169,9 +203,9 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     requestSync();
 
     window.addEventListener('scroll', requestSync, {passive: true});
-    window.addEventListener('resize', requestSync);
-    window.addEventListener('hashchange', requestSync);
-    window.addEventListener('load', requestSync);
+    window.addEventListener('resize', onResize);
+    window.addEventListener('hashchange', onHashChange);
+    window.addEventListener('load', onLoad);
     window.addEventListener('toc:reveal-active', onRevealActive);
 
     return () => {
@@ -179,9 +213,9 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
         window.cancelAnimationFrame(frame);
       }
       window.removeEventListener('scroll', requestSync);
-      window.removeEventListener('resize', requestSync);
-      window.removeEventListener('hashchange', requestSync);
-      window.removeEventListener('load', requestSync);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('hashchange', onHashChange);
+      window.removeEventListener('load', onLoad);
       window.removeEventListener('toc:reveal-active', onRevealActive);
       resourceListeners.forEach(({element, handler}) => {
         element.removeEventListener('load', handler);

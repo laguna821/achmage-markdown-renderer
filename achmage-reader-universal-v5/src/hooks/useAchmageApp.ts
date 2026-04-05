@@ -24,6 +24,21 @@ type UseAchmageAppResult = {
   persistSettings: (updater: (current: AppSettings) => AppSettings) => Promise<void>;
 };
 
+let appSettingsSaveQueue: Promise<void> = Promise.resolve();
+
+export const enqueueAppSettingsSave = async (
+  settings: AppSettings,
+  saver: (settings: AppSettings) => Promise<void> = saveAppSettings,
+): Promise<void> => {
+  const task = appSettingsSaveQueue.catch(() => undefined).then(() => saver(settings));
+  appSettingsSaveQueue = task.catch(() => undefined);
+  return task;
+};
+
+export const __resetAppSettingsSaveQueueForTest = (): void => {
+  appSettingsSaveQueue = Promise.resolve();
+};
+
 export const useAchmageApp = (): UseAchmageAppResult => {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [snapshot, setSnapshot] = useState<VaultSnapshot | null>(null);
@@ -37,7 +52,7 @@ export const useAchmageApp = (): UseAchmageAppResult => {
       }
 
       const next = updater(current);
-      void saveAppSettings(next);
+      void enqueueAppSettingsSave(next);
       return next;
     });
   }, []);
@@ -74,7 +89,7 @@ export const useAchmageApp = (): UseAchmageAppResult => {
     const nextSettings = withRecentVault(baseSettings, selected);
 
     setSettings(nextSettings);
-    await saveAppSettings(nextSettings);
+    await enqueueAppSettingsSave(nextSettings);
     await refreshVault(selected);
   }, [refreshVault, settings]);
 
