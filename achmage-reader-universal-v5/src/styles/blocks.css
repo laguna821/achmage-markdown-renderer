@@ -484,7 +484,9 @@
 :root[data-theme='dark'] .doc-quote {
   border: 1px solid var(--color-border-strong);
   border-radius: 0;
-  background: var(--color-surface);
+  background:
+    linear-gradient(180deg, rgba(204, 254, 3, 0.028), rgba(204, 254, 3, 0) 42%),
+    var(--color-surface);
   box-shadow: 5px 5px 0 0 var(--color-paper-shadow);
   backdrop-filter: none;
 }
@@ -535,7 +537,9 @@
 :root[data-theme='dark'] .axis-table-card {
   border: 1px solid var(--color-border-strong);
   border-radius: 0;
-  background: var(--color-surface);
+  background:
+    linear-gradient(180deg, rgba(204, 254, 3, 0.028), rgba(204, 254, 3, 0) 42%),
+    var(--color-surface);
   box-shadow: 5px 5px 0 0 var(--color-paper-shadow);
 }
 
