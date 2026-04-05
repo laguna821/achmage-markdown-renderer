@@ -4,7 +4,13 @@ import {findActiveHeadingId, getActiveHeadingLine, type NormalizedDoc, type Outp
 import {initPretextEnhancer} from '../core/pretext/client';
 import {openExternal} from '../lib/bridge';
 
-import {buildLiveHeadingSnapshot, flattenTocIds, type TocDebugHeading} from './document-toc-sync';
+import {
+  buildLiveHeadingSnapshot,
+  flattenTocIds,
+  resolveVisibleHeadingIndex,
+  type TocDebugHeading,
+  type TocSyncTrigger,
+} from './document-toc-sync';
 import {DocRail} from './DocRail';
 import {DocumentHeader} from './DocumentHeader';
 import {DocumentSections} from './DocumentSections';
@@ -20,7 +26,11 @@ declare global {
   interface Window {
     __ACHMAGE_TOC_DEBUG__?: {
       activeLine: number;
-      chosenId: string | null;
+      absoluteTargetId: string | null;
+      visibleActiveId: string | null;
+      currentIndex: number;
+      targetIndex: number;
+      trigger: TocSyncTrigger;
       headings: TocDebugHeading[];
     };
   }
@@ -63,8 +73,12 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     }
 
     let activeId = '';
+    let activeIndex = -1;
     let frame = 0;
+    let queuedTrigger: TocSyncTrigger = 'init';
+    let queuedExplicitId: string | null = null;
     let pendingForcedReveal = true;
+    let lastScrollTop = window.scrollY;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const resourceListeners: Array<{element: HTMLElement; handler: () => void}> = [];
 
@@ -128,38 +142,74 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     };
 
     const syncActiveHeading = () => {
+      const trigger = queuedTrigger;
+      const explicitId = queuedExplicitId;
+
+      queuedTrigger = 'scroll';
+      queuedExplicitId = null;
       frame = 0;
 
       const viewportHeight = window.innerHeight;
       const scrollTop = window.scrollY;
       const maxScroll = Math.max(document.documentElement.scrollHeight - viewportHeight, 0);
+      const scrollChanged = scrollTop !== lastScrollTop;
       const activationLine = getActiveHeadingLine({
         viewportHeight,
         scrollTop,
         maxScroll,
       });
       const {candidates, debugHeadings} = buildLiveHeadingSnapshot(articleHeadings, tocHeadingIds);
-      const nextActiveId = findActiveHeadingId(candidates, activationLine);
+      const absoluteTargetId = explicitId ?? findActiveHeadingId(candidates, activationLine);
+      let currentIndex = activeIndex;
+      if (activeId) {
+        currentIndex = candidates.findIndex((heading) => heading.id === activeId);
+      }
+      if (currentIndex < 0 || currentIndex >= candidates.length) {
+        currentIndex = -1;
+      }
+      const targetIndex = absoluteTargetId ? candidates.findIndex((heading) => heading.id === absoluteTargetId) : -1;
+      const nextVisibleIndex = resolveVisibleHeadingIndex({
+        currentIndex,
+        targetIndex,
+        scrollChanged,
+        trigger,
+      });
+      const nextActiveId = nextVisibleIndex >= 0 ? candidates[nextVisibleIndex]?.id ?? null : null;
 
       if (import.meta.env.DEV) {
         window.__ACHMAGE_TOC_DEBUG__ = {
           activeLine: activationLine,
-          chosenId: nextActiveId ?? null,
+          absoluteTargetId: absoluteTargetId ?? null,
+          visibleActiveId: nextActiveId,
+          currentIndex,
+          targetIndex,
+          trigger,
           headings: debugHeadings,
         };
       }
 
       if (nextActiveId) {
         const changed = activate(nextActiveId);
+        activeIndex = nextVisibleIndex;
         if (changed || pendingForcedReveal) {
           revealActiveLinks(nextActiveId, pendingForcedReveal);
         }
+      } else {
+        activeIndex = -1;
       }
 
       pendingForcedReveal = false;
+      lastScrollTop = scrollTop;
     };
 
-    const requestSync = () => {
+    const requestSync = (trigger: TocSyncTrigger = 'scroll', explicitId: string | null = null) => {
+      if (trigger === 'toc-click' && explicitId) {
+        queuedTrigger = trigger;
+        queuedExplicitId = explicitId;
+      } else if (queuedTrigger !== 'toc-click') {
+        queuedTrigger = trigger;
+      }
+
       if (frame !== 0) {
         return;
       }
@@ -174,49 +224,64 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       }
 
       pendingForcedReveal = true;
-      requestSync();
+      requestSync('reveal');
     };
 
     const onHashChange = () => {
       pendingForcedReveal = true;
-      requestSync();
+      requestSync('hashchange');
     };
 
     const onLoad = () => {
       pendingForcedReveal = true;
-      requestSync();
+      requestSync('load');
     };
 
     const onResize = () => {
       pendingForcedReveal = true;
-      requestSync();
+      requestSync('resize');
+    };
+
+    const onScroll = () => {
+      requestSync('scroll');
+    };
+
+    const onActivateTarget = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail;
+      if (!id) {
+        return;
+      }
+
+      requestSync('toc-click', id);
     };
 
     article?.querySelectorAll<HTMLElement>('img, iframe, video').forEach((element) => {
       const handler = () => {
-        requestSync();
+        requestSync('resource');
       };
       element.addEventListener('load', handler, {passive: true});
       resourceListeners.push({element, handler});
     });
 
-    requestSync();
+    requestSync('init');
 
-    window.addEventListener('scroll', requestSync, {passive: true});
+    window.addEventListener('scroll', onScroll, {passive: true});
     window.addEventListener('resize', onResize);
     window.addEventListener('hashchange', onHashChange);
     window.addEventListener('load', onLoad);
     window.addEventListener('toc:reveal-active', onRevealActive);
+    window.addEventListener('toc:activate-target', onActivateTarget as EventListener);
 
     return () => {
       if (frame !== 0) {
         window.cancelAnimationFrame(frame);
       }
-      window.removeEventListener('scroll', requestSync);
+      window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('hashchange', onHashChange);
       window.removeEventListener('load', onLoad);
       window.removeEventListener('toc:reveal-active', onRevealActive);
+      window.removeEventListener('toc:activate-target', onActivateTarget as EventListener);
       resourceListeners.forEach(({element, handler}) => {
         element.removeEventListener('load', handler);
       });
@@ -336,6 +401,10 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
           onNavigateDoc(nextOutput, nextSlug, nextAnchor);
         }
       }
+    }
+
+    if (anchor.matches('a[data-toc-item]') && href.startsWith('#')) {
+      window.dispatchEvent(new CustomEvent<string>('toc:activate-target', {detail: decodeURIComponent(href.slice(1))}));
     }
   };
 

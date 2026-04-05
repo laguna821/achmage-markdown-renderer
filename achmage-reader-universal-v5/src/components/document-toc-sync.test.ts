@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 
-import {buildLiveHeadingSnapshot} from './document-toc-sync';
+import {buildLiveHeadingSnapshot, resolveVisibleHeadingIndex} from './document-toc-sync';
 
 const createHeading = (id: string, tagName: string, top: number, text: string) => ({
   id,
@@ -29,5 +29,54 @@ describe('document toc sync helpers', () => {
         tagName: 'H3',
       }),
     );
+  });
+
+  it('moves only one heading per scroll event toward a farther absolute target', () => {
+    expect(
+      resolveVisibleHeadingIndex({
+        currentIndex: 0,
+        targetIndex: 3,
+        scrollChanged: true,
+        trigger: 'scroll',
+      }),
+    ).toBe(1);
+    expect(
+      resolveVisibleHeadingIndex({
+        currentIndex: 3,
+        targetIndex: 0,
+        scrollChanged: true,
+        trigger: 'scroll',
+      }),
+    ).toBe(2);
+  });
+
+  it('does not self-advance on non-scrolling syncs at the same scroll position', () => {
+    expect(
+      resolveVisibleHeadingIndex({
+        currentIndex: 0,
+        targetIndex: 3,
+        scrollChanged: false,
+        trigger: 'resource',
+      }),
+    ).toBe(0);
+  });
+
+  it('boots from the absolute target and allows explicit ToC clicks to snap immediately', () => {
+    expect(
+      resolveVisibleHeadingIndex({
+        currentIndex: -1,
+        targetIndex: 3,
+        scrollChanged: false,
+        trigger: 'init',
+      }),
+    ).toBe(3);
+    expect(
+      resolveVisibleHeadingIndex({
+        currentIndex: 0,
+        targetIndex: 3,
+        scrollChanged: false,
+        trigger: 'toc-click',
+      }),
+    ).toBe(3);
   });
 });

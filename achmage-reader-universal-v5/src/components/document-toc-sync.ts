@@ -15,6 +15,23 @@ export type TocDebugHeading = {
   isInToc: boolean;
 };
 
+export type TocSyncTrigger =
+  | 'init'
+  | 'scroll'
+  | 'resize'
+  | 'hashchange'
+  | 'load'
+  | 'resource'
+  | 'reveal'
+  | 'toc-click';
+
+type ResolveVisibleHeadingIndexOptions = {
+  currentIndex: number;
+  targetIndex: number;
+  scrollChanged: boolean;
+  trigger: TocSyncTrigger;
+};
+
 export const flattenTocIds = (items: readonly TocItem[]): string[] => {
   const ids: string[] = [];
 
@@ -67,4 +84,33 @@ export const buildLiveHeadingSnapshot = (
   }
 
   return {candidates, debugHeadings};
+};
+
+export const resolveVisibleHeadingIndex = ({
+  currentIndex,
+  targetIndex,
+  scrollChanged,
+  trigger,
+}: ResolveVisibleHeadingIndexOptions): number => {
+  if (targetIndex < 0) {
+    return currentIndex;
+  }
+
+  if (trigger === 'toc-click') {
+    return targetIndex;
+  }
+
+  if (currentIndex < 0) {
+    return targetIndex;
+  }
+
+  if (currentIndex === targetIndex) {
+    return currentIndex;
+  }
+
+  if (!scrollChanged) {
+    return currentIndex;
+  }
+
+  return targetIndex > currentIndex ? currentIndex + 1 : currentIndex - 1;
 };

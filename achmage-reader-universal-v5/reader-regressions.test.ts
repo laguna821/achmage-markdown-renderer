@@ -15,11 +15,18 @@ describe('reader regressions', () => {
     expect(source).toContain("window.addEventListener('toc:reveal-active'");
     expect(source).toContain("window.removeEventListener('toc:reveal-active'");
     expect(source).toContain("window.dispatchEvent(new Event('toc:reveal-active'))");
+    expect(source).toContain("window.addEventListener('toc:activate-target'");
+    expect(source).toContain("window.removeEventListener('toc:activate-target'");
+    expect(source).toContain("new CustomEvent<string>('toc:activate-target'");
     expect(source).toContain("findActiveHeadingId(");
+    expect(source).toContain("resolveVisibleHeadingIndex({");
     expect(source).toContain("article.querySelectorAll<HTMLElement>('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]')");
     expect(source).toContain('const tocHeadingIds = new Set(flattenTocIds(doc.headings));');
     expect(source).not.toContain(".map((id) => document.getElementById(id))");
     expect(source).toContain('window.__ACHMAGE_TOC_DEBUG__');
+    expect(source).toContain('absoluteTargetId');
+    expect(source).toContain('visibleActiveId');
+    expect(source).toContain('const scrollChanged = scrollTop !== lastScrollTop;');
     expect(source).toContain("const activate = (id: string): boolean => {");
     expect(source).toContain("const changed = activeId !== id;");
     expect(source).toContain("link.classList.toggle('is-active', link.getAttribute('data-toc-item') === id)");
@@ -28,6 +35,7 @@ describe('reader regressions', () => {
     );
     expect(source).toContain("const onRevealActive = () => {");
     expect(source).toContain("revealActiveLinks(activeId, true);");
+    expect(source).not.toContain('needsAnotherFrame');
   });
 
   it('uses the rail as the desktop ToC scroll root and keeps the ToC panel itself non-scrollable', () => {
