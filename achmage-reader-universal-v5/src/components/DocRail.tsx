@@ -11,7 +11,7 @@ export function DocRail({doc}: DocRailProps) {
   const insights = deriveDocumentInsights(doc);
 
   return (
-    <aside className="doc-rail" aria-label="Document rail">
+    <aside className="doc-rail" aria-label="Document rail" data-toc-scroll-root="desktop">
       {insights.thesis ? (
         <section className="doc-rail__panel doc-rail__panel--thesis" data-rail-kind="thesis">
           <h2>{insights.thesisLabel}</h2>
@@ -20,7 +20,7 @@ export function DocRail({doc}: DocRailProps) {
       ) : null}
 
       {doc.meta.rail.showToc && doc.headings.length > 0 ? (
-        <section className="doc-rail__panel doc-rail__panel--toc" data-rail-kind="toc" data-toc-scroll-root="desktop">
+        <section className="doc-rail__panel doc-rail__panel--toc" data-rail-kind="toc">
           <h2>Index</h2>
           <TocList items={doc.headings} />
         </section>

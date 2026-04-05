@@ -112,9 +112,9 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
         tocLinks.forEach((link) => {
           link.classList.toggle('is-active', link.getAttribute('data-toc-item') === id);
         });
-      }
 
-      revealActiveLinks(id);
+        revealActiveLinks(id);
+      }
     };
 
     const syncActiveHeading = () => {
@@ -335,7 +335,7 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
                 hidden={!mobileTocOpen}
                 onClick={(event) => {
                   const target = event.target as HTMLElement | null;
-                  if (target?.closest('a[data-toc-link]')) {
+                  if (target?.closest('a[data-toc-item]')) {
                     setMobileTocOpen(false);
                   }
                 }}

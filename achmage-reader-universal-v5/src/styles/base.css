@@ -518,11 +518,6 @@ samp {
 
 .doc-rail__panel--toc {
   min-height: fit-content;
-  max-height: min(40rem, calc(100vh - var(--doc-rail-top-offset) - 11rem));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scroll-behavior: auto;
 }
 
 .doc-rail__panel h2 {

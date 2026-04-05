@@ -12,13 +12,33 @@ const readSource = (...segments: string[]) =>
 describe('reader regressions', () => {
   it('keeps the ToC sync effect aligned with SPA output changes and mobile reveal events', () => {
     const source = readSource('components', 'DocumentView.tsx');
-
     expect(source).toContain("window.addEventListener('toc:reveal-active'");
     expect(source).toContain("window.removeEventListener('toc:reveal-active'");
     expect(source).toContain("window.dispatchEvent(new Event('toc:reveal-active'))");
     expect(source).toMatch(
       /const tocLinks = Array\.from\(document\.querySelectorAll<HTMLAnchorElement>\('\[data-toc-item\]'\)\);[\s\S]*?\}, \[doc(?:\.headings)?, doc\.slug, output\]\);/,
     );
+    expect(source).toMatch(
+      /const activate = \(id: string\) => \{[\s\S]*?if \(changed\) \{[\s\S]*?link\.classList\.toggle\('is-active'[\s\S]*?revealActiveLinks\(id\);[\s\S]*?\n\s+\}\n\s+\};/,
+    );
+    expect(source).not.toMatch(
+      /const activate = \(id: string\) => \{[\s\S]*?\n\s+\}\n\s+revealActiveLinks\(id\);\n\s+\};/,
+    );
+  });
+
+  it('uses the rail as the desktop ToC scroll root and keeps the ToC panel itself non-scrollable', () => {
+    const railSource = readSource('components', 'DocRail.tsx');
+    const baseCss = readSource('styles', 'base.css');
+    const tocPanelBlock = baseCss.match(/\.doc-rail__panel--toc \{([\s\S]*?)\n\}/)?.[1] ?? '';
+
+    expect(railSource).toContain('<aside className="doc-rail" aria-label="Document rail" data-toc-scroll-root="desktop">');
+    expect(railSource).not.toContain('doc-rail__panel--toc" data-rail-kind="toc" data-toc-scroll-root="desktop"');
+    expect(tocPanelBlock).toContain('min-height: fit-content;');
+    expect(tocPanelBlock).not.toContain('max-height:');
+    expect(tocPanelBlock).not.toContain('overflow-y: auto;');
+    expect(tocPanelBlock).not.toContain('overscroll-behavior: contain;');
+    expect(tocPanelBlock).not.toContain('scrollbar-gutter: stable;');
+    expect(tocPanelBlock).not.toContain('scroll-behavior: auto;');
   });
 
   it('keeps code blocks free of inline code highlight fills in prose and log blocks', () => {
