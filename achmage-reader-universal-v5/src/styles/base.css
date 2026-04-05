@@ -2223,7 +2223,7 @@ samp {
 
 :root[data-theme='aurora'] .doc-rail__panel {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   padding: 1.2rem 1.1rem 1.15rem;
   border-radius: 1.45rem;
   border: 1px solid rgba(182, 190, 221, 0.34);
@@ -2233,6 +2233,11 @@ samp {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 24px 44px -38px rgba(66, 83, 130, 0.28);
+}
+
+:root[data-theme='aurora'] .doc-rail__panel--toc {
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 :root[data-theme='aurora'] .doc-rail__panel::before {
@@ -2972,8 +2977,13 @@ samp {
 
 :root[data-theme='cyber_sanctuary'] .doc-rail__panel {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   padding: 1.1rem 1rem 1.15rem;
+}
+
+:root[data-theme='cyber_sanctuary'] .doc-rail__panel--toc {
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 :root[data-theme='cyber_sanctuary'] .doc-rail__panel::before {
@@ -3292,6 +3302,19 @@ samp {
 
 :root[data-theme='cyber_sanctuary'] .doc-header__meta {
   gap: 0.6rem;
+}
+
+:root[data-theme='cyber_sanctuary'] .doc-header__meta-top {
+  border-color: rgba(83, 221, 252, 0.18);
+  background:
+    linear-gradient(180deg, rgba(16, 23, 38, 0.98), rgba(10, 16, 29, 0.92)),
+    rgba(10, 16, 29, 0.9);
+  color: #a3b2cb;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+:root[data-theme='cyber_sanctuary'] .doc-header__meta-item + .doc-header__meta-item::before {
+  color: rgba(83, 221, 252, 0.28);
 }
 
 :root[data-theme='cyber_sanctuary'] .doc-header__title {

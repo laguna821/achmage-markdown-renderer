@@ -1,8 +1,28 @@
 import {describe, expect, it} from 'vitest';
 
-import {findActiveHeadingId} from './active-heading';
+import {findActiveHeadingId, getActiveHeadingLine} from './active-heading';
 
 describe('active heading helpers', () => {
+  it('uses the default 20 percent activation line away from the page bottom', () => {
+    expect(
+      getActiveHeadingLine({
+        viewportHeight: 1000,
+        scrollTop: 400,
+        maxScroll: 5000,
+      }),
+    ).toBe(200);
+  });
+
+  it('slides the activation line toward the bottom near the end of the page', () => {
+    expect(
+      getActiveHeadingLine({
+        viewportHeight: 1000,
+        scrollTop: 4700,
+        maxScroll: 5000,
+      }),
+    ).toBe(700);
+  });
+
   it('defaults to the first heading before the activation offset reaches it', () => {
     expect(
       findActiveHeadingId(
@@ -15,14 +35,14 @@ describe('active heading helpers', () => {
     ).toBe('intro');
   });
 
-  it('selects the active heading by document position even if the input order is mixed', () => {
+  it('keeps the provided DOM order instead of re-sorting headings', () => {
     expect(
       findActiveHeadingId(
         [
-          {id: 'h3-early', top: 7800},
           {id: 'h2-current', top: 1260},
           {id: 'h3-current', top: 1420},
           {id: 'h2-next', top: 1980},
+          {id: 'h3-early', top: 7800},
         ],
         1500,
       ),

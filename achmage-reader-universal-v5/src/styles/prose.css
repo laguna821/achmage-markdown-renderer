@@ -82,12 +82,6 @@
   word-break: inherit;
 }
 
-.prose-block pre::selection,
-.prose-block pre *::selection {
-  background: transparent;
-  color: inherit;
-}
-
 .prose-block table {
   width: 100%;
   max-width: 100%;

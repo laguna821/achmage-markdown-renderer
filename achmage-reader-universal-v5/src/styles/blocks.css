@@ -332,12 +332,6 @@
   word-break: break-word;
 }
 
-.log-block pre::selection,
-.log-block pre *::selection {
-  background: transparent;
-  color: inherit;
-}
-
 :root[data-theme='aurora'] .log-block {
   background:
     linear-gradient(180deg, rgba(48, 34, 78, 0.98), rgba(30, 22, 48, 0.98)),
