@@ -37,6 +37,34 @@ declare global {
 }
 
 const isDocRouteHref = (href: string): boolean => href.startsWith('?view=');
+const SCROLL_BURST_IDLE_MS = 140;
+const ANCHOR_SCROLL_GAP = 16;
+
+const isScrollNavigationKey = (event: KeyboardEvent): boolean => {
+  if (event.altKey || event.ctrlKey || event.metaKey) {
+    return false;
+  }
+
+  const target = event.target as HTMLElement | null;
+  if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName ?? '')) {
+    return false;
+  }
+
+  return ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' ', 'Spacebar'].includes(event.key);
+};
+
+const getStickyHeaderOffset = (): number => {
+  const header = document.querySelector<HTMLElement>('.site-header');
+  return header ? header.getBoundingClientRect().height : 0;
+};
+
+const scrollElementIntoViewWithOffset = (
+  element: HTMLElement,
+  behavior: ScrollBehavior = 'smooth',
+): void => {
+  const top = Math.max(window.scrollY + element.getBoundingClientRect().top - getStickyHeaderOffset() - ANCHOR_SCROLL_GAP, 0);
+  window.scrollTo({top, behavior});
+};
 
 export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
   const [mobileTocOpen, setMobileTocOpen] = useState(false);
@@ -56,7 +84,7 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     const anchorId = decodeURIComponent(window.location.hash.slice(1));
     const target = document.getElementById(anchorId);
     if (target) {
-      target.scrollIntoView({behavior: 'smooth', block: 'start'});
+      scrollElementIntoViewWithOffset(target, 'auto');
     }
   }, [doc.slug, output]);
 
@@ -78,7 +106,11 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     let queuedTrigger: TocSyncTrigger = 'init';
     let queuedExplicitId: string | null = null;
     let pendingForcedReveal = true;
+    let pendingAdvanceBudget = 0;
     let lastScrollTop = window.scrollY;
+    let lastObservedScrollTop = window.scrollY;
+    let scrollBurstActive = false;
+    let scrollBurstTimer = 0;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const resourceListeners: Array<{element: HTMLElement; handler: () => void}> = [];
 
@@ -153,6 +185,7 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       const scrollTop = window.scrollY;
       const maxScroll = Math.max(document.documentElement.scrollHeight - viewportHeight, 0);
       const scrollChanged = scrollTop !== lastScrollTop;
+      const scrollDirection = Math.sign(scrollTop - lastScrollTop);
       const activationLine = getActiveHeadingLine({
         viewportHeight,
         scrollTop,
@@ -168,10 +201,17 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
         currentIndex = -1;
       }
       const targetIndex = absoluteTargetId ? candidates.findIndex((heading) => heading.id === absoluteTargetId) : -1;
+      const targetDirection =
+        currentIndex < 0 || targetIndex < 0 || targetIndex === currentIndex ? 0 : Math.sign(targetIndex - currentIndex);
+      const canAdvance =
+        trigger === 'scroll' &&
+        pendingAdvanceBudget > 0 &&
+        scrollChanged &&
+        (targetDirection === 0 || scrollDirection === 0 || targetDirection === scrollDirection);
       const nextVisibleIndex = resolveVisibleHeadingIndex({
         currentIndex,
         targetIndex,
-        scrollChanged,
+        canAdvance,
         trigger,
       });
       const nextActiveId = nextVisibleIndex >= 0 ? candidates[nextVisibleIndex]?.id ?? null : null;
@@ -191,6 +231,9 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       if (nextActiveId) {
         const changed = activate(nextActiveId);
         activeIndex = nextVisibleIndex;
+        if (canAdvance && nextVisibleIndex !== currentIndex) {
+          pendingAdvanceBudget = 0;
+        }
         if (changed || pendingForcedReveal) {
           revealActiveLinks(nextActiveId, pendingForcedReveal);
         }
@@ -215,6 +258,23 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       }
 
       frame = window.requestAnimationFrame(syncActiveHeading);
+    };
+
+    const refreshScrollBurst = (grantBudget = false) => {
+      if (grantBudget || !scrollBurstActive) {
+        pendingAdvanceBudget = 1;
+      }
+
+      scrollBurstActive = true;
+
+      if (scrollBurstTimer !== 0) {
+        window.clearTimeout(scrollBurstTimer);
+      }
+
+      scrollBurstTimer = window.setTimeout(() => {
+        scrollBurstActive = false;
+        scrollBurstTimer = 0;
+      }, SCROLL_BURST_IDLE_MS);
     };
 
     const onRevealActive = () => {
@@ -243,7 +303,20 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     };
 
     const onScroll = () => {
+      const nextScrollTop = window.scrollY;
+      if (nextScrollTop !== lastObservedScrollTop) {
+        refreshScrollBurst(!scrollBurstActive);
+        lastObservedScrollTop = nextScrollTop;
+      }
       requestSync('scroll');
+    };
+
+    const onScrollKeyDown = (event: KeyboardEvent) => {
+      if (!isScrollNavigationKey(event)) {
+        return;
+      }
+
+      refreshScrollBurst(true);
     };
 
     const onActivateTarget = (event: Event) => {
@@ -269,6 +342,7 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     window.addEventListener('resize', onResize);
     window.addEventListener('hashchange', onHashChange);
     window.addEventListener('load', onLoad);
+    window.addEventListener('keydown', onScrollKeyDown);
     window.addEventListener('toc:reveal-active', onRevealActive);
     window.addEventListener('toc:activate-target', onActivateTarget as EventListener);
 
@@ -276,10 +350,14 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       if (frame !== 0) {
         window.cancelAnimationFrame(frame);
       }
+      if (scrollBurstTimer !== 0) {
+        window.clearTimeout(scrollBurstTimer);
+      }
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('hashchange', onHashChange);
       window.removeEventListener('load', onLoad);
+      window.removeEventListener('keydown', onScrollKeyDown);
       window.removeEventListener('toc:reveal-active', onRevealActive);
       window.removeEventListener('toc:activate-target', onActivateTarget as EventListener);
       resourceListeners.forEach(({element, handler}) => {
@@ -403,8 +481,20 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       }
     }
 
-    if (anchor.matches('a[data-toc-item]') && href.startsWith('#')) {
-      window.dispatchEvent(new CustomEvent<string>('toc:activate-target', {detail: decodeURIComponent(href.slice(1))}));
+    if (href.startsWith('#')) {
+      const targetId = decodeURIComponent(href.slice(1));
+      const targetElement = document.getElementById(targetId);
+      if (!targetElement) {
+        return;
+      }
+
+      event.preventDefault();
+      scrollElementIntoViewWithOffset(targetElement, 'smooth');
+      window.history.pushState(null, '', `#${encodeURIComponent(targetId)}`);
+
+      if (anchor.matches('a[data-toc-item]')) {
+        window.dispatchEvent(new CustomEvent<string>('toc:activate-target', {detail: targetId}));
+      }
     }
   };
 

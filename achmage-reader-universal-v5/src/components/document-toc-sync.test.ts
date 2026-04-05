@@ -36,7 +36,7 @@ describe('document toc sync helpers', () => {
       resolveVisibleHeadingIndex({
         currentIndex: 0,
         targetIndex: 3,
-        scrollChanged: true,
+        canAdvance: true,
         trigger: 'scroll',
       }),
     ).toBe(1);
@@ -44,29 +44,29 @@ describe('document toc sync helpers', () => {
       resolveVisibleHeadingIndex({
         currentIndex: 3,
         targetIndex: 0,
-        scrollChanged: true,
+        canAdvance: true,
         trigger: 'scroll',
       }),
     ).toBe(2);
   });
 
-  it('does not self-advance on non-scrolling syncs at the same scroll position', () => {
+  it('does not self-advance without a fresh advance budget', () => {
     expect(
       resolveVisibleHeadingIndex({
         currentIndex: 0,
         targetIndex: 3,
-        scrollChanged: false,
+        canAdvance: false,
         trigger: 'resource',
       }),
     ).toBe(0);
   });
 
-  it('boots from the absolute target and allows explicit ToC clicks to snap immediately', () => {
+  it('boots from the absolute target and allows explicit hash/ToC navigation to snap immediately', () => {
     expect(
       resolveVisibleHeadingIndex({
         currentIndex: -1,
         targetIndex: 3,
-        scrollChanged: false,
+        canAdvance: false,
         trigger: 'init',
       }),
     ).toBe(3);
@@ -74,7 +74,15 @@ describe('document toc sync helpers', () => {
       resolveVisibleHeadingIndex({
         currentIndex: 0,
         targetIndex: 3,
-        scrollChanged: false,
+        canAdvance: false,
+        trigger: 'hashchange',
+      }),
+    ).toBe(3);
+    expect(
+      resolveVisibleHeadingIndex({
+        currentIndex: 0,
+        targetIndex: 3,
+        canAdvance: false,
         trigger: 'toc-click',
       }),
     ).toBe(3);

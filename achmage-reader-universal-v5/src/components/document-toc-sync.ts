@@ -28,7 +28,7 @@ export type TocSyncTrigger =
 type ResolveVisibleHeadingIndexOptions = {
   currentIndex: number;
   targetIndex: number;
-  scrollChanged: boolean;
+  canAdvance: boolean;
   trigger: TocSyncTrigger;
 };
 
@@ -89,18 +89,18 @@ export const buildLiveHeadingSnapshot = (
 export const resolveVisibleHeadingIndex = ({
   currentIndex,
   targetIndex,
-  scrollChanged,
+  canAdvance,
   trigger,
 }: ResolveVisibleHeadingIndexOptions): number => {
   if (targetIndex < 0) {
     return currentIndex;
   }
 
-  if (trigger === 'toc-click') {
+  if (trigger === 'toc-click' || trigger === 'hashchange') {
     return targetIndex;
   }
 
-  if (currentIndex < 0) {
+  if (currentIndex < 0 || trigger === 'init') {
     return targetIndex;
   }
 
@@ -108,7 +108,7 @@ export const resolveVisibleHeadingIndex = ({
     return currentIndex;
   }
 
-  if (!scrollChanged) {
+  if (!canAdvance) {
     return currentIndex;
   }
 

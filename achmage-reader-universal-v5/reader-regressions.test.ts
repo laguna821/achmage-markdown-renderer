@@ -15,6 +15,10 @@ describe('reader regressions', () => {
     expect(source).toContain("window.addEventListener('toc:reveal-active'");
     expect(source).toContain("window.removeEventListener('toc:reveal-active'");
     expect(source).toContain("window.dispatchEvent(new Event('toc:reveal-active'))");
+    expect(source).toContain("window.addEventListener('keydown', onScrollKeyDown)");
+    expect(source).toContain("window.removeEventListener('keydown', onScrollKeyDown)");
+    expect(source).toContain('const SCROLL_BURST_IDLE_MS = 140;');
+    expect(source).toContain('pendingAdvanceBudget = 1;');
     expect(source).toContain("window.addEventListener('toc:activate-target'");
     expect(source).toContain("window.removeEventListener('toc:activate-target'");
     expect(source).toContain("new CustomEvent<string>('toc:activate-target'");
@@ -27,6 +31,10 @@ describe('reader regressions', () => {
     expect(source).toContain('absoluteTargetId');
     expect(source).toContain('visibleActiveId');
     expect(source).toContain('const scrollChanged = scrollTop !== lastScrollTop;');
+    expect(source).toContain("scrollElementIntoViewWithOffset(target, 'auto');");
+    expect(source).toContain("scrollElementIntoViewWithOffset(targetElement, 'smooth');");
+    expect(source).toContain("window.history.pushState(null, '', `#${encodeURIComponent(targetId)}`);");
+    expect(source).not.toContain("target.scrollIntoView({behavior: 'smooth', block: 'start'})");
     expect(source).toContain("const activate = (id: string): boolean => {");
     expect(source).toContain("const changed = activeId !== id;");
     expect(source).toContain("link.classList.toggle('is-active', link.getAttribute('data-toc-item') === id)");
@@ -60,5 +68,23 @@ describe('reader regressions', () => {
     expect(proseCss).toContain(":root[data-theme='dark'] .prose-block pre > code");
     expect(proseCss).toContain(":root[data-theme='light'] .prose-block pre > code");
     expect(blocksCss).toContain('.log-block pre > code');
+  });
+
+  it('keeps anchor jumps below the sticky header and dark surfaces close to the cmdspace reference', () => {
+    const baseCss = readSource('styles', 'base.css');
+    const blocksCss = readSource('styles', 'blocks.css');
+    const tokensCss = readSource('styles', 'tokens.css');
+    const darkBlocksSection =
+      blocksCss.match(/:root\[data-theme='dark'\] \.thesis-block,[\s\S]*?:root\[data-theme='dark'\] \.log-block \{[\s\S]*?\n\}/)?.[0] ??
+      '';
+
+    expect(baseCss).toContain('.doc-article :is(h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]) {');
+    expect(baseCss).toContain('scroll-margin-top: calc(5rem + var(--space-4));');
+    expect(tokensCss).toContain("--color-canvas: #030303;");
+    expect(tokensCss).toContain("--color-surface: #080a06;");
+    expect(tokensCss).toContain("--color-surface-muted: #0c0f09;");
+    expect(darkBlocksSection).toContain(":root[data-theme='dark'] .thesis-block,");
+    expect(darkBlocksSection).toContain('background: var(--color-surface);');
+    expect(darkBlocksSection).not.toContain('linear-gradient(180deg, rgba(204, 254, 3, 0.028), rgba(204, 254, 3, 0) 42%),');
   });
 });
