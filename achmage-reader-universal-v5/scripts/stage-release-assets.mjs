@@ -61,8 +61,9 @@ const writePortableReadme = (targetDir) => {
     "Achmage Markdown Renderer portable package",
     "",
     "1. Run achmage-reader-universal-v5.exe.",
-    "2. On Windows, Microsoft Edge WebView2 Runtime must be available.",
-    "3. The app reads your vault but does not modify Markdown files.",
+    "2. The portable package requires Microsoft Edge WebView2 Runtime to already be available.",
+    "3. The Windows MSI bundle includes the offline WebView2 installer path.",
+    "4. The app reads your vault but does not modify Markdown files.",
     "",
     `Version: ${version}`,
   ].join(os.EOL);
@@ -71,21 +72,25 @@ const writePortableReadme = (targetDir) => {
 };
 
 if (platform === "windows") {
-  const installerSource = findFirst(
-    path.join(root, "src-tauri", "target", "release", "bundle", "nsis"),
-    (filePath, entryName) => entryName.endsWith(".exe") && filePath.includes("-setup"),
+  const msiSource = findFirst(
+    path.join(root, "src-tauri", "target", "release", "bundle", "msi"),
+    (_, entryName) => entryName.endsWith(".msi"),
   );
   const exeSource = path.join(root, "src-tauri", "target", "release", "achmage-reader-universal-v5.exe");
 
-  if (!installerSource) {
-    throw new Error("Windows installer not found. Run `npm run package:windows` first.");
+  if (!msiSource) {
+    throw new Error("Windows MSI bundle not found. Run `npm run package:windows` first.");
   }
 
   if (!fs.existsSync(exeSource)) {
     throw new Error("Release executable not found. Run `npm run package:windows` first.");
   }
 
-  const installerTarget = path.join(
+  const msiTarget = path.join(
+    releaseDir,
+    `${productSlug}_${version}_windows_x64.msi`,
+  );
+  const legacySetupTarget = path.join(
     releaseDir,
     `${productSlug}_${version}_windows_x64_setup.exe`,
   );
@@ -95,12 +100,13 @@ if (platform === "windows") {
   );
   const portableStageDir = path.join(stagingRoot, "windows-portable");
 
-  removeIfExists(installerTarget);
+  removeIfExists(msiTarget);
+  removeIfExists(legacySetupTarget);
   removeIfExists(portableTarget);
   removeIfExists(portableStageDir);
   fs.mkdirSync(portableStageDir, { recursive: true });
 
-  fs.copyFileSync(installerSource, installerTarget);
+  fs.copyFileSync(msiSource, msiTarget);
   fs.copyFileSync(exeSource, path.join(portableStageDir, "achmage-reader-universal-v5.exe"));
   writePortableReadme(portableStageDir);
 

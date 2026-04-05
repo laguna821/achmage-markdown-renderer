@@ -4,7 +4,7 @@ Achmage Markdown Renderer is the desktop packaging line for the Markdown rendere
 
 ## Current scope
 
-- Windows installer: NSIS `.exe`
+- Windows installer: WiX `.msi`
 - Windows portable: `.zip`
 - macOS installer: `.dmg`
 - macOS portable: `.app.zip`
@@ -56,6 +56,12 @@ In the repository integration layout, the GitHub Actions workflow lives at the r
 
 ## Notes
 
-- This beta build is unsigned on both Windows and macOS.
+- This beta build is still unsigned on both Windows and macOS.
+- Windows release assets now include two public paths:
+  - WiX `.msi`
+  - portable `.zip`
+- The Windows `.msi` is built with Tauri's `offlineInstaller` WebView2 path, so a new PC does not need to download WebView2 during setup.
+- The Windows portable `.zip` still assumes WebView2 is already available on the machine.
+- Because the artifacts are unsigned, some new Windows PCs may still warn or block direct execution of internet-downloaded installers. In that case, the practical fallback is:
+  - try the portable `.zip` after unblocking the downloaded file in Windows Properties or via `Unblock-File`
 - macOS release builds use `universal-apple-darwin`.
-- Windows packaging intentionally targets `nsis` only to avoid the MSI prerelease-version restriction.

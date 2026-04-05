@@ -1,7 +1,7 @@
 {
   "name": "achmage-reader-universal-v5",
   "private": true,
-  "version": "5.0.0-beta.21",
+  "version": "5.0.0-beta.22",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "package:windows": "tauri build --bundles nsis --ci --no-sign",
+    "package:windows": "tauri build --bundles msi --ci --no-sign",
     "package:macos": "tauri build --target universal-apple-darwin --bundles app,dmg --ci --no-sign",
     "package:beta:desktop": "npm run package:windows",
     "stage:release-assets": "node scripts/stage-release-assets.mjs",

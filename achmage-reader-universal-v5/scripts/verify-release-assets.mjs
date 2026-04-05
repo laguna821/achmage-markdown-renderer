@@ -10,6 +10,8 @@ const tauriConfig = JSON.parse(
 const productName = tauriConfig.productName ?? "Achmage Markdown Renderer";
 const version = tauriConfig.version;
 const productSlug = productName.replace(/\s+/g, "-");
+const hasOfflineWebViewInstaller =
+  tauriConfig.bundle?.windows?.webviewInstallMode?.type === "offlineInstaller";
 const args = process.argv.slice(2);
 const platformFlagIndex = args.indexOf("--platform");
 const inferredPlatform =
@@ -44,16 +46,16 @@ cleanTemp();
 fs.mkdirSync(tempDir, { recursive: true });
 
 if (platform === "windows") {
-  const installerPath = path.join(
+  const msiPath = path.join(
     releaseDir,
-    `${productSlug}_${version}_windows_x64_setup.exe`,
+    `${productSlug}_${version}_windows_x64.msi`,
   );
   const portableZipPath = path.join(
     releaseDir,
     `${productSlug}_${version}_windows_x64_portable.zip`,
   );
 
-  ensureFile(installerPath, 1 * 1024 * 1024);
+  ensureFile(msiPath, hasOfflineWebViewInstaller ? 100 * 1024 * 1024 : 1 * 1024 * 1024);
   ensureFile(portableZipPath, 2 * 1024 * 1024);
 
   const unzipDir = path.join(tempDir, "windows-portable");
