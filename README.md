@@ -16,6 +16,13 @@
 - v5부터는 Windows `.exe` / `.zip`, macOS `.dmg` / `.app.zip` 형태의 설치형 배포를 기준으로 갑니다.
 - README 마지막 절반에는 "Achmage Markdown Renderer 기준으로 잘 읽히는 Markdown을 어떻게 써야 하는가"까지 문서 작성 가이드로 붙였습니다.
 
+## 빠른 설치 (윈도우 기준)
+https://github.com/laguna821/achmage-markdown-renderer/releases/tag/v5.0.0-beta.22
+
+- 위 주소에서 Achmage-Markdown-Renderer_5.0.0-beta.22_windows_x64.msi를 다운로드
+- PC에서 설치해서 실행
+- 내 옵시디언 볼트를 열기
+
 ## 이 프로젝트는 정확히 무엇인가
 
 Achmage Markdown Renderer는 Obsidian에 써둔 Markdown 문서를 로컬에서 바로 프론트엔드 화면으로 보여주는 뷰어입니다.
