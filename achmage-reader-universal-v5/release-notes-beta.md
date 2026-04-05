@@ -9,6 +9,8 @@ Achmage Markdown Renderer v5 Universal Beta
 
 Notes
 
+- Fix ToC active-link sync to follow the legacy v4 viewer behavior more closely, including mobile reveal alignment.
+- Remove extra inline-code highlight styling from fenced code blocks in both light and dark themes.
 - This beta release is unsigned on both Windows and macOS.
 - macOS artifacts are built as `universal-apple-darwin`.
 - The app is read-focused: it indexes and renders vault content but does not edit Markdown files.

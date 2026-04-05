@@ -187,14 +187,20 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
         element.removeEventListener('load', handler);
       });
     };
-  }, [doc.headings, doc.slug]);
+  }, [doc.headings, doc.slug, output]);
 
   useEffect(() => {
     if (!mobileTocOpen) {
       return;
     }
 
-    window.dispatchEvent(new Event('toc:reveal-active'));
+    const frame = window.requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('toc:reveal-active'));
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
   }, [mobileTocOpen]);
 
   useEffect(() => {
@@ -322,10 +328,26 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
               >
                 Contents
               </button>
-              <div className="mobile-toc__panel" data-mobile-toc-panel data-toc-scroll-root="mobile" hidden={!mobileTocOpen}>
+              <div
+                className="mobile-toc__panel"
+                data-mobile-toc-panel
+                data-toc-scroll-root="mobile"
+                hidden={!mobileTocOpen}
+                onClick={(event) => {
+                  const target = event.target as HTMLElement | null;
+                  if (target?.closest('a[data-toc-link]')) {
+                    setMobileTocOpen(false);
+                  }
+                }}
+              >
                 <div className="mobile-toc__header">
                   <span>{doc.meta.tocTitle}</span>
-                  <button type="button" data-mobile-toc-close onClick={() => setMobileTocOpen(false)}>
+                  <button
+                    type="button"
+                    data-mobile-toc-close
+                    aria-label="Close table of contents"
+                    onClick={() => setMobileTocOpen(false)}
+                  >
                     Close
                   </button>
                 </div>

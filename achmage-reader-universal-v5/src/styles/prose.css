@@ -478,3 +478,15 @@
   border-left-color: rgba(255, 109, 175, 0.72);
   color: #d3dbed;
 }
+
+.prose-block pre > code,
+:root[data-theme='light'] .prose-block pre > code,
+:root[data-theme='dark'] .prose-block pre > code,
+:root[data-theme='aurora'] .prose-block pre > code,
+:root[data-theme='cyber_sanctuary'] .prose-block pre > code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+}

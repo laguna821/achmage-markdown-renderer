@@ -745,3 +745,11 @@
     0 0 0 1px rgba(83, 221, 252, 0.07),
     0 24px 46px -36px rgba(0, 0, 0, 0.94);
 }
+
+.log-block pre > code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+}
