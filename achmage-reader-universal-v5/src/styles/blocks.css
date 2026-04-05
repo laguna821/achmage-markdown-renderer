@@ -484,9 +484,7 @@
 :root[data-theme='dark'] .doc-quote {
   border: 1px solid var(--color-border-strong);
   border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(204, 254, 3, 0.028), rgba(204, 254, 3, 0) 42%),
-    var(--color-surface);
+  background: var(--color-surface);
   box-shadow: 5px 5px 0 0 var(--color-paper-shadow);
   backdrop-filter: none;
 }
@@ -520,7 +518,7 @@
 :root[data-theme='dark'] .evidence-card__tag,
 :root[data-theme='dark'] .evidence-panel__tag {
   border-color: var(--color-border-strong);
-  background: var(--color-accent-soft);
+  background: var(--color-surface-muted);
   color: var(--color-accent);
 }
 
@@ -537,9 +535,7 @@
 :root[data-theme='dark'] .axis-table-card {
   border: 1px solid var(--color-border-strong);
   border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(204, 254, 3, 0.028), rgba(204, 254, 3, 0) 42%),
-    var(--color-surface);
+  background: var(--color-surface);
   box-shadow: 5px 5px 0 0 var(--color-paper-shadow);
 }
 
@@ -558,9 +554,7 @@
 
 :root[data-theme='dark'] .doc-quote {
   border-left-color: var(--color-accent);
-  background:
-    linear-gradient(180deg, rgba(204, 254, 3, 0.05), rgba(204, 254, 3, 0.02)),
-    var(--color-quote);
+  background: var(--color-surface-muted);
 }
 
 :root[data-theme='aurora'] .thesis-block,

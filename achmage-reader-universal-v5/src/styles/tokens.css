@@ -43,10 +43,10 @@
 }
 
 :root[data-theme='dark'] {
-  --color-canvas: #020302;
-  --color-surface: #070905;
-  --color-surface-muted: #0b0e08;
-  --color-surface-glass: rgba(2, 3, 2, 0.94);
+  --color-canvas: #020202;
+  --color-surface: #060606;
+  --color-surface-muted: #0b0b0b;
+  --color-surface-glass: rgba(2, 2, 2, 0.94);
   --color-ink: #f6faf2;
   --color-ink-soft: #dde5d5;
   --color-muted: #b7c0ac;
@@ -55,17 +55,17 @@
   --color-border-strong: #596909;
   --color-accent: #ccfe03;
   --color-accent-strong: #efff9b;
-  --color-accent-soft: rgba(204, 254, 3, 0.08);
-  --color-accent-tint: rgba(204, 254, 3, 0.16);
-  --color-ai: rgba(204, 254, 3, 0.1);
-  --color-code-bg: #0a0d07;
+  --color-accent-soft: rgba(204, 254, 3, 0.03);
+  --color-accent-tint: rgba(204, 254, 3, 0.08);
+  --color-ai: rgba(204, 254, 3, 0.04);
+  --color-code-bg: #090909;
   --color-code-border: #596909;
   --color-code-text: #eef5e7;
   --color-grid: rgba(89, 105, 9, 0.14);
-  --color-shadow: rgba(20, 26, 2, 0.34);
-  --color-shadow-strong: rgba(20, 26, 2, 0.66);
-  --color-paper-shadow: #141a02;
-  --color-paper-shadow-strong: #141a02;
+  --color-shadow: rgba(0, 0, 0, 0.4);
+  --color-shadow-strong: rgba(0, 0, 0, 0.72);
+  --color-paper-shadow: #090909;
+  --color-paper-shadow-strong: #090909;
   --color-focus-ring: rgba(204, 254, 3, 0.2);
 }
 

@@ -80,14 +80,18 @@ describe('reader regressions', () => {
 
     expect(baseCss).toContain('.doc-article :is(h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]) {');
     expect(baseCss).toContain('scroll-margin-top: calc(5rem + var(--space-4));');
-    expect(tokensCss).toContain("--color-canvas: #020302;");
-    expect(tokensCss).toContain("--color-surface: #070905;");
-    expect(tokensCss).toContain("--color-surface-muted: #0b0e08;");
+    expect(tokensCss).toContain("--color-canvas: #020202;");
+    expect(tokensCss).toContain("--color-surface: #060606;");
+    expect(tokensCss).toContain("--color-surface-muted: #0b0b0b;");
     expect(tokensCss).toContain("--color-border: #243004;");
     expect(tokensCss).toContain("--color-border-strong: #596909;");
     expect(darkBlocksSection).toContain(":root[data-theme='dark'] .thesis-block,");
-    expect(darkBlocksSection).toContain('linear-gradient(180deg, rgba(204, 254, 3, 0.028), rgba(204, 254, 3, 0) 42%),');
+    expect(darkBlocksSection).toContain('background: var(--color-surface);');
+    expect(darkBlocksSection).not.toContain('linear-gradient(180deg, rgba(204, 254, 3, 0.028), rgba(204, 254, 3, 0) 42%),');
     expect(baseCss).toContain(":root[data-theme='dark'] .doc-paper {");
-    expect(baseCss).toContain('linear-gradient(180deg, rgba(204, 254, 3, 0.022), rgba(204, 254, 3, 0) 16%),');
+    expect(baseCss).toContain('background: transparent;');
+    expect(baseCss).toContain(":root[data-theme='dark'] .home-hero {");
+    expect(baseCss).toContain(":root[data-theme='dark'] .doc-header__standfirst {");
+    expect(baseCss).toContain('background: var(--color-surface-muted);');
   });
 });
