@@ -15,17 +15,21 @@ describe('reader regressions', () => {
     expect(source).toContain("window.addEventListener('toc:reveal-active'");
     expect(source).toContain("window.removeEventListener('toc:reveal-active'");
     expect(source).toContain("window.dispatchEvent(new Event('toc:reveal-active'))");
-    expect(source).toContain('let activeIndex = -1;');
-    expect(source).toContain('let previousScrollTop = window.scrollY;');
-    expect(source).toContain('let pendingForceSnap = true;');
-    expect(source).toContain('resolveActiveHeadingIndex({');
+    expect(source).toContain("findActiveHeadingId(");
+    expect(source).not.toContain('resolveActiveHeadingIndex({');
+    expect(source).not.toContain('let activeIndex = -1;');
+    expect(source).not.toContain('let previousScrollTop = window.scrollY;');
+    expect(source).not.toContain('let pendingForceSnap = true;');
+    expect(source).not.toContain('needsAnotherFrame');
     expect(source).toMatch(
       /const tocLinks = Array\.from\(document\.querySelectorAll<HTMLAnchorElement>\('\[data-toc-item\]'\)\);[\s\S]*?\}, \[doc(?:\.headings)?, doc\.slug, output\]\);/,
     );
-    expect(source).toContain('const activate = (nextIndex: number) => {');
-    expect(source).toContain('const changed = activeIndex !== nextIndex;');
-    expect(source).toContain("link.classList.toggle('is-active', link.getAttribute('data-toc-item') === nextId)");
-    expect(source).toContain('if (resolved.needsAnotherFrame) {');
+    expect(source).toContain("const activate = (id: string) => {");
+    expect(source).toContain("const changed = activeId !== id;");
+    expect(source).toContain("link.classList.toggle('is-active', link.getAttribute('data-toc-item') === id)");
+    expect(source).toMatch(
+      /const activate = \(id: string\) => \{[\s\S]*?if \(changed\) \{[\s\S]*?link\.classList\.toggle\('is-active'[\s\S]*?\n\s+\}\n[\s\S]*?revealActiveLinks\(id\);[\s\S]*?\n\s+\};/,
+    );
   });
 
   it('uses the rail as the desktop ToC scroll root and keeps the ToC panel itself non-scrollable', () => {
