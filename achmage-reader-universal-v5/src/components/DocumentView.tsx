@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 
-import {findActiveHeadingId, getActiveHeadingLine, type NormalizedDoc, type OutputMode} from '../core/content';
+import {getActiveHeadingLine, resolveActiveHeadingIndex, type NormalizedDoc, type OutputMode} from '../core/content';
 import {initPretextEnhancer} from '../core/pretext/client';
 import {openExternal} from '../lib/bridge';
 
@@ -57,8 +57,10 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       return;
     }
 
-    let activeId = '';
+    let activeIndex = -1;
+    let previousScrollTop = window.scrollY;
     let frame = 0;
+    let pendingForceSnap = true;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const resourceListeners: Array<{element: HTMLElement; handler: () => void}> = [];
 
@@ -104,16 +106,17 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       });
     };
 
-    const activate = (id: string) => {
-      const changed = activeId !== id;
-      activeId = id;
+    const activate = (nextIndex: number) => {
+      const nextId = headings[nextIndex]?.id ?? '';
+      const changed = activeIndex !== nextIndex;
+      activeIndex = nextIndex;
 
-      if (changed) {
+      if (changed && nextId) {
         tocLinks.forEach((link) => {
-          link.classList.toggle('is-active', link.getAttribute('data-toc-item') === id);
+          link.classList.toggle('is-active', link.getAttribute('data-toc-item') === nextId);
         });
 
-        revealActiveLinks(id);
+        revealActiveLinks(nextId);
       }
     };
 
@@ -128,20 +131,35 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
         scrollTop,
         maxScroll,
       });
-      const nextActiveId = findActiveHeadingId(
-        headings.map((heading) => ({
-          id: heading.id,
-          top: heading.getBoundingClientRect().top,
-        })),
+      const headingPositions = headings.map((heading) => ({
+        id: heading.id,
+        top: heading.getBoundingClientRect().top,
+      }));
+      const resolved = resolveActiveHeadingIndex({
+        headings: headingPositions,
+        currentIndex: activeIndex,
+        previousScrollTop,
+        currentScrollTop: scrollTop,
         activationLine,
-      );
+        forceSnap: pendingForceSnap,
+        largeJumpThreshold: viewportHeight * 1.25,
+      });
 
-      if (nextActiveId) {
-        activate(nextActiveId);
+      pendingForceSnap = false;
+      previousScrollTop = scrollTop;
+
+      if (resolved.nextIndex >= 0) {
+        activate(resolved.nextIndex);
+      }
+
+      if (resolved.needsAnotherFrame) {
+        requestSync();
       }
     };
 
-    const requestSync = () => {
+    const requestSync = (forceSnap = false) => {
+      pendingForceSnap = pendingForceSnap || forceSnap;
+
       if (frame !== 0) {
         return;
       }
@@ -150,12 +168,19 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     };
 
     const onRevealActive = () => {
+      const activeId = headings[activeIndex]?.id ?? '';
       if (activeId) {
         revealActiveLinks(activeId);
         return;
       }
 
+      requestSync(true);
+    };
+    const onScroll = () => {
       requestSync();
+    };
+    const onForceSnapSync = () => {
+      requestSync(true);
     };
 
     article?.querySelectorAll<HTMLElement>('img, iframe, video').forEach((element) => {
@@ -166,22 +191,22 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       resourceListeners.push({element, handler});
     });
 
-    requestSync();
+    requestSync(true);
 
-    window.addEventListener('scroll', requestSync, {passive: true});
-    window.addEventListener('resize', requestSync);
-    window.addEventListener('hashchange', requestSync);
-    window.addEventListener('load', requestSync);
+    window.addEventListener('scroll', onScroll, {passive: true});
+    window.addEventListener('resize', onForceSnapSync);
+    window.addEventListener('hashchange', onForceSnapSync);
+    window.addEventListener('load', onForceSnapSync);
     window.addEventListener('toc:reveal-active', onRevealActive);
 
     return () => {
       if (frame !== 0) {
         window.cancelAnimationFrame(frame);
       }
-      window.removeEventListener('scroll', requestSync);
-      window.removeEventListener('resize', requestSync);
-      window.removeEventListener('hashchange', requestSync);
-      window.removeEventListener('load', requestSync);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onForceSnapSync);
+      window.removeEventListener('hashchange', onForceSnapSync);
+      window.removeEventListener('load', onForceSnapSync);
       window.removeEventListener('toc:reveal-active', onRevealActive);
       resourceListeners.forEach(({element, handler}) => {
         element.removeEventListener('load', handler);
