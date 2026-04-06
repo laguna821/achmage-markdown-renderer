@@ -1,22 +1,16 @@
 Achmage Markdown Renderer v5 Universal Beta
 
-- Windows installer `.exe`
+- Windows installer `.msi`
 - Windows portable `.zip`
-- macOS installer `.dmg`
-- macOS portable `.app.zip`
 - `release-manifest.json`
 - `SHA256SUMS.txt`
 
 Notes
 
-- Windows release assets now ship as two public variants: WiX `.msi` and portable `.zip`.
-- Windows MSI installers now use Tauri's offline WebView2 installer path so a fresh PC does not need to download WebView2 during setup.
+- Windows release assets ship as two public variants: WiX `.msi` and portable `.zip`.
+- Windows MSI installers use Tauri's offline WebView2 installer path so a fresh PC does not need to download WebView2 during setup.
 - Portable `.zip` remains available as a fallback path when the installer is blocked or WebView2 is already present.
-- Restore ToC active-heading sync to the exact `cmd v4` model and remove the beta.15 self-advancing progression layer.
-- Keep the desktop ToC on the single rail scroll root so active items follow the article without the panel fighting its own scroll container.
-- Revert desktop ToC tracking to the single-scroll-root `cmd v4` model so active links follow the article without abrupt jumps.
-- Fix ToC active-link sync to follow the legacy v4 viewer behavior more closely, including mobile reveal alignment.
-- Remove extra inline-code highlight styling from fenced code blocks in both light and dark themes.
-- This beta release is unsigned on both Windows and macOS.
-- macOS artifacts are built as `universal-apple-darwin`.
+- Fix markdown link activation so Obsidian note links, in-document anchors, and external markdown links route reliably from the reader.
+- Fix thesis, callout, and doc-quote boxes so longer titles and bodies wrap and grow instead of clipping or spilling outside the frame.
+- This beta release is unsigned on Windows.
 - The app is read-focused: it indexes and renders vault content but does not edit Markdown files.

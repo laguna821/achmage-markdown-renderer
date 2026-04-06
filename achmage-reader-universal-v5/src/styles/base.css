@@ -69,11 +69,17 @@ samp {
 
 .pretext-rich-shell {
   position: relative;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
 }
 
 .pretext-rich-source {
   position: relative;
   z-index: 1;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .pretext-rich-source > :first-child {
@@ -90,15 +96,21 @@ samp {
   z-index: 2;
   pointer-events: none;
   color: inherit;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .pretext-rich-line {
   display: block;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .pretext-rich-segment {
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .pretext-rich-segment--strong {
@@ -3334,7 +3346,7 @@ samp {
 
 :root[data-theme='cyber_sanctuary'] .doc-article {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   padding: clamp(1.3rem, 2vw, 1.8rem);
   border-radius: 1.6rem;
 }

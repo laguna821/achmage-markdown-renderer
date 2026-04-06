@@ -186,7 +186,7 @@ function CalloutBlock({calloutType, title, content}: {calloutType: string; title
         <span className="callout-block__icon" aria-hidden="true">
           {iconMap[normalizedType] ?? 'i'}
         </span>
-        <span>{title}</span>
+        <span className="callout-block__title-text">{title}</span>
       </div>
       <HtmlBlock html={content} className="callout-block__body prose-block" />
     </aside>

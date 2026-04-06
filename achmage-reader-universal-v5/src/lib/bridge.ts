@@ -104,12 +104,27 @@ export const readAssetDataUrl = async (
 };
 
 export const openExternal = async (url: string): Promise<void> => {
+  const openInBrowser = (): boolean => {
+    if (typeof window !== 'undefined' && typeof window.open === 'function') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return true;
+    }
+
+    return false;
+  };
+
   if (!isTauriRuntime()) {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openInBrowser();
     return;
   }
 
-  await openUrl(url);
+  try {
+    await openUrl(url);
+  } catch (error) {
+    if (!openInBrowser()) {
+      throw error;
+    }
+  }
 };
 
 export const withRecentVault = (settings: AppSettings, rootPath: string): AppSettings => {

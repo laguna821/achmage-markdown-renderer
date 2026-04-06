@@ -6,6 +6,7 @@
   margin: 0 0 var(--space-5);
   min-width: 0;
   max-width: 100%;
+  overflow: visible;
 }
 
 .thesis-block {
@@ -47,6 +48,25 @@
 .callout-block__body,
 .doc-quote__content-shell {
   display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.thesis-block__content,
+.callout-block__body,
+.doc-quote__content {
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.thesis-block__content > *,
+.callout-block__body > *,
+.doc-quote__content > * {
   min-width: 0;
   max-width: 100%;
 }
@@ -83,13 +103,22 @@
 
 .callout-block__title {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 0.55rem;
   margin: 0 0 var(--space-3);
+  min-width: 0;
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 700;
   color: var(--color-ink);
+}
+
+.callout-block__title-text {
+  min-width: 0;
+  flex: 1 1 12rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .callout-block__icon {
@@ -105,7 +134,8 @@
   font-family: var(--font-mono);
   font-size: 0.72rem;
   line-height: 1;
-  flex: none;
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
 }
 
 .callout-block__body > :last-child {

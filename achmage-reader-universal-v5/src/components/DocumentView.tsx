@@ -11,6 +11,7 @@ import {
   type TocDebugHeading,
   type TocSyncTrigger,
 } from './document-toc-sync';
+import {resolveArticleLinkAction} from './document-links';
 import {DocRail} from './DocRail';
 import {DocumentHeader} from './DocumentHeader';
 import {DocumentSections} from './DocumentSections';
@@ -36,7 +37,6 @@ declare global {
   }
 }
 
-const isDocRouteHref = (href: string): boolean => href.startsWith('?view=');
 const SCROLL_BURST_IDLE_MS = 140;
 const ANCHOR_SCROLL_GAP = 16;
 
@@ -451,9 +451,13 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
   }, [doc.slug, output]);
 
   const onClickCapture = (event: React.MouseEvent<HTMLElement>) => {
-    const target = event.target as HTMLElement | null;
-    const anchor = target?.closest('a');
-    if (!anchor) {
+    const target = event.target instanceof Element ? event.target : null;
+    const anchor = target?.closest<HTMLAnchorElement>('a[href]');
+    if (!anchor || event.defaultPrevented || event.button !== 0) {
+      return;
+    }
+
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || anchor.hasAttribute('download')) {
       return;
     }
 
@@ -462,38 +466,35 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
       return;
     }
 
-    if (/^(https?:|mailto:)/i.test(href)) {
-      event.preventDefault();
-      void openExternal(href);
+    const action = resolveArticleLinkAction(href, window.location.href);
+    if (!action) {
       return;
     }
 
-    if (isDocRouteHref(href)) {
+    if (action.type === 'external') {
       event.preventDefault();
-      const url = new URL(href, window.location.href);
-      const nextOutput = url.searchParams.get('view');
-      const nextSlug = url.searchParams.get('doc');
-      const nextAnchor = url.hash ? url.hash.slice(1) : undefined;
-      if (nextOutput === 'reader' || nextOutput === 'stage' || nextOutput === 'newsletter') {
-        if (nextSlug) {
-          onNavigateDoc(nextOutput, nextSlug, nextAnchor);
-        }
-      }
+      void openExternal(action.href);
+      return;
     }
 
-    if (href.startsWith('#')) {
-      const targetId = decodeURIComponent(href.slice(1));
-      const targetElement = document.getElementById(targetId);
+    if (action.type === 'doc-route') {
+      event.preventDefault();
+      onNavigateDoc(action.output, action.slug, action.anchor);
+      return;
+    }
+
+    if (action.type === 'hash') {
+      const targetElement = document.getElementById(action.id);
       if (!targetElement) {
         return;
       }
 
       event.preventDefault();
       scrollElementIntoViewWithOffset(targetElement, 'smooth');
-      window.history.pushState(null, '', `#${encodeURIComponent(targetId)}`);
+      window.history.pushState(null, '', `#${encodeURIComponent(action.id)}`);
 
       if (anchor.matches('a[data-toc-item]')) {
-        window.dispatchEvent(new CustomEvent<string>('toc:activate-target', {detail: targetId}));
+        window.dispatchEvent(new CustomEvent<string>('toc:activate-target', {detail: action.id}));
       }
     }
   };

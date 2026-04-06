@@ -33,8 +33,11 @@ describe('reader regressions', () => {
     expect(source).toContain('const scrollChanged = scrollTop !== lastScrollTop;');
     expect(source).toContain("scrollElementIntoViewWithOffset(target, 'auto');");
     expect(source).toContain("scrollElementIntoViewWithOffset(targetElement, 'smooth');");
-    expect(source).toContain("window.history.pushState(null, '', `#${encodeURIComponent(targetId)}`);");
+    expect(source).toContain("window.history.pushState(null, '', `#${encodeURIComponent(action.id)}`);");
     expect(source).not.toContain("target.scrollIntoView({behavior: 'smooth', block: 'start'})");
+    expect(source).toContain("const anchor = target?.closest<HTMLAnchorElement>('a[href]');");
+    expect(source).toContain('const action = resolveArticleLinkAction(href, window.location.href);');
+    expect(source).not.toContain("const isDocRouteHref = (href: string): boolean => href.startsWith('?view=');");
     expect(source).toContain("const activate = (id: string): boolean => {");
     expect(source).toContain("const changed = activeId !== id;");
     expect(source).toContain("link.classList.toggle('is-active', link.getAttribute('data-toc-item') === id)");
@@ -44,6 +47,25 @@ describe('reader regressions', () => {
     expect(source).toContain("const onRevealActive = () => {");
     expect(source).toContain("revealActiveLinks(activeId, true);");
     expect(source).not.toContain('needsAnotherFrame');
+  });
+
+  it('keeps callout, thesis, and quote boxes able to wrap and grow with content', () => {
+    const blockRenderer = readSource('components', 'BlockRenderer.tsx');
+    const baseCss = readSource('styles', 'base.css');
+    const blocksCss = readSource('styles', 'blocks.css');
+    const cyberArticleBlock =
+      baseCss.match(/:root\[data-theme='cyber_sanctuary'\] \.doc-article \{([\s\S]*?)\n\}/)?.[1] ?? '';
+
+    expect(blockRenderer).toContain('className="callout-block__title-text"');
+    expect(blocksCss).toContain('.callout-block__title-text {');
+    expect(blocksCss).toContain('flex-wrap: wrap;');
+    expect(blocksCss).toContain('align-items: flex-start;');
+    expect(blocksCss).toContain('overflow: visible;');
+    expect(blocksCss).toContain('overflow-wrap: anywhere;');
+    expect(baseCss).toContain('.pretext-rich-shell {');
+    expect(baseCss).toContain('.pretext-rich-line {');
+    expect(cyberArticleBlock).toContain('overflow: visible;');
+    expect(cyberArticleBlock).not.toContain('overflow: hidden;');
   });
 
   it('uses the rail as the desktop ToC scroll root and keeps the ToC panel itself non-scrollable', () => {
