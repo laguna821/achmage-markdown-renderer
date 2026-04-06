@@ -11,7 +11,7 @@ import {
   type TocDebugHeading,
   type TocSyncTrigger,
 } from './document-toc-sync';
-import {resolveArticleLinkAction} from './document-links';
+import {findClosestArticleAnchor, resolveArticleLinkAction} from './document-links';
 import {DocRail} from './DocRail';
 import {DocumentHeader} from './DocumentHeader';
 import {DocumentSections} from './DocumentSections';
@@ -451,8 +451,8 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
   }, [doc.slug, output]);
 
   const onClickCapture = (event: React.MouseEvent<HTMLElement>) => {
-    const target = event.target instanceof Element ? event.target : null;
-    const anchor = target?.closest<HTMLAnchorElement>('a[href]');
+    const composedPath = typeof event.nativeEvent.composedPath === 'function' ? event.nativeEvent.composedPath() : undefined;
+    const anchor = findClosestArticleAnchor(event.target, composedPath);
     if (!anchor || event.defaultPrevented || event.button !== 0) {
       return;
     }

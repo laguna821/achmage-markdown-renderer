@@ -12,6 +12,7 @@ const readSource = (...segments: string[]) =>
 describe('reader regressions', () => {
   it('keeps the ToC sync effect aligned with live article headings and explicit reveal events', () => {
     const source = readSource('components', 'DocumentView.tsx');
+    const linkSource = readSource('components', 'document-links.ts');
     expect(source).toContain("window.addEventListener('toc:reveal-active'");
     expect(source).toContain("window.removeEventListener('toc:reveal-active'");
     expect(source).toContain("window.dispatchEvent(new Event('toc:reveal-active'))");
@@ -35,8 +36,12 @@ describe('reader regressions', () => {
     expect(source).toContain("scrollElementIntoViewWithOffset(targetElement, 'smooth');");
     expect(source).toContain("window.history.pushState(null, '', `#${encodeURIComponent(action.id)}`);");
     expect(source).not.toContain("target.scrollIntoView({behavior: 'smooth', block: 'start'})");
-    expect(source).toContain("const anchor = target?.closest<HTMLAnchorElement>('a[href]');");
+    expect(source).toContain("const anchor = findClosestArticleAnchor(event.target, composedPath);");
+    expect(source).toContain("const composedPath = typeof event.nativeEvent.composedPath === 'function' ? event.nativeEvent.composedPath() : undefined;");
     expect(source).toContain('const action = resolveArticleLinkAction(href, window.location.href);');
+    expect(linkSource).toContain('export const findClosestArticleAnchor = (');
+    expect(linkSource).toContain('if (hasParentElement(value) && value.parentElement && hasClosest(value.parentElement)) {');
+    expect(linkSource).toContain("const closest = value.parentElement.closest('a[href]');");
     expect(source).not.toContain("const isDocRouteHref = (href: string): boolean => href.startsWith('?view=');");
     expect(source).toContain("const activate = (id: string): boolean => {");
     expect(source).toContain("const changed = activeId !== id;");

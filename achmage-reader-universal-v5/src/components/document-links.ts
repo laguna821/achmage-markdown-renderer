@@ -18,6 +18,66 @@ const safeParseUrl = (href: string, currentHref?: string): URL | null => {
   }
 };
 
+const hasClosest = (value: unknown): value is {closest: (selector: string) => unknown} =>
+  typeof value === 'object' && value !== null && 'closest' in value && typeof value.closest === 'function';
+
+const hasParentElement = (value: unknown): value is {parentElement: {closest: (selector: string) => unknown} | null} =>
+  typeof value === 'object' && value !== null && 'parentElement' in value;
+
+const isAnchorElement = (value: unknown): value is HTMLAnchorElement =>
+  typeof value === 'object' &&
+  value !== null &&
+  'tagName' in value &&
+  typeof value.tagName === 'string' &&
+  value.tagName.toLowerCase() === 'a' &&
+  'getAttribute' in value &&
+  typeof value.getAttribute === 'function';
+
+const resolveAnchorCandidate = (value: unknown): HTMLAnchorElement | null => {
+  if (isAnchorElement(value)) {
+    return value;
+  }
+
+  if (hasClosest(value)) {
+    const closest = value.closest('a[href]');
+    if (isAnchorElement(closest)) {
+      return closest;
+    }
+  }
+
+  if (hasParentElement(value) && value.parentElement && hasClosest(value.parentElement)) {
+    const closest = value.parentElement.closest('a[href]');
+    if (isAnchorElement(closest)) {
+      return closest;
+    }
+  }
+
+  return null;
+};
+
+export const findClosestArticleAnchor = (
+  target: EventTarget | null,
+  composedPath?: readonly EventTarget[],
+): HTMLAnchorElement | null => {
+  const directMatch = resolveAnchorCandidate(target);
+  if (directMatch) {
+    return directMatch;
+  }
+
+  if (!composedPath) {
+    return null;
+  }
+
+  for (const entry of composedPath) {
+    const candidate = resolveAnchorCandidate(entry);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return null;
+};
+
 export const resolveArticleLinkAction = (href: string, currentHref: string): ArticleLinkAction | null => {
   const trimmedHref = href.trim();
   if (!trimmedHref) {
