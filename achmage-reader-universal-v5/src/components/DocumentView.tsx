@@ -11,7 +11,7 @@ import {
   type TocDebugHeading,
   type TocSyncTrigger,
 } from './document-toc-sync';
-import {findClosestArticleAnchor, resolveArticleLinkAction} from './document-links';
+import {handleArticleLinkClick, type ArticleLinkDebugEntry} from './document-links';
 import {DocRail} from './DocRail';
 import {DocumentHeader} from './DocumentHeader';
 import {DocumentSections} from './DocumentSections';
@@ -34,6 +34,7 @@ declare global {
       trigger: TocSyncTrigger;
       headings: TocDebugHeading[];
     };
+    __ACHMAGE_LINK_DEBUG__?: ArticleLinkDebugEntry[];
   }
 }
 
@@ -68,6 +69,50 @@ const scrollElementIntoViewWithOffset = (
 
 export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
   const [mobileTocOpen, setMobileTocOpen] = useState(false);
+
+  useEffect(() => {
+    const article = document.querySelector<HTMLElement>('.doc-article');
+    if (!article) {
+      return;
+    }
+
+    const recordLinkDebug = (entry: ArticleLinkDebugEntry) => {
+      if (!import.meta.env.DEV) {
+        return;
+      }
+
+      const nextEntries = [...(window.__ACHMAGE_LINK_DEBUG__ ?? []), entry];
+      window.__ACHMAGE_LINK_DEBUG__ = nextEntries.slice(-30);
+    };
+
+    const onArticleClick = (event: MouseEvent) => {
+      void handleArticleLinkClick({
+        event,
+        currentHref: window.location.href,
+        onDocRoute: (nextOutput, slug, anchor) => {
+          onNavigateDoc(nextOutput, slug, anchor);
+        },
+        onHash: (id, anchor) => {
+          scrollElementIntoViewWithOffset(document.getElementById(id) as HTMLElement, 'smooth');
+          window.history.pushState(null, '', `#${encodeURIComponent(id)}`);
+
+          if (anchor.matches('a[data-toc-item]')) {
+            window.dispatchEvent(new CustomEvent<string>('toc:activate-target', {detail: id}));
+          }
+        },
+        onExternal: (href) => {
+          void openExternal(href);
+        },
+        onDebug: recordLinkDebug,
+      });
+    };
+
+    article.addEventListener('click', onArticleClick, true);
+
+    return () => {
+      article.removeEventListener('click', onArticleClick, true);
+    };
+  }, [doc.slug, onNavigateDoc, output]);
 
   useEffect(() => {
     if (output === 'reader' || output === 'stage' || output === 'newsletter') {
@@ -450,111 +495,60 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     };
   }, [doc.slug, output]);
 
-  const onClickCapture = (event: React.MouseEvent<HTMLElement>) => {
-    const composedPath = typeof event.nativeEvent.composedPath === 'function' ? event.nativeEvent.composedPath() : undefined;
-    const anchor = findClosestArticleAnchor(event.target, composedPath);
-    if (!anchor || event.defaultPrevented || event.button !== 0) {
-      return;
-    }
-
-    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || anchor.hasAttribute('download')) {
-      return;
-    }
-
-    const href = anchor.getAttribute('href') ?? '';
-    if (!href) {
-      return;
-    }
-
-    const action = resolveArticleLinkAction(href, window.location.href);
-    if (!action) {
-      return;
-    }
-
-    if (action.type === 'external') {
-      event.preventDefault();
-      void openExternal(action.href);
-      return;
-    }
-
-    if (action.type === 'doc-route') {
-      event.preventDefault();
-      onNavigateDoc(action.output, action.slug, action.anchor);
-      return;
-    }
-
-    if (action.type === 'hash') {
-      const targetElement = document.getElementById(action.id);
-      if (!targetElement) {
-        return;
-      }
-
-      event.preventDefault();
-      scrollElementIntoViewWithOffset(targetElement, 'smooth');
-      window.history.pushState(null, '', `#${encodeURIComponent(action.id)}`);
-
-      if (anchor.matches('a[data-toc-item]')) {
-        window.dispatchEvent(new CustomEvent<string>('toc:activate-target', {detail: action.id}));
-      }
-    }
-  };
-
   return (
-    <div onClickCapture={onClickCapture}>
-      <div className={`layout-shell${output === 'stage' ? ' layout-shell--stage' : ''}${output === 'newsletter' ? ' layout-shell--newsletter' : ''}`}>
-        <div className={`layout-shell__rail${output === 'newsletter' ? ' layout-shell__rail--newsletter' : ''}`}>
-          <DocRail doc={doc} />
-        </div>
-        <main
-          className={`layout-shell__main${output === 'newsletter' ? ' layout-shell__main--newsletter' : ''}`}
-          data-pretext-stage-hero={output === 'stage' ? 'true' : undefined}
-          data-pretext-max-viewport-ratio={output === 'stage' ? '0.92' : undefined}
-          data-stage-fit={output === 'stage' ? 'stage-fit-ok' : undefined}
-        >
-          {doc.headings.length > 0 ? (
-            <div className="mobile-toc">
-              <button
-                className="mobile-toc__trigger"
-                type="button"
-                data-mobile-toc-trigger
-                aria-expanded={mobileTocOpen}
-                onClick={() => setMobileTocOpen((current) => !current)}
-              >
-                Contents
-              </button>
-              <div
-                className="mobile-toc__panel"
-                data-mobile-toc-panel
-                data-toc-scroll-root="mobile"
-                hidden={!mobileTocOpen}
-                onClick={(event) => {
-                  const target = event.target as HTMLElement | null;
-                  if (target?.closest('a[data-toc-item]')) {
-                    setMobileTocOpen(false);
-                  }
-                }}
-              >
-                <div className="mobile-toc__header">
-                  <span>{doc.meta.tocTitle}</span>
-                  <button
-                    type="button"
-                    data-mobile-toc-close
-                    aria-label="Close table of contents"
-                    onClick={() => setMobileTocOpen(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-                <TocList items={doc.headings} />
-              </div>
-            </div>
-          ) : null}
-          <div className={`doc-paper doc-paper--${output}`}>
-            <DocumentHeader doc={doc} variant={output} />
-            <DocumentSections doc={doc} variant={output} />
-          </div>
-        </main>
+    <div className={`layout-shell${output === 'stage' ? ' layout-shell--stage' : ''}${output === 'newsletter' ? ' layout-shell--newsletter' : ''}`}>
+      <div className={`layout-shell__rail${output === 'newsletter' ? ' layout-shell__rail--newsletter' : ''}`}>
+        <DocRail doc={doc} />
       </div>
+      <main
+        className={`layout-shell__main${output === 'newsletter' ? ' layout-shell__main--newsletter' : ''}`}
+        data-pretext-stage-hero={output === 'stage' ? 'true' : undefined}
+        data-pretext-max-viewport-ratio={output === 'stage' ? '0.92' : undefined}
+        data-stage-fit={output === 'stage' ? 'stage-fit-ok' : undefined}
+      >
+        {doc.headings.length > 0 ? (
+          <div className="mobile-toc">
+            <button
+              className="mobile-toc__trigger"
+              type="button"
+              data-mobile-toc-trigger
+              aria-expanded={mobileTocOpen}
+              onClick={() => setMobileTocOpen((current) => !current)}
+            >
+              Contents
+            </button>
+            <div
+              className="mobile-toc__panel"
+              data-mobile-toc-panel
+              data-toc-scroll-root="mobile"
+              hidden={!mobileTocOpen}
+              onClick={(event) => {
+                const target = event.target as HTMLElement | null;
+                if (target?.closest('a[data-toc-item]')) {
+                  setMobileTocOpen(false);
+                }
+              }}
+            >
+              <div className="mobile-toc__header">
+                <span>{doc.meta.tocTitle}</span>
+                <button
+                  type="button"
+                  data-mobile-toc-close
+                  aria-label="Close table of contents"
+                  onClick={() => setMobileTocOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+              <TocList items={doc.headings} />
+            </div>
+          </div>
+        ) : null}
+        <div className={`doc-paper doc-paper--${output}`}>
+          <DocumentHeader doc={doc} variant={output} />
+          <DocumentSections doc={doc} variant={output} />
+        </div>
+      </main>
     </div>
   );
 }

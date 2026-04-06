@@ -5,6 +5,23 @@ export type ArticleLinkAction =
   | {type: 'hash'; id: string}
   | {type: 'doc-route'; output: OutputMode; slug: string; anchor?: string};
 
+export type ArticleLinkDebugEntry = {
+  targetKind: string | null;
+  href: string | null;
+  actionType: ArticleLinkAction['type'] | 'unresolved' | null;
+  prevented: boolean;
+  slug?: string;
+};
+
+type HandleArticleLinkClickOptions = {
+  event: MouseEvent;
+  currentHref: string;
+  onDocRoute: (output: OutputMode, slug: string, anchor?: string) => void;
+  onHash: (id: string, anchor: HTMLAnchorElement) => void;
+  onExternal: (href: string) => void;
+  onDebug?: (entry: ArticleLinkDebugEntry) => void;
+};
+
 const EXTERNAL_PROTOCOL_PATTERN = /^(https?:|mailto:)/i;
 
 const isOutputMode = (value: string | null): value is OutputMode =>
@@ -53,6 +70,22 @@ const resolveAnchorCandidate = (value: unknown): HTMLAnchorElement | null => {
   }
 
   return null;
+};
+
+const getTargetKind = (value: EventTarget | null): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof Text !== 'undefined' && value instanceof Text) {
+    return '#text';
+  }
+
+  if (typeof Element !== 'undefined' && value instanceof Element) {
+    return value.tagName.toLowerCase();
+  }
+
+  return value.constructor?.name ?? typeof value;
 };
 
 export const findClosestArticleAnchor = (
@@ -131,4 +164,80 @@ export const resolveArticleLinkAction = (href: string, currentHref: string): Art
   }
 
   return null;
+};
+
+export const handleArticleLinkClick = ({
+  event,
+  currentHref,
+  onDocRoute,
+  onHash,
+  onExternal,
+  onDebug,
+}: HandleArticleLinkClickOptions): boolean => {
+  const composedPath = typeof event.composedPath === 'function' ? event.composedPath() : undefined;
+  const anchor = findClosestArticleAnchor(event.target, composedPath);
+  const debugEntry: ArticleLinkDebugEntry = {
+    targetKind: getTargetKind(event.target),
+    href: anchor?.getAttribute('href') ?? null,
+    actionType: null,
+    prevented: false,
+  };
+
+  if (!anchor || event.defaultPrevented || event.button !== 0) {
+    onDebug?.(debugEntry);
+    return false;
+  }
+
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || anchor.hasAttribute('download')) {
+    onDebug?.(debugEntry);
+    return false;
+  }
+
+  const href = anchor.getAttribute('href') ?? '';
+  if (!href) {
+    onDebug?.(debugEntry);
+    return false;
+  }
+
+  const action = resolveArticleLinkAction(href, currentHref);
+  if (!action) {
+    onDebug?.({
+      ...debugEntry,
+      href,
+      actionType: 'unresolved',
+    });
+    return false;
+  }
+
+  debugEntry.href = href;
+  debugEntry.actionType = action.type;
+
+  if (action.type === 'external') {
+    event.preventDefault();
+    debugEntry.prevented = event.defaultPrevented;
+    onDebug?.(debugEntry);
+    onExternal(action.href);
+    return true;
+  }
+
+  if (action.type === 'doc-route') {
+    event.preventDefault();
+    debugEntry.prevented = event.defaultPrevented;
+    debugEntry.slug = action.slug;
+    onDebug?.(debugEntry);
+    onDocRoute(action.output, action.slug, action.anchor);
+    return true;
+  }
+
+  const targetElement = document.getElementById(action.id);
+  if (!targetElement) {
+    onDebug?.(debugEntry);
+    return false;
+  }
+
+  event.preventDefault();
+  debugEntry.prevented = event.defaultPrevented;
+  onDebug?.(debugEntry);
+  onHash(action.id, anchor);
+  return true;
 };
