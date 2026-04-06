@@ -57,11 +57,16 @@ describe('reader regressions', () => {
       baseCss.match(/:root\[data-theme='cyber_sanctuary'\] \.doc-article \{([\s\S]*?)\n\}/)?.[1] ?? '';
 
     expect(blockRenderer).toContain('className="callout-block__title-text"');
+    expect(blockRenderer).toMatch(/<HtmlBlock\s+html=\{content\}\s+className="thesis-block__content prose-block"\s*\/>/);
+    expect(blockRenderer).toMatch(/<HtmlBlock\s+html=\{content\}\s+className="doc-quote__content prose-block"\s*\/>/);
+    expect(blockRenderer).not.toContain('overlayClassName="thesis-block__content"');
+    expect(blockRenderer).not.toContain('overlayClassName="doc-quote__content"');
     expect(blocksCss).toContain('.callout-block__title-text {');
     expect(blocksCss).toContain('flex-wrap: wrap;');
     expect(blocksCss).toContain('align-items: flex-start;');
     expect(blocksCss).toContain('overflow: visible;');
     expect(blocksCss).toContain('overflow-wrap: anywhere;');
+    expect(blocksCss).toContain('.thesis-block__content > :last-child,');
     expect(baseCss).toContain('.pretext-rich-shell {');
     expect(baseCss).toContain('.pretext-rich-line {');
     expect(cyberArticleBlock).toContain('overflow: visible;');

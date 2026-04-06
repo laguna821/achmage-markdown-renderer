@@ -57,6 +57,7 @@
 .thesis-block__content,
 .callout-block__body,
 .doc-quote__content {
+  display: block;
   min-width: 0;
   max-width: 100%;
   overflow: visible;
@@ -69,6 +70,16 @@
 .doc-quote__content > * {
   min-width: 0;
   max-width: 100%;
+}
+
+.thesis-block__content > :first-child,
+.doc-quote__content > :first-child {
+  margin-top: 0;
+}
+
+.thesis-block__content > :last-child,
+.doc-quote__content > :last-child {
+  margin-bottom: 0;
 }
 
 .callout-block {

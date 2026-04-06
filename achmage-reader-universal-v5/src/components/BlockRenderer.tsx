@@ -1,8 +1,8 @@
 import {useEffect, useMemo, useState} from 'react';
 
-import {resolveAxisTableLayoutHints, resolveBlockLayoutHints, buildPretextTargetAttributes, getHintByKind} from '../core/pretext/hints';
+import {resolveAxisTableLayoutHints, resolveBlockLayoutHints, buildPretextTargetAttributes} from '../core/pretext/hints';
 import {resolveMediaEmbed} from '../core/content/media';
-import type {DocType, NormalizedBlock, NormalizedDoc, RichBlockContent} from '../core/content';
+import type {NormalizedBlock, NormalizedDoc} from '../core/content';
 import {readAssetDataUrl} from '../lib/bridge';
 
 type Variant = 'reader' | 'stage' | 'newsletter';
@@ -24,130 +24,19 @@ function HtmlBlock({html, className, ...attrs}: HtmlProps) {
   return <div className={className} {...attrs} dangerouslySetInnerHTML={{__html: html}} />;
 }
 
-function RichHtmlBlock({
-  html,
-  rich,
-  className,
-  overlayClassName,
-  attrs,
-}: {
-  html: string;
-  rich?: RichBlockContent;
-  className: string;
-  overlayClassName: string;
-  attrs?: Record<string, string | undefined>;
-}) {
-  if (!rich) {
-    return <HtmlBlock html={html} className={className} {...(attrs ?? {})} />;
-  }
-
-  return (
-    <div className={`${className}-shell pretext-rich-shell`}>
-      <div
-        className={`${className} pretext-rich-source`}
-        data-pretext-manual-lines="true"
-        data-pretext-rich-source="true"
-        data-pretext-rich={JSON.stringify(rich)}
-        {...(attrs ?? {})}
-        dangerouslySetInnerHTML={{__html: html}}
-      />
-      <div className={`${overlayClassName} pretext-rich-overlay`} data-pretext-rich-overlay="true" aria-hidden="true" />
-    </div>
-  );
-}
-
-function ThesisBlock({
-  content,
-  rich,
-  variant,
-  docType,
-  doc,
-  sectionId,
-  blockIndex,
-}: {
-  content: string;
-  rich?: RichBlockContent;
-  variant: Variant;
-  docType: DocType;
-  doc: NormalizedDoc;
-  sectionId: string;
-  blockIndex: number;
-}) {
-  const hints = resolveBlockLayoutHints('thesis', variant, {docType, pretext: doc.meta.pretext});
-  const primaryHint = getHintByKind(hints, 'shrink-wrap');
-  const balanceHint = getHintByKind(hints, 'balance-title');
-  const pretextAttributes = primaryHint
-    ? buildPretextTargetAttributes({
-        slug: doc.slug,
-        hint: {
-          ...primaryHint,
-          minLines: balanceHint?.minLines ?? primaryHint.minLines,
-          maxLines: balanceHint?.maxLines ?? primaryHint.maxLines,
-          preferredLines: balanceHint?.preferredLines ?? primaryHint.preferredLines,
-        },
-        keySuffix: `section:${sectionId}:block:${blockIndex}:thesis`,
-        extras: {
-          'data-pretext-apply-closest': '.thesis-block',
-          'data-pretext-section-id': sectionId,
-          'data-pretext-block-index': String(blockIndex),
-        },
-      })
-    : {};
-
+function ThesisBlock({content, variant}: {content: string; variant: Variant}) {
   return (
     <aside className={`thesis-block thesis-block--${variant}`}>
       <div className="thesis-block__label">THESIS</div>
-      <RichHtmlBlock
-        html={content}
-        rich={rich}
-        className="thesis-block__content"
-        overlayClassName="thesis-block__content"
-        attrs={pretextAttributes}
-      />
+      <HtmlBlock html={content} className="thesis-block__content prose-block" />
     </aside>
   );
 }
 
-function DocQuoteBlock({
-  content,
-  rich,
-  variant,
-  docType,
-  doc,
-  sectionId,
-  blockIndex,
-}: {
-  content: string;
-  rich?: RichBlockContent;
-  variant: Variant;
-  docType: DocType;
-  doc: NormalizedDoc;
-  sectionId: string;
-  blockIndex: number;
-}) {
-  const [hint] = resolveBlockLayoutHints('docQuote', variant, {docType, pretext: doc.meta.pretext});
-  const pretextAttributes = hint
-    ? buildPretextTargetAttributes({
-        slug: doc.slug,
-        hint,
-        keySuffix: `section:${sectionId}:block:${blockIndex}:quote`,
-        extras: {
-          'data-pretext-apply-closest': '.doc-quote',
-          'data-pretext-section-id': sectionId,
-          'data-pretext-block-index': String(blockIndex),
-        },
-      })
-    : {};
-
+function DocQuoteBlock({content, variant}: {content: string; variant: Variant}) {
   return (
     <blockquote className="doc-quote" data-pretext-pull-quote={variant === 'newsletter' ? 'true' : undefined}>
-      <RichHtmlBlock
-        html={content}
-        rich={rich}
-        className="doc-quote__content"
-        overlayClassName="doc-quote__content"
-        attrs={pretextAttributes}
-      />
+      <HtmlBlock html={content} className="doc-quote__content prose-block" />
     </blockquote>
   );
 }
@@ -447,17 +336,7 @@ function LogBlock({language = 'log', code}: {language?: string; code: string}) {
 export function BlockRenderer({block, variant, doc, sectionId, blockIndex}: BlockRendererProps) {
   switch (block.kind) {
     case 'thesis':
-      return (
-        <ThesisBlock
-          content={block.content}
-          rich={block.rich}
-          variant={variant}
-          docType={doc.meta.docType}
-          doc={doc}
-          sectionId={sectionId}
-          blockIndex={blockIndex}
-        />
-      );
+      return <ThesisBlock content={block.content} variant={variant} />;
     case 'callout':
       return <CalloutBlock calloutType={block.calloutType} title={block.title} content={block.content} />;
     case 'questionReset':
@@ -469,17 +348,7 @@ export function BlockRenderer({block, variant, doc, sectionId, blockIndex}: Bloc
     case 'axisTable':
       return <AxisTable headers={block.headers} rows={block.rows} variant={variant} doc={doc} sectionId={sectionId} blockIndex={blockIndex} />;
     case 'docQuote':
-      return (
-        <DocQuoteBlock
-          content={block.content}
-          rich={block.rich}
-          variant={variant}
-          docType={doc.meta.docType}
-          doc={doc}
-          sectionId={sectionId}
-          blockIndex={blockIndex}
-        />
-      );
+      return <DocQuoteBlock content={block.content} variant={variant} />;
     case 'log':
       return <LogBlock language={block.language} code={block.code} />;
     case 'provenance':
