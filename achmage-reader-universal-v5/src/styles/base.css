@@ -100,6 +100,10 @@ samp {
   max-width: 100%;
 }
 
+.pretext-rich-overlay a {
+  pointer-events: auto;
+}
+
 .pretext-rich-line {
   display: block;
   white-space: pre-wrap;

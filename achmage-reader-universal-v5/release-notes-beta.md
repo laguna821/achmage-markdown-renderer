@@ -13,6 +13,7 @@ Notes
 - Move markdown link interception from React synthetic capture to native article-level click delegation so raw rendered anchors in the reader respond reliably.
 - Keep internal note routes, in-document hash links, and external links on the same routing policy while adding dev-only link debug tracing for packaged runtime diagnosis.
 - Add regression coverage for Korean `[[위키링크]]` rendering and direct text-node clicks so note-to-note jumps stay locked for packaged builds.
-- Republish the standalone v5 app tree with synchronized beta28 version metadata so the tagged release and the locally verified app copy stay aligned.
+- Render Pretext rich overlay links as real anchors with `href` plus `data-href` so visible wiki links and external links stay clickable in packaged runtime.
+- Keep the overlay itself non-interactive while re-enabling pointer events only for overlay anchors, with regression coverage for internal and external link segments.
 - This beta release is unsigned on Windows.
 - The app is read-focused: it indexes and renders vault content but does not edit Markdown files.

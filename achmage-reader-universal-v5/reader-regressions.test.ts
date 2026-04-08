@@ -78,6 +78,8 @@ describe('reader regressions', () => {
     expect(blocksCss).toContain('.thesis-block__content > :last-child,');
     expect(baseCss).toContain('.pretext-rich-shell {');
     expect(baseCss).toContain('.pretext-rich-line {');
+    expect(baseCss).toContain('.pretext-rich-overlay a {');
+    expect(baseCss).toContain('pointer-events: auto;');
     expect(cyberArticleBlock).toContain('overflow: visible;');
     expect(cyberArticleBlock).not.toContain('overflow: hidden;');
   });

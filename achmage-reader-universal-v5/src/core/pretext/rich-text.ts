@@ -213,10 +213,11 @@ export const createRichLineElements = (doc: Document, lines: RichTextLine[]): Do
     lineElement.className = 'pretext-rich-line';
 
     line.segments.forEach((segment) => {
-      const segmentElement = doc.createElement('span');
+      const segmentElement = doc.createElement(segment.href ? 'a' : 'span');
       segmentElement.className = 'pretext-rich-segment';
       applySegmentClasses(segmentElement, segment.marks);
       if (segment.href) {
+        segmentElement.setAttribute('href', segment.href);
         segmentElement.dataset.href = segment.href;
       }
       segmentElement.textContent = segment.text;
