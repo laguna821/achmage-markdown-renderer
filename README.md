@@ -2,6 +2,9 @@
 
 > No more HTML/PPT vibe coding. Markdown writing to frontend rendering. Focus on writing.
 
+## 최신버전 링크 목록 (윈도우 설치파일 바로가기)
+https://github.com/laguna821/achmage-markdown-renderer/tags
+
 > [!IMPORTANT]
 > Achmage Markdown Renderer는 "이미 Obsidian에 써둔 Markdown을 다시 HTML이나 PPT로 옮겨 적지 않고", 바로 읽고 보여주는 화면으로 렌더링하는 프로젝트입니다.
 >
