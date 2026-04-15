@@ -119,14 +119,21 @@ describe('StageDocumentView', () => {
     document.body.innerHTML = '';
   });
 
-  it('renders the new stage shell without rail or mobile toc and supports 2D navigation', async () => {
+  it('uses the right-side rail for frame navigation and the bottom bar for logical groups', async () => {
     const mounted = await mountStageView(makeDoc());
     root = mounted.root;
+
+    const groupCounter = () => document.querySelector('[data-stage-group-counter="true"]')?.textContent;
+    const frameCounter = () => document.querySelector('[data-stage-frame-counter="true"]')?.textContent ?? null;
+    const frameRail = () => document.querySelector<HTMLElement>('[data-stage-frame-rail="true"]');
+    const frameDots = () => [...document.querySelectorAll<HTMLButtonElement>('.stage-shell__frame-dot')];
 
     expect(document.querySelector('[data-stage-root="true"]')).toBeTruthy();
     expect(document.querySelector('.doc-rail')).toBeNull();
     expect(document.querySelector('.mobile-toc')).toBeNull();
-    expect(document.querySelector('[data-stage-group-counter="true"]')?.textContent).toBe('1 / 3');
+    expect(groupCounter()).toBe('1 / 3');
+    expect(frameCounter()).toBeNull();
+    expect(frameRail()?.hidden).toBe(true);
 
     const nextGroupButton = document.querySelector<HTMLButtonElement>('button[aria-label="Next stage group"]');
     if (!nextGroupButton) {
@@ -138,8 +145,11 @@ describe('StageDocumentView', () => {
       await Promise.resolve();
     });
 
-    expect(document.querySelector('[data-stage-group-counter="true"]')?.textContent).toBe('2 / 3');
+    expect(groupCounter()).toBe('2 / 3');
+    expect(frameCounter()).toBe('2-1');
     expect(document.querySelector('.doc-section__title')?.textContent).toContain('Section One');
+    expect(frameRail()?.hidden).toBe(false);
+    expect(frameDots()).toHaveLength(Number(frameRail()?.dataset.stageFrameCount ?? '0'));
 
     const nextFrameButton = document.querySelector<HTMLButtonElement>('button[aria-label="Next stage frame"]');
     if (!nextFrameButton) {
@@ -151,15 +161,116 @@ describe('StageDocumentView', () => {
       await Promise.resolve();
     });
 
-    expect(document.querySelector('[data-stage-frame-counter="true"]')?.textContent).toBe('2-2');
+    expect(groupCounter()).toBe('2 / 3');
+    expect(frameCounter()).toBe('2-2');
     expect(document.querySelector('.stage-frame__continued')?.textContent).toBe('CONT.');
 
+    const nextBottomGroupButton = document.querySelector<HTMLButtonElement>('button[aria-label="Next stage group"]');
+    if (!nextBottomGroupButton) {
+      throw new Error('next bottom group button not found');
+    }
+
     await act(async () => {
-      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'End', bubbles: true}));
+      nextBottomGroupButton.click();
       await Promise.resolve();
     });
 
-    expect(document.querySelector('[data-stage-group-counter="true"]')?.textContent).toBe('3 / 3');
+    expect(groupCounter()).toBe('3 / 3');
+    expect(frameCounter()).toBeNull();
+    expect(frameRail()?.hidden).toBe(true);
     expect(document.querySelector('.doc-section__title')?.textContent).toContain('Section Two');
+
+    const previousGroupButton = document.querySelector<HTMLButtonElement>('button[aria-label="Previous stage group"]');
+    if (!previousGroupButton) {
+      throw new Error('previous group button not found');
+    }
+
+    await act(async () => {
+      previousGroupButton.click();
+      await Promise.resolve();
+    });
+
+    expect(groupCounter()).toBe('2 / 3');
+    expect(frameCounter()).toBe('2-1');
+    expect(frameRail()?.hidden).toBe(false);
+  });
+
+  it('matches ultra-v3 keyboard semantics for logical groups and continued frames', async () => {
+    const mounted = await mountStageView(makeDoc());
+    root = mounted.root;
+
+    const groupCounter = () => document.querySelector('[data-stage-group-counter="true"]')?.textContent;
+    const frameCounter = () => document.querySelector('[data-stage-frame-counter="true"]')?.textContent ?? null;
+    const frameRail = () => document.querySelector<HTMLElement>('[data-stage-frame-rail="true"]');
+
+    const clickButton = async (label: string) => {
+      const button = document.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
+      if (!button) {
+        throw new Error(`${label} button not found`);
+      }
+
+      await act(async () => {
+        button.click();
+        await Promise.resolve();
+      });
+    };
+
+    const pressKey = async (key: string) => {
+      await act(async () => {
+        window.dispatchEvent(new KeyboardEvent('keydown', {key, bubbles: true}));
+        await Promise.resolve();
+      });
+    };
+
+    await clickButton('Next stage group');
+
+    expect(groupCounter()).toBe('2 / 3');
+    expect(frameCounter()).toBe('2-1');
+    expect(frameRail()?.hidden).toBe(false);
+
+    await pressKey('ArrowDown');
+    expect(groupCounter()).toBe('2 / 3');
+    expect(frameCounter()).toBe('2-2');
+
+    await pressKey('ArrowUp');
+    expect(groupCounter()).toBe('2 / 3');
+    expect(frameCounter()).toBe('2-1');
+
+    await pressKey('ArrowDown');
+    expect(frameCounter()).toBe('2-2');
+
+    await pressKey('ArrowLeft');
+    expect(groupCounter()).toBe('2 / 3');
+    expect(frameCounter()).toBe('2-1');
+
+    const frameDots = [...document.querySelectorAll<HTMLButtonElement>('.stage-shell__frame-dot')];
+    const lastFrameDot = frameDots.at(-1);
+    if (!lastFrameDot) {
+      throw new Error('last frame dot not found');
+    }
+
+    await act(async () => {
+      lastFrameDot.click();
+      await Promise.resolve();
+    });
+
+    expect(groupCounter()).toBe('2 / 3');
+    expect(frameCounter()).toBe(`2-${frameDots.length}`);
+
+    await pressKey('ArrowDown');
+    expect(groupCounter()).toBe('3 / 3');
+    expect(frameCounter()).toBeNull();
+
+    await pressKey('PageUp');
+    expect(groupCounter()).toBe('2 / 3');
+    expect(frameCounter()).toBe('2-1');
+
+    await pressKey('Home');
+    expect(groupCounter()).toBe('1 / 3');
+    expect(frameCounter()).toBeNull();
+
+    await pressKey('End');
+    expect(groupCounter()).toBe('3 / 3');
+    expect(frameCounter()).toBeNull();
   });
 });

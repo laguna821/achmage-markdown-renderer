@@ -1,5 +1,16 @@
 # Release Notes
 
+## v6.0.0-beta.4
+
+This release restores ultra-v3 navigation parity in the shipped desktop stage mode so logical slide movement and vertical continuation movement no longer feel inverted.
+
+### Changed
+
+- Remapped desktop stage keyboard controls to ultra-v3 semantics: left and right now move between logical groups, while up and down move within continued frames before crossing group boundaries
+- Reassigned the stage HUD so the right-side vertical rail is frame-only and the bottom control bar is logical-group-only
+- Removed the bottom horizontal frame-dot strip and clarified the counter display so multi-frame groups show `group-frame` as secondary status
+- Bumped the renderer, desktop app, and Tauri packaging metadata to `6.0.0-beta.4`
+
 ## v6.0.0-beta.3
 
 This release corrects the shipping desktop app so V6 stage mode now lands in the packaged installer instead of only in the Astro renderer shell.

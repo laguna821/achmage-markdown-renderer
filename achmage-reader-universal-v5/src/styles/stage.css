@@ -101,12 +101,12 @@
 
 .stage-shell__hud {
   position: absolute;
-  right: clamp(1rem, 1.8vw, 1.4rem);
   bottom: clamp(0.8rem, 1.6vw, 1.2rem);
   left: clamp(1rem, 1.8vw, 1.4rem);
+  right: clamp(1rem, 1.8vw, 1.4rem);
   z-index: 3;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 0.9rem;
   pointer-events: none;
@@ -114,8 +114,7 @@
 
 .stage-shell__status,
 .stage-shell__controls,
-.stage-shell__frame-dots,
-.stage-shell__group-dots {
+.stage-shell__frame-rail {
   pointer-events: auto;
 }
 
@@ -158,7 +157,7 @@
 }
 
 .stage-shell__control,
-.stage-shell__dot,
+.stage-shell__frame-button,
 .stage-shell__frame-dot {
   border: 1px solid var(--color-border-strong);
   background: rgba(255, 255, 255, 0.74);
@@ -181,23 +180,39 @@
 }
 
 .stage-shell__control:hover,
-.stage-shell__dot:hover,
+.stage-shell__frame-button:hover,
 .stage-shell__frame-dot:hover {
   transform: translateY(-0.05rem);
   background: rgba(255, 255, 255, 0.92);
 }
 
-.stage-shell__group-dots {
+.stage-shell__frame-rail {
   position: absolute;
   top: 50%;
   right: 0.55rem;
   z-index: 2;
   display: grid;
-  gap: 0.4rem;
+  justify-items: center;
+  gap: 0.55rem;
   transform: translateY(-50%);
 }
 
-.stage-shell__dot,
+.stage-shell__frame-rail[hidden] {
+  display: none;
+}
+
+.stage-shell__frame-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  border-radius: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
 .stage-shell__frame-dot {
   width: 0.82rem;
   height: 0.82rem;
@@ -205,17 +220,16 @@
   padding: 0;
 }
 
-.stage-shell__dot--active,
 .stage-shell__frame-dot--active {
   background: var(--color-accent);
   border-color: var(--color-accent);
 }
 
 .stage-shell__frame-dots {
-  display: inline-flex;
+  display: grid;
   gap: 0.35rem;
   align-items: center;
-  justify-content: flex-end;
+  justify-items: center;
 }
 
 .stage-shell__nav-zone {
@@ -239,21 +253,6 @@
 
 .stage-shell__nav-zone--right {
   right: 0;
-}
-
-.stage-shell__nav-zone--top,
-.stage-shell__nav-zone--bottom {
-  left: 20%;
-  right: 20%;
-  height: 16%;
-}
-
-.stage-shell__nav-zone--top {
-  top: 0;
-}
-
-.stage-shell__nav-zone--bottom {
-  bottom: 0;
 }
 
 .mode-newsletter .doc-header {
@@ -293,12 +292,11 @@
     justify-items: stretch;
   }
 
-  .stage-shell__controls,
-  .stage-shell__frame-dots {
+  .stage-shell__controls {
     justify-content: flex-start;
   }
 
-  .stage-shell__group-dots {
+  .stage-shell__frame-rail {
     right: 0.3rem;
   }
 }

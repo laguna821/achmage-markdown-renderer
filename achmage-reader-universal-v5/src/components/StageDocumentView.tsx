@@ -41,6 +41,8 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
 
   const currentGroup = deck.groups[groupIndex] ?? deck.groups[0];
   const currentFrame = currentGroup?.frames[frameIndex] ?? currentGroup?.frames[0];
+  const currentFrameCount = currentGroup?.frames.length ?? 0;
+  const hasVerticalFrames = currentFrameCount > 1;
 
   const moveToGroup = (nextIndex: number) => {
     const clamped = Math.max(0, Math.min(nextIndex, deck.groups.length - 1));
@@ -57,6 +59,41 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
     setFrameIndex(clamped);
   };
 
+  const moveToPreviousGroup = () => {
+    moveToGroup(groupIndex - 1);
+  };
+
+  const moveToNextGroup = () => {
+    moveToGroup(groupIndex + 1);
+  };
+
+  const moveToFirstGroup = () => {
+    setGroupIndex(0);
+    setFrameIndex(0);
+  };
+
+  const moveToLastGroup = () => {
+    setGroupIndex(Math.max(deck.groups.length - 1, 0));
+    setFrameIndex(0);
+  };
+
+  const moveToPreviousFrame = () => {
+    moveToFrame(frameIndex - 1);
+  };
+
+  const moveToNextFrame = () => {
+    moveToFrame(frameIndex + 1);
+  };
+
+  const moveToPreviousLogical = () => {
+    if (frameIndex > 0) {
+      setFrameIndex(0);
+      return;
+    }
+
+    moveToPreviousGroup();
+  };
+
   const advance = () => {
     if (!currentGroup) {
       return;
@@ -71,6 +108,15 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
       setGroupIndex((current) => current + 1);
       setFrameIndex(0);
     }
+  };
+
+  const retreatWithinStage = () => {
+    if (frameIndex > 0) {
+      moveToPreviousFrame();
+      return;
+    }
+
+    moveToPreviousLogical();
   };
 
   useEffect(() => {
@@ -143,25 +189,25 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
 
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
-        moveToGroup(groupIndex - 1);
+        moveToPreviousLogical();
         return;
       }
 
-      if (event.key === 'ArrowRight') {
+      if (event.key === 'ArrowRight' || event.key === 'PageDown') {
         event.preventDefault();
-        moveToGroup(groupIndex + 1);
+        moveToNextGroup();
         return;
       }
 
       if (event.key === 'ArrowUp') {
         event.preventDefault();
-        moveToFrame(frameIndex - 1);
+        retreatWithinStage();
         return;
       }
 
       if (event.key === 'ArrowDown') {
         event.preventDefault();
-        moveToFrame(frameIndex + 1);
+        advance();
         return;
       }
 
@@ -171,17 +217,21 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
         return;
       }
 
+      if (event.key === 'PageUp') {
+        event.preventDefault();
+        moveToPreviousLogical();
+        return;
+      }
+
       if (event.key === 'Home') {
         event.preventDefault();
-        setGroupIndex(0);
-        setFrameIndex(0);
+        moveToFirstGroup();
         return;
       }
 
       if (event.key === 'End') {
         event.preventDefault();
-        setGroupIndex(Math.max(deck.groups.length - 1, 0));
-        setFrameIndex(0);
+        moveToLastGroup();
       }
     };
 
@@ -190,7 +240,7 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [advance, deck.groups.length, deck.keyboardNav, frameIndex, groupIndex, currentGroup]);
+  }, [advance, deck.keyboardNav, frameIndex, groupIndex, currentGroup]);
 
   useEffect(() => {
     const article = document.querySelector<HTMLElement>('.stage-frame [data-stage-article="true"]');
@@ -267,26 +317,14 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
         <button
           type="button"
           className="stage-shell__nav-zone stage-shell__nav-zone--left"
-          aria-label="Previous stage group"
-          onClick={() => moveToGroup(groupIndex - 1)}
+          aria-label="Previous stage step"
+          onClick={retreatWithinStage}
         />
         <button
           type="button"
           className="stage-shell__nav-zone stage-shell__nav-zone--right"
-          aria-label="Next stage group"
-          onClick={() => moveToGroup(groupIndex + 1)}
-        />
-        <button
-          type="button"
-          className="stage-shell__nav-zone stage-shell__nav-zone--top"
-          aria-label="Previous stage frame"
-          onClick={() => moveToFrame(frameIndex - 1)}
-        />
-        <button
-          type="button"
-          className="stage-shell__nav-zone stage-shell__nav-zone--bottom"
-          aria-label="Next stage frame"
-          onClick={() => moveToFrame(frameIndex + 1)}
+          aria-label="Next stage step"
+          onClick={advance}
         />
 
         <div className="stage-shell__deck">
@@ -322,53 +360,23 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
           </div>
         </div>
 
-        <aside className="stage-shell__group-dots" aria-label="Stage groups">
-          {deck.groups.map((group, index) => (
-            <button
-              key={group.id}
-              type="button"
-              className={`stage-shell__dot${index === groupIndex ? ' stage-shell__dot--active' : ''}`}
-              aria-label={`Go to group ${index + 1}: ${group.title}`}
-              onClick={() => {
-                setGroupIndex(index);
-                setFrameIndex(0);
-              }}
-            />
-          ))}
-        </aside>
-
-        <div className="stage-shell__hud">
-          <div className="stage-shell__status">
-            <div className="stage-shell__status-title">{currentGroup.title}</div>
-            <div className="stage-shell__status-meta">
-              <span data-stage-group-counter="true">
-                {groupIndex + 1} / {deck.groups.length}
-              </span>
-              <span data-stage-frame-counter="true">
-                {groupIndex + 1}-{frameIndex + 1}
-              </span>
-            </div>
-          </div>
-
-          <div className="stage-shell__controls">
-            <button type="button" className="stage-shell__control" onClick={() => moveToGroup(0)}>
-              |&lt;
-            </button>
-            <button type="button" className="stage-shell__control" onClick={() => moveToGroup(groupIndex - 1)}>
-              &lt;
-            </button>
-            <button type="button" className="stage-shell__control" onClick={advance}>
-              &gt;
-            </button>
-            <button type="button" className="stage-shell__control" onClick={() => moveToGroup(deck.groups.length - 1)}>
-              &gt;|
-            </button>
-            <button type="button" className="stage-shell__control" onClick={() => void onToggleFullscreen()}>
-              {isFullscreen ? 'Exit' : 'Full'}
-            </button>
-          </div>
-
-          <div className="stage-shell__frame-dots" aria-label="Stage frames">
+        <aside
+          className="stage-shell__frame-rail"
+          data-stage-frame-rail="true"
+          data-stage-frame-count={currentFrameCount}
+          aria-label="Stage frames"
+          hidden={!hasVerticalFrames}
+        >
+          <button
+            type="button"
+            className="stage-shell__frame-button"
+            aria-label="Previous stage frame"
+            onClick={moveToPreviousFrame}
+            disabled={frameIndex === 0}
+          >
+            ▲
+          </button>
+          <div className="stage-shell__frame-dots">
             {currentGroup.frames.map((frame, index) => (
               <button
                 key={frame.id}
@@ -378,6 +386,49 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
                 onClick={() => setFrameIndex(index)}
               />
             ))}
+          </div>
+          <button
+            type="button"
+            className="stage-shell__frame-button"
+            aria-label="Next stage frame"
+            onClick={moveToNextFrame}
+            disabled={frameIndex === currentFrameCount - 1}
+          >
+            ▼
+          </button>
+        </aside>
+
+        <div className="stage-shell__hud">
+          <div className="stage-shell__status">
+            <div className="stage-shell__status-title">{currentGroup.title}</div>
+            <div className="stage-shell__status-meta">
+              <span data-stage-group-counter="true">
+                {groupIndex + 1} / {deck.groups.length}
+              </span>
+              {hasVerticalFrames ? (
+                <span data-stage-frame-counter="true">
+                  {groupIndex + 1}-{frameIndex + 1}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="stage-shell__controls">
+            <button type="button" className="stage-shell__control" aria-label="First stage group" onClick={moveToFirstGroup}>
+              |&lt;
+            </button>
+            <button type="button" className="stage-shell__control" aria-label="Previous stage group" onClick={moveToPreviousGroup}>
+              &lt;
+            </button>
+            <button type="button" className="stage-shell__control" aria-label="Next stage group" onClick={moveToNextGroup}>
+              &gt;
+            </button>
+            <button type="button" className="stage-shell__control" aria-label="Last stage group" onClick={moveToLastGroup}>
+              &gt;|
+            </button>
+            <button type="button" className="stage-shell__control" aria-label="Toggle fullscreen" onClick={() => void onToggleFullscreen()}>
+              {isFullscreen ? 'Exit' : 'Full'}
+            </button>
           </div>
         </div>
       </div>
