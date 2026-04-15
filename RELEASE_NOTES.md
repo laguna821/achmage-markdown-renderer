@@ -1,5 +1,15 @@
 # Release Notes
 
+## v6.0.0-beta.5
+
+This release keeps the beta.4 stage navigation parity fix intact and adds the CI compatibility correction needed to publish the desktop installers successfully.
+
+### Changed
+
+- Replaced the desktop stage regression test's use of `Array.prototype.at()` with a TypeScript-target-safe index lookup so GitHub Actions packaging completes on both Windows and macOS
+- Kept the ultra-v3 navigation parity fix from `v6.0.0-beta.4` as the shipped behavior baseline
+- Bumped the renderer, desktop app, and Tauri packaging metadata to `6.0.0-beta.5`
+
 ## v6.0.0-beta.4
 
 This release restores ultra-v3 navigation parity in the shipped desktop stage mode so logical slide movement and vertical continuation movement no longer feel inverted.

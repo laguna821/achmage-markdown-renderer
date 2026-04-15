@@ -244,7 +244,7 @@ describe('StageDocumentView', () => {
     expect(frameCounter()).toBe('2-1');
 
     const frameDots = [...document.querySelectorAll<HTMLButtonElement>('.stage-shell__frame-dot')];
-    const lastFrameDot = frameDots.at(-1);
+    const lastFrameDot = frameDots[frameDots.length - 1];
     if (!lastFrameDot) {
       throw new Error('last frame dot not found');
     }
