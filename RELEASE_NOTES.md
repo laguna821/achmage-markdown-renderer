@@ -1,5 +1,20 @@
 # Release Notes
 
+## v6.0.0-beta.2
+
+This release keeps the V6 universal stage rollout intact and adds GitHub Actions desktop packaging for the beta line.
+
+### Added
+
+- Automatic GitHub Actions release builds for `v6.*` tags
+- Manual workflow dispatch support for rebuilding release assets against an existing V6 tag
+- Windows installer, Windows portable zip, macOS DMG, and macOS app zip publishing on the V6 release line
+
+### Changed
+
+- Bumped the renderer and desktop packaging metadata to `6.0.0-beta.2`
+- Kept the V6 universal stage renderer changes from `v6.0.0-beta.1` as the feature baseline
+
 ## v6.0.0-beta.1
 
 This release introduces the renderer-native V6 stage overhaul.

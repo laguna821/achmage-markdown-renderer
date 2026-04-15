@@ -1,4 +1,4 @@
-# Achmage Markdown Renderer v5 Universal Beta
+# Achmage Markdown Renderer v6 Universal Beta
 
 Achmage Markdown Renderer is the desktop packaging line for the Markdown renderer. It keeps the existing `reader`, `stage`, and `newsletter` views, but removes the old "install dependencies on first launch" flow and moves distribution to a Tauri 2 desktop app.
 
@@ -51,8 +51,8 @@ In the repository integration layout, the GitHub Actions workflow lives at the r
 
 - `.github/workflows/release-achmage-reader-v5-beta.yml`
 
-- `workflow_dispatch`: builds Windows and macOS artifacts and uploads them as workflow artifacts
-- `push` tag matching `v5.*`: builds both platforms, generates `release-manifest.json` and `SHA256SUMS.txt`, and creates a draft prerelease
+- `workflow_dispatch`: builds Windows and macOS artifacts and can publish against an existing tag when `release_tag` is provided
+- `push` tag matching `v6.*`: builds both platforms, generates `release-manifest.json` and `SHA256SUMS.txt`, and creates a public prerelease
 
 ## Notes
 

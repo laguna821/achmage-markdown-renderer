@@ -1,12 +1,17 @@
-name: release-achmage-reader-v5-beta
+name: release-achmage-reader-v6-beta
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Optional existing tag to publish under, for example v6.0.0-beta.2"
+        required: false
+        type: string
   push:
     branches:
-      - "codex/v5-universal-release"
+      - "v6"
     tags:
-      - "v5.*"
+      - "v6.*"
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -106,7 +111,7 @@ jobs:
           if-no-files-found: error
 
   publish-release:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.release_tag != ''
     needs:
       - build-windows
       - build-macos
@@ -138,6 +143,23 @@ jobs:
         working-directory: achmage-reader-universal-v5
         run: node scripts/write-release-manifest.mjs release-assets
 
+      - name: Resolve release metadata
+        id: release_meta
+        shell: bash
+        run: |
+          release_tag="${{ github.event.inputs.release_tag }}"
+          if [ -z "$release_tag" ] && [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            release_tag="$GITHUB_REF_NAME"
+          fi
+
+          if [ -z "$release_tag" ]; then
+            echo "No release tag provided and workflow was not triggered from a tag ref." >&2
+            exit 1
+          fi
+
+          echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
+          echo "release_title=Achmage Markdown Renderer $release_tag" >> "$GITHUB_OUTPUT"
+
       - name: Publish public prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -148,9 +170,12 @@ jobs:
             exit 1
           fi
 
-          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release delete "$GITHUB_REF_NAME" --yes --repo "$GITHUB_REPOSITORY"
+          release_tag="${{ steps.release_meta.outputs.release_tag }}"
+          release_title="${{ steps.release_meta.outputs.release_title }}"
+
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release delete "$release_tag" --yes --repo "$GITHUB_REPOSITORY"
           fi
 
           printf 'Publishing release assets:\n%s\n' "${release_files[@]}"
-          gh release create "$GITHUB_REF_NAME" "${release_files[@]}" --title "Achmage Markdown Renderer v5 Universal Beta" --notes-file achmage-reader-universal-v5/release-notes-beta.md --prerelease --verify-tag --repo "$GITHUB_REPOSITORY"
+          gh release create "$release_tag" "${release_files[@]}" --title "$release_title" --notes-file achmage-reader-universal-v5/release-notes-beta.md --prerelease --verify-tag --repo "$GITHUB_REPOSITORY"
