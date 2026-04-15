@@ -1,6 +1,6 @@
 import {expect, test} from '@playwright/test';
 
-test('stage and reader routes expose Pretext targets and QA state', async ({page}) => {
+test('reader route exposes Pretext targets and stage route drops the legacy stage pretext surfaces', async ({page}) => {
   await page.goto('/reader/lecture-basic');
 
   await expect(page.locator('[data-pretext="balance-title"]').first()).toBeVisible();
@@ -10,11 +10,9 @@ test('stage and reader routes expose Pretext targets and QA state', async ({page
   expect(Array.isArray(readerQa)).toBe(true);
 
   await page.goto('/stage/pretext-lab');
-  await expect(page.locator('[data-pretext-stage-hero]')).toHaveCount(1);
-  await expect(page.locator('[data-pretext-section-cover]').first()).toHaveCount(1);
-
-  const fitClass = await page.locator('[data-pretext-stage-hero]').getAttribute('data-stage-fit');
-  expect(['stage-fit-ok', 'stage-fit-tight', 'stage-fit-overflow']).toContain(fitClass);
+  await expect(page.locator('[data-stage-root]')).toHaveCount(1);
+  await expect(page.locator('[data-pretext-stage-hero]')).toHaveCount(0);
+  await expect(page.locator('[data-pretext-section-cover]')).toHaveCount(0);
 });
 
 test('newsletter route exposes cover tuning, wrap figure surfaces, and axis-table mobile fallback', async ({page}) => {

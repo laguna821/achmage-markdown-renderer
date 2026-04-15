@@ -1,12 +1,6 @@
 ---
-import DocumentHeader from '../components/DocumentHeader.astro';
-import DocumentSections from '../components/DocumentSections.astro';
-import ActiveHeadingScript from '../components/shell/ActiveHeadingScript.astro';
-import DocRail from '../components/shell/DocRail.astro';
-import MobileTocDrawer from '../components/shell/MobileTocDrawer.astro';
-import PretextEnhancerScript from '../components/shell/PretextEnhancerScript.astro';
+import StageDeck from '../components/stage/StageDeck.astro';
 import SiteHeader from '../components/shell/SiteHeader.astro';
-import StageInteractionScript from '../components/shell/StageInteractionScript.astro';
 import BaseLayout from './BaseLayout.astro';
 
 import type {NormalizedDoc} from '../lib/content';
@@ -28,17 +22,5 @@ const {doc} = Astro.props;
   pretextEnabled={true}
 >
   <SiteHeader doc={doc} variant="stage" />
-  <div class="layout-shell layout-shell--stage">
-    <div class="layout-shell__rail">
-      <DocRail doc={doc} />
-    </div>
-    <main class="layout-shell__main" data-pretext-stage-hero="true" data-pretext-max-viewport-ratio="0.92" data-stage-fit="stage-fit-ok">
-      <MobileTocDrawer doc={doc} />
-      <DocumentHeader doc={doc} variant="stage" />
-      <DocumentSections doc={doc} variant="stage" />
-    </main>
-  </div>
-  <ActiveHeadingScript />
-  <StageInteractionScript />
-  <PretextEnhancerScript />
+  <StageDeck doc={doc} />
 </BaseLayout>

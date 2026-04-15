@@ -2,6 +2,7 @@
 import HomeSearchScript from '../components/shell/HomeSearchScript.astro';
 import SiteHeader from '../components/shell/SiteHeader.astro';
 import {getContentRootInfo, loadNormalizedDocuments} from '../lib/content';
+import {getDocumentModeLinks} from '../lib/stage';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const docs = loadNormalizedDocuments();
@@ -81,8 +82,8 @@ const searchIndexUrl = '/search-index.json';
             {doc.meta.summary && <p data-home-card-summary>{doc.meta.summary}</p>}
             <p class="home-card__excerpt" data-home-card-excerpt hidden></p>
             <div class="home-card__links">
-              {doc.meta.outputs.map((output) => (
-                <a href={`/${output}/${doc.slug}`}>{output}</a>
+              {getDocumentModeLinks(doc).map((link) => (
+                <a href={link.href}>{link.label}</a>
               ))}
             </div>
           </article>

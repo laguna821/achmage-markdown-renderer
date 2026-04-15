@@ -1,9 +1,9 @@
 ---
-import {getDocumentsForOutput} from '../../lib/content';
+import {getDocumentsForStage} from '../../lib/stage';
 import StageLayout from '../../layouts/StageLayout.astro';
 
 export const getStaticPaths = () =>
-  getDocumentsForOutput('stage').map((doc) => ({
+  getDocumentsForStage().map((doc) => ({
     params: {slug: doc.slug},
     props: {doc},
   }));

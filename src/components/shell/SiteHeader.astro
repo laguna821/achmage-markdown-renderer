@@ -1,4 +1,6 @@
 ---
+import {getDocumentModeLinks} from '../../lib/stage';
+
 import type {NormalizedDoc} from '../../lib/content';
 
 interface Props {
@@ -7,6 +9,8 @@ interface Props {
 }
 
 const {doc, variant = 'reader'} = Astro.props;
+const activeMode = variant === 'reader' || variant === 'stage' || variant === 'newsletter' ? variant : undefined;
+const modeLinks = doc ? getDocumentModeLinks(doc, activeMode) : [];
 ---
 
 <header class:list={['site-header', `site-header--${variant}`]}>
@@ -18,6 +22,15 @@ const {doc, variant = 'reader'} = Astro.props;
       <>
         <span class="site-header__mode">{variant.toUpperCase()}</span>
         <span class="site-header__title">{doc.meta.title}</span>
+        {modeLinks.length > 0 && (
+          <nav class="site-header__modes" aria-label="Document modes">
+            {modeLinks.map((link) => (
+              <a class:list={['site-header__mode-link', link.active && 'is-active']} href={link.href} aria-current={link.active ? 'page' : undefined}>
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        )}
       </>
     ) : (
       <span class="site-header__mode">STATIC-FIRST DOC ENGINE</span>

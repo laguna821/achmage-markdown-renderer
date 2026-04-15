@@ -1,0 +1,55 @@
+---
+import BlockRenderer from '../BlockRenderer.astro';
+import DocumentHeader from '../DocumentHeader.astro';
+
+import type {NormalizedDoc} from '../../lib/content';
+import type {StageFrame, StageGroup} from '../../lib/stage';
+
+interface Props {
+  doc: NormalizedDoc;
+  group: StageGroup;
+  frame: StageFrame;
+  groupIndex: number;
+  frameIndex: number;
+}
+
+const {doc, group, frame, groupIndex, frameIndex} = Astro.props;
+const eyebrow =
+  group.kind === 'lead'
+    ? frame.continued
+      ? 'CONTINUED'
+      : 'OVERVIEW'
+    : frame.continued
+      ? 'CONTINUED'
+      : 'SECTION';
+---
+
+<article
+  class:list={['stage-frame', frame.includeDocumentHeader && 'stage-frame--header']}
+  data-stage-frame-view="true"
+  data-stage-group-index={groupIndex}
+  data-stage-frame-index={frameIndex}
+>
+  {frame.includeDocumentHeader ? (
+    <DocumentHeader doc={doc} variant="stage" />
+  ) : (
+    <header class="stage-frame__header">
+      <span class="stage-frame__eyebrow">{eyebrow}</span>
+      <h2 class="doc-section__title stage-frame__title">{frame.title}</h2>
+    </header>
+  )}
+
+  <div class="stage-frame__blocks">
+    {frame.blocks.map((block, blockIndex) => (
+      <BlockRenderer
+        block={block}
+        variant="stage"
+        docType={doc.meta.docType}
+        slug={doc.slug}
+        sectionId={group.sectionId}
+        blockIndex={blockIndex}
+        pretext={doc.meta.pretext}
+      />
+    ))}
+  </div>
+</article>

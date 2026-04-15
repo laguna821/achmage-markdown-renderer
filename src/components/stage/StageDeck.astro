@@ -1,0 +1,75 @@
+---
+import StageFrameView from './StageFrameView.astro';
+import StageDeckScript from '../shell/StageDeckScript.astro';
+import {buildStageDeck} from '../../lib/stage';
+
+import type {NormalizedDoc} from '../../lib/content';
+
+interface Props {
+  doc: NormalizedDoc;
+}
+
+const {doc} = Astro.props;
+const deck = buildStageDeck(doc);
+---
+
+<main
+  class="stage-root"
+  data-stage-root
+  data-stage-keyboard-nav={String(deck.keyboardNav)}
+  data-active-group="0"
+  data-active-frame="0"
+>
+  <div class="stage-canvas">
+    {deck.groups.map((group, groupIndex) => (
+      <section
+        class:list={['stage-group', groupIndex === 0 && 'is-active']}
+        data-stage-group
+        data-stage-group-index={groupIndex}
+        data-stage-group-kind={group.kind}
+        data-stage-group-title={group.title}
+        data-stage-frame-count={group.frames.length}
+        aria-hidden={groupIndex === 0 ? 'false' : 'true'}
+        style={groupIndex === 0 ? undefined : 'display:none'}
+      >
+        <div class="stage-group__viewport" data-stage-viewport>
+          <div class="stage-group__stack" data-stage-stack>
+            {group.frames.map((frame, frameIndex) => (
+              <div class="stage-group__frame-slot" data-stage-frame-slot data-stage-frame-slot-index={frameIndex}>
+                <StageFrameView
+                  doc={doc}
+                  group={group}
+                  frame={frame}
+                  groupIndex={groupIndex}
+                  frameIndex={frameIndex}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    ))}
+
+    <div class="stage-overlay stage-overlay--label">
+      <div class="stage-overlay__main" data-stage-label-main>1</div>
+      <div class="stage-overlay__sub" data-stage-label-sub>{doc.meta.title}</div>
+    </div>
+
+    <button class="stage-vertical stage-vertical--up is-hidden" type="button" data-stage-up aria-label="Previous frame">
+      ▲
+    </button>
+    <button class="stage-vertical stage-vertical--down is-hidden" type="button" data-stage-down aria-label="Next frame">
+      ▼
+    </button>
+    <div class="stage-dots" data-stage-dots aria-hidden="true"></div>
+
+    <div class="stage-controls" data-stage-controls>
+      <button type="button" data-stage-first aria-label="First slide">⏮</button>
+      <button type="button" data-stage-prev aria-label="Previous slide">◀</button>
+      <span class="stage-controls__counter" data-stage-counter>1 / {deck.groups.length}</span>
+      <button type="button" data-stage-next aria-label="Next slide">▶</button>
+      <button type="button" data-stage-last aria-label="Last slide">⏭</button>
+    </div>
+  </div>
+  <StageDeckScript />
+</main>

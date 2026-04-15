@@ -1,5 +1,23 @@
 # Release Notes
 
+## v6.0.0-beta.1
+
+This release introduces the renderer-native V6 stage overhaul.
+
+### Added
+
+- Universal `stage` routes for every document, including reader-only notes
+- Full-bleed presentation stage below the existing top bar
+- Renderer-native horizontal/vertical slide grouping and continuation pagination
+- Stage mode switcher links in the top header and home cards
+- Stage-specific unit and end-to-end coverage for navigation and universal route generation
+
+### Changed
+
+- Replaced the old scroll-highlight stage mode with a real presentation shell
+- Removed stage rail / TOC / mobile drawer behavior from stage pages
+- Kept reader and newsletter rendering behavior intact while preserving the existing theme system
+
 ## v4.0.0
 
 이번 버전은 "Markdown을 다시 만들지 말고 그대로 보여주자"는 방향을 더 분명하게 다듬은 릴리스입니다.

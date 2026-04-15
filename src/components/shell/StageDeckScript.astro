@@ -1,0 +1,231 @@
+<script is:inline>
+  (() => {
+    const root = document.querySelector('[data-stage-root]');
+    if (!(root instanceof HTMLElement)) return;
+
+    const groups = Array.from(root.querySelectorAll('[data-stage-group]'));
+    if (groups.length === 0) return;
+
+    const labelMain = root.querySelector('[data-stage-label-main]');
+    const labelSub = root.querySelector('[data-stage-label-sub]');
+    const counter = root.querySelector('[data-stage-counter]');
+    const dots = root.querySelector('[data-stage-dots]');
+    const upButton = root.querySelector('[data-stage-up]');
+    const downButton = root.querySelector('[data-stage-down]');
+    const keyboardNav = root.dataset.stageKeyboardNav !== 'false';
+
+    let activeGroup = 0;
+    let activeFrame = 0;
+
+    const getFrameCount = (groupIndex) => {
+      const group = groups[groupIndex];
+      if (!(group instanceof HTMLElement)) return 0;
+      return Number(group.dataset.stageFrameCount ?? '0');
+    };
+
+    const updateFramePosition = () => {
+      const group = groups[activeGroup];
+      if (!(group instanceof HTMLElement)) return;
+      const stack = group.querySelector('[data-stage-stack]');
+      if (!(stack instanceof HTMLElement)) return;
+      stack.style.transform = `translateY(${-activeFrame * root.clientHeight}px)`;
+    };
+
+    const buildDots = (frameCount) => {
+      if (!(dots instanceof HTMLElement)) return;
+      dots.replaceChildren();
+      dots.classList.toggle('has-frames', frameCount > 1);
+
+      for (let index = 0; index < frameCount; index += 1) {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = `stage-dots__dot${index === activeFrame ? ' is-active' : ''}`;
+        dot.setAttribute('aria-label', `Go to frame ${index + 1}`);
+        dot.addEventListener('click', (event) => {
+          event.stopPropagation();
+          showFrame(index);
+        });
+        dots.appendChild(dot);
+      }
+    };
+
+    const updateUi = () => {
+      const group = groups[activeGroup];
+      if (!(group instanceof HTMLElement)) return;
+      const frameCount = getFrameCount(activeGroup);
+      root.dataset.activeGroup = String(activeGroup);
+      root.dataset.activeFrame = String(activeFrame);
+
+      if (labelMain instanceof HTMLElement) {
+        labelMain.textContent = frameCount > 1 ? `${activeGroup + 1}-${activeFrame + 1}` : String(activeGroup + 1);
+      }
+
+      if (labelSub instanceof HTMLElement) {
+        labelSub.textContent = `${group.dataset.stageGroupTitle ?? ''} (${activeGroup + 1}/${groups.length})`;
+      }
+
+      if (counter instanceof HTMLElement) {
+        counter.textContent = `${activeGroup + 1} / ${groups.length}`;
+      }
+
+      if (upButton instanceof HTMLElement) {
+        upButton.classList.toggle('is-hidden', activeFrame === 0);
+      }
+
+      if (downButton instanceof HTMLElement) {
+        downButton.classList.toggle('is-hidden', activeFrame >= frameCount - 1);
+      }
+
+      buildDots(frameCount);
+      updateFramePosition();
+    };
+
+    const showGroup = (nextGroup, animationClass) => {
+      if (nextGroup < 0 || nextGroup >= groups.length || nextGroup === activeGroup) return;
+
+      const previous = groups[activeGroup];
+      if (previous instanceof HTMLElement) {
+        previous.style.display = 'none';
+        previous.classList.remove('is-active', 'enter-left', 'enter-right');
+        previous.setAttribute('aria-hidden', 'true');
+        const previousStack = previous.querySelector('[data-stage-stack]');
+        if (previousStack instanceof HTMLElement) {
+          previousStack.style.transform = 'translateY(0px)';
+        }
+      }
+
+      activeGroup = nextGroup;
+      activeFrame = 0;
+
+      const current = groups[activeGroup];
+      if (current instanceof HTMLElement) {
+        current.style.display = 'block';
+        current.classList.add('is-active');
+        current.setAttribute('aria-hidden', 'false');
+        if (animationClass) {
+          current.classList.add(animationClass);
+          window.setTimeout(() => current.classList.remove(animationClass), 320);
+        }
+      }
+
+      updateUi();
+    };
+
+    const showFrame = (nextFrame) => {
+      const frameCount = getFrameCount(activeGroup);
+      if (nextFrame < 0 || nextFrame >= frameCount) return;
+      activeFrame = nextFrame;
+      updateUi();
+    };
+
+    const goPrevGroup = () => showGroup(activeGroup - 1, 'enter-left');
+    const goNextGroup = () => showGroup(activeGroup + 1, 'enter-right');
+    const goPrevFrame = () => {
+      if (activeFrame > 0) {
+        showFrame(activeFrame - 1);
+        return;
+      }
+
+      goPrevGroup();
+    };
+    const goNextFrame = () => {
+      const frameCount = getFrameCount(activeGroup);
+      if (activeFrame < frameCount - 1) {
+        showFrame(activeFrame + 1);
+        return;
+      }
+
+      goNextGroup();
+    };
+
+    root.querySelector('[data-stage-first]')?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      showGroup(0, 'enter-left');
+    });
+    root.querySelector('[data-stage-prev]')?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      goPrevGroup();
+    });
+    root.querySelector('[data-stage-next]')?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      goNextGroup();
+    });
+    root.querySelector('[data-stage-last]')?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      showGroup(groups.length - 1, 'enter-right');
+    });
+    upButton?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      goPrevFrame();
+    });
+    downButton?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      goNextFrame();
+    });
+
+    if (keyboardNav) {
+      window.addEventListener('keydown', (event) => {
+        if (event.defaultPrevented) return;
+
+        if (event.key === 'ArrowRight' || event.key === 'PageDown') {
+          event.preventDefault();
+          goNextGroup();
+          return;
+        }
+
+        if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+          event.preventDefault();
+          goPrevGroup();
+          return;
+        }
+
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          goNextFrame();
+          return;
+        }
+
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          goPrevFrame();
+          return;
+        }
+
+        if (event.key === ' ') {
+          event.preventDefault();
+          goNextFrame();
+          return;
+        }
+
+        if (event.key === 'Home') {
+          event.preventDefault();
+          showGroup(0, 'enter-left');
+          return;
+        }
+
+        if (event.key === 'End') {
+          event.preventDefault();
+          showGroup(groups.length - 1, 'enter-right');
+        }
+      });
+    }
+
+    root.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('[data-stage-controls]') || target.closest('[data-stage-dots]') || target.closest('[data-stage-up]') || target.closest('[data-stage-down]')) {
+        return;
+      }
+
+      const width = root.clientWidth;
+      if (event.clientX > width * 0.6) {
+        goNextFrame();
+      } else if (event.clientX < width * 0.4) {
+        goPrevFrame();
+      }
+    });
+
+    window.addEventListener('resize', updateFramePosition, {passive: true});
+    updateUi();
+  })();
+</script>
