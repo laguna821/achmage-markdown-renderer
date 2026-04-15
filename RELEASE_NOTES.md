@@ -1,5 +1,23 @@
 # Release Notes
 
+## v6.0.0-beta.3
+
+This release corrects the shipping desktop app so V6 stage mode now lands in the packaged installer instead of only in the Astro renderer shell.
+
+### Added
+
+- Desktop-native universal `stage` mode in `achmage-reader-universal-v5`
+- New stage deck modules under `src/stage/*` for horizontal grouping, vertical continuation frames, and Pretext-backed block measurement
+- Dedicated desktop `StageDocumentView` with left/right group navigation, up/down frame navigation, `Space`, `Home`, `End`, click zones, counters, and frame dots
+- Desktop unit and jsdom coverage for universal stage links, stage pagination, and stage view navigation
+
+### Changed
+
+- `?view=stage&doc=<slug>` now works for every desktop document, including reader-only notes
+- Home cards and the top header now always expose `Stage`, while `Reader` and `Newsletter` remain conditional
+- Removed the old scroll-highlight desktop stage behavior with rail / TOC / mobile drawer from the shipped stage mode
+- Bumped the renderer, desktop app, and Tauri packaging metadata to `6.0.0-beta.3`
+
 ## v6.0.0-beta.2
 
 This release keeps the V6 universal stage rollout intact and adds GitHub Actions desktop packaging for the beta line.

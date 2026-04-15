@@ -115,7 +115,7 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
   }, [doc.slug, onNavigateDoc, output]);
 
   useEffect(() => {
-    if (output === 'reader' || output === 'stage' || output === 'newsletter') {
+    if (output === 'reader' || output === 'newsletter') {
       initPretextEnhancer(output);
     }
   }, [doc.slug, output]);
@@ -425,87 +425,12 @@ export function DocumentView({doc, output, onNavigateDoc}: DocumentViewProps) {
     };
   }, [mobileTocOpen]);
 
-  useEffect(() => {
-    if (output !== 'stage') {
-      return;
-    }
-
-    const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-stage-target="true"]'));
-    if (sections.length === 0) {
-      return;
-    }
-
-    let activeIndex = 0;
-
-    const setActive = (nextIndex: number) => {
-      activeIndex = Math.max(0, Math.min(nextIndex, sections.length - 1));
-      sections.forEach((section, index) => {
-        section.classList.toggle('is-active', index === activeIndex);
-        section.classList.toggle('is-dimmed', index !== activeIndex);
-      });
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top)[0];
-
-        if (!visible) {
-          return;
-        }
-
-        const nextIndex = sections.indexOf(visible.target as HTMLElement);
-        if (nextIndex >= 0) {
-          setActive(nextIndex);
-        }
-      },
-      {
-        rootMargin: '-20% 0px -55% 0px',
-        threshold: [0, 1],
-      },
-    );
-
-    sections.forEach((section) => observer.observe(section));
-    setActive(0);
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!['ArrowDown', 'ArrowRight', 'j', 'J', 'ArrowUp', 'ArrowLeft', 'k', 'K'].includes(event.key)) {
-        return;
-      }
-
-      const direction =
-        event.key === 'ArrowDown' || event.key === 'ArrowRight' || event.key === 'j' || event.key === 'J' ? 1 : -1;
-      const nextIndex = Math.max(0, Math.min(activeIndex + direction, sections.length - 1));
-      const nextSection = sections[nextIndex];
-      if (!nextSection) {
-        return;
-      }
-
-      event.preventDefault();
-      setActive(nextIndex);
-      nextSection.scrollIntoView({behavior: 'smooth', block: 'start'});
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [doc.slug, output]);
-
   return (
-    <div className={`layout-shell${output === 'stage' ? ' layout-shell--stage' : ''}${output === 'newsletter' ? ' layout-shell--newsletter' : ''}`}>
+    <div className={`layout-shell${output === 'newsletter' ? ' layout-shell--newsletter' : ''}`}>
       <div className={`layout-shell__rail${output === 'newsletter' ? ' layout-shell__rail--newsletter' : ''}`}>
         <DocRail doc={doc} />
       </div>
-      <main
-        className={`layout-shell__main${output === 'newsletter' ? ' layout-shell__main--newsletter' : ''}`}
-        data-pretext-stage-hero={output === 'stage' ? 'true' : undefined}
-        data-pretext-max-viewport-ratio={output === 'stage' ? '0.92' : undefined}
-        data-stage-fit={output === 'stage' ? 'stage-fit-ok' : undefined}
-      >
+      <main className={`layout-shell__main${output === 'newsletter' ? ' layout-shell__main--newsletter' : ''}`}>
         {doc.headings.length > 0 ? (
           <div className="mobile-toc">
             <button

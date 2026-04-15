@@ -1,4 +1,4 @@
-Achmage Markdown Renderer v6 Universal Beta
+Achmage Markdown Renderer v6 Desktop Beta 3
 
 - Windows installer `.msi`
 - Windows portable `.zip`
@@ -13,7 +13,9 @@ Notes
 - macOS release assets ship as two public variants: universal `.dmg` and `.app.zip`.
 - Windows MSI installers use Tauri's offline WebView2 installer path so a fresh PC does not need to download WebView2 during setup.
 - Portable `.zip` remains available as a fallback path when the installer is blocked or WebView2 is already present.
-- This beta line ships the renderer-native V6 universal stage integration.
+- This beta line ships the corrected desktop-native V6 universal stage integration.
+- Stage now opens for every packaged desktop note, including reader-only notes.
+- Desktop stage now uses a real full-bleed deck with horizontal groups and vertical continuation frames instead of the old scroll-highlight shell.
 - Move markdown link interception from React synthetic capture to native article-level click delegation so raw rendered anchors in the reader respond reliably.
 - Keep internal note routes, in-document hash links, and external links on the same routing policy while adding dev-only link debug tracing for packaged runtime diagnosis.
 - Add regression coverage for Korean wiki-link rendering and direct text-node clicks so note-to-note jumps stay locked for packaged builds.

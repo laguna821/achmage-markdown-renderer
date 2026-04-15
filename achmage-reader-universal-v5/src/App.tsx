@@ -4,6 +4,7 @@ import {parseHomeSearchState, type HomeSearchState, type OutputMode} from './cor
 import {SiteHeader} from './components/SiteHeader';
 import {DocumentView} from './components/DocumentView';
 import {HomeView} from './components/HomeView';
+import {StageDocumentView} from './components/StageDocumentView';
 import {useAchmageApp} from './hooks/useAchmageApp';
 import {APP_DISPLAY_NAME, clearLastOpenDoc, getInitialRestoreRoute, type AppRoute} from './lib/app-shell';
 
@@ -230,10 +231,12 @@ function App() {
         appName={APP_DISPLAY_NAME}
         doc={activeDoc ?? undefined}
         modeLabel={modeLabel}
+        activeOutput={route.screen === 'doc' ? route.output : undefined}
         themeState={themeState}
         themeLocked={themeLocked}
         onThemeToggle={onThemeToggle}
         onHome={navigateHome}
+        onOpenDoc={navigateDoc}
         onSelectVault={selectVault}
         onRescan={() => void refreshVault()}
         selectedVaultPath={settings?.selectedVaultPath ?? null}
@@ -249,7 +252,11 @@ function App() {
         </main>
       ) : null}
       {!error && route.screen === 'doc' && activeDoc ? (
-        <DocumentView doc={activeDoc} output={route.output} onNavigateDoc={navigateDoc} />
+        route.output === 'stage' ? (
+          <StageDocumentView doc={activeDoc} onNavigateDoc={navigateDoc} />
+        ) : (
+          <DocumentView doc={activeDoc} output={route.output} onNavigateDoc={navigateDoc} />
+        )
       ) : null}
       {!error && (route.screen === 'home' || !activeDoc) ? (
         <HomeView

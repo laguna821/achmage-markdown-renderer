@@ -10,6 +10,7 @@ import {
   type NormalizedDoc,
   type SourceDocument,
 } from '../core/content';
+import {getDocumentModeLinks} from '../stage';
 
 type HomeViewProps = {
   docs: NormalizedDoc[];
@@ -197,14 +198,14 @@ export function HomeView({
                 {doc.meta.summary ? <p>{doc.meta.summary}</p> : null}
                 {match?.excerpt ? <p className="home-card__excerpt">{match.excerpt}</p> : null}
                 <div className="home-card__links">
-                  {doc.meta.outputs.map((output) => (
+                  {getDocumentModeLinks(doc).map((link) => (
                     <button
-                      key={`${doc.slug}-${output}`}
+                      key={`${doc.slug}-${link.output}`}
                       className="home-search__clear"
                       type="button"
-                      onClick={() => onOpenDoc(output, doc.slug)}
+                      onClick={() => onOpenDoc(link.output, doc.slug)}
                     >
-                      {output}
+                      {link.label}
                     </button>
                   ))}
                 </div>
