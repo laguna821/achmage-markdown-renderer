@@ -253,7 +253,7 @@ function App() {
       ) : null}
       {!error && route.screen === 'doc' && activeDoc ? (
         route.output === 'stage' ? (
-          <StageDocumentView doc={activeDoc} onNavigateDoc={navigateDoc} />
+          <StageDocumentView doc={activeDoc} theme={effectiveTheme} onNavigateDoc={navigateDoc} />
         ) : (
           <DocumentView doc={activeDoc} output={route.output} onNavigateDoc={navigateDoc} />
         )

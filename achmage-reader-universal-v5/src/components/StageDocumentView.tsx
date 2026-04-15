@@ -1,6 +1,6 @@
 import {useEffect, useMemo, useState, type CSSProperties} from 'react';
 
-import type {NormalizedDoc, OutputMode} from '../core/content';
+import type {NormalizedDoc, OutputMode, ThemeMode} from '../core/content';
 import {openExternal} from '../lib/bridge';
 import {buildStageDeck} from '../stage';
 
@@ -10,6 +10,7 @@ import {DocumentHeader} from './DocumentHeader';
 
 type StageDocumentViewProps = {
   doc: NormalizedDoc;
+  theme: ThemeMode;
   onNavigateDoc: (output: OutputMode, slug: string, anchor?: string) => void;
 };
 
@@ -18,6 +19,8 @@ declare global {
     __ACHMAGE_LINK_DEBUG__?: ArticleLinkDebugEntry[];
   }
 }
+
+const STAGE_DOCK_BREAKPOINT = 1120;
 
 const isNavigationTarget = (event: KeyboardEvent): boolean => {
   if (event.altKey || event.ctrlKey || event.metaKey) {
@@ -32,17 +35,21 @@ const isNavigationTarget = (event: KeyboardEvent): boolean => {
   return true;
 };
 
-export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) {
+export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentViewProps) {
   const deck = useMemo(() => buildStageDeck(doc), [doc]);
   const [groupIndex, setGroupIndex] = useState(0);
   const [frameIndex, setFrameIndex] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [layoutMode, setLayoutMode] = useState<'dock' | 'compact'>('dock');
 
   const currentGroup = deck.groups[groupIndex] ?? deck.groups[0];
   const currentFrame = currentGroup?.frames[frameIndex] ?? currentGroup?.frames[0];
   const currentFrameCount = currentGroup?.frames.length ?? 0;
   const hasVerticalFrames = currentFrameCount > 1;
+  const currentFrameContentKind =
+    currentFrame?.blocks.length === 1 ? currentFrame.blocks[0]?.kind ?? 'mixed' : 'mixed';
+  const isLightStageTheme = theme === 'light';
 
   const moveToGroup = (nextIndex: number) => {
     const clamped = Math.max(0, Math.min(nextIndex, deck.groups.length - 1));
@@ -125,16 +132,17 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
   }, [doc.slug]);
 
   useEffect(() => {
-    const syncHeaderHeight = () => {
+    const syncStageMetrics = () => {
       const header = document.querySelector<HTMLElement>('.site-header');
       setHeaderHeight(Math.ceil(header?.getBoundingClientRect().height ?? 0));
+      setLayoutMode(window.innerWidth < STAGE_DOCK_BREAKPOINT ? 'compact' : 'dock');
     };
 
-    syncHeaderHeight();
-    window.addEventListener('resize', syncHeaderHeight);
+    syncStageMetrics();
+    window.addEventListener('resize', syncStageMetrics);
 
     return () => {
-      window.removeEventListener('resize', syncHeaderHeight);
+      window.removeEventListener('resize', syncStageMetrics);
     };
   }, []);
 
@@ -301,10 +309,29 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
     return null;
   }
 
+  const sectionHeading =
+    currentGroup.kind !== 'lead' ? (
+      isLightStageTheme ? (
+        <div className="stage-section-heading" data-stage-heading-style="title-above-rule">
+          <h2 className="doc-section__title" id={!currentFrame.continued ? currentFrame.sectionId : undefined}>
+            {currentFrame.title}
+            {currentFrame.continued ? <span className="stage-frame__continued">CONT.</span> : null}
+          </h2>
+          <div className="stage-section-heading__rule" aria-hidden="true" />
+        </div>
+      ) : (
+        <h2 className="doc-section__title" id={!currentFrame.continued ? currentFrame.sectionId : undefined}>
+          {currentFrame.title}
+          {currentFrame.continued ? <span className="stage-frame__continued">CONT.</span> : null}
+        </h2>
+      )
+    ) : null;
+
   return (
     <main
       className="stage-shell"
       data-stage-root="true"
+      data-stage-layout-mode={layoutMode}
       style={
         {
           '--stage-viewport-height': stageHeight,
@@ -313,106 +340,106 @@ export function StageDocumentView({doc, onNavigateDoc}: StageDocumentViewProps) 
         } as CSSProperties
       }
     >
-      <div className="stage-shell__viewport">
-        <button
-          type="button"
-          className="stage-shell__nav-zone stage-shell__nav-zone--left"
-          aria-label="Previous stage step"
-          onClick={retreatWithinStage}
-        />
-        <button
-          type="button"
-          className="stage-shell__nav-zone stage-shell__nav-zone--right"
-          aria-label="Next stage step"
-          onClick={advance}
-        />
-
-        <div className="stage-shell__deck">
-          <div className="stage-paper" data-stage-group-index={groupIndex} data-stage-frame-index={frameIndex}>
-            <div className="doc-paper doc-paper--stage stage-frame">
-              {currentFrame.includeDocumentHeader ? <DocumentHeader doc={doc} variant="stage" /> : null}
-
-              <section
-                className={`doc-section${currentGroup.kind === 'lead' ? ' doc-section--lead' : ''}${currentFrame.continued ? ' stage-frame__section--continued' : ''}`}
-                data-stage-article="true"
-                data-section-id={currentFrame.sectionId ?? currentGroup.id}
-              >
-                {currentGroup.kind !== 'lead' ? (
-                  <h2 className="doc-section__title" id={!currentFrame.continued ? currentFrame.sectionId : undefined}>
-                    {currentFrame.title}
-                    {currentFrame.continued ? <span className="stage-frame__continued">CONT.</span> : null}
-                  </h2>
-                ) : null}
-                <div className="doc-section__blocks">
-                  {currentFrame.blocks.map((block, blockIndex) => (
-                    <BlockRenderer
-                      key={`${currentFrame.id}-${block.kind}-${blockIndex}`}
-                      block={block}
-                      variant="stage"
-                      doc={doc}
-                      sectionId={currentFrame.sectionId ?? currentGroup.id}
-                      blockIndex={blockIndex}
-                    />
-                  ))}
-                </div>
-              </section>
-            </div>
+      <aside className="stage-shell__status-dock" data-stage-status-dock="true">
+        <div className="stage-shell__status">
+          <div className="stage-shell__status-title">{currentGroup.title}</div>
+          <div className="stage-shell__status-meta">
+            <span data-stage-group-counter="true">
+              {groupIndex + 1} / {deck.groups.length}
+            </span>
+            {hasVerticalFrames ? (
+              <span data-stage-frame-counter="true">
+                {groupIndex + 1}-{frameIndex + 1}
+              </span>
+            ) : null}
           </div>
         </div>
+      </aside>
 
-        <aside
-          className="stage-shell__frame-rail"
-          data-stage-frame-rail="true"
-          data-stage-frame-count={currentFrameCount}
-          aria-label="Stage frames"
-          hidden={!hasVerticalFrames}
-        >
+      <div className="stage-shell__viewport-shell">
+        <div className="stage-shell__viewport">
           <button
             type="button"
-            className="stage-shell__frame-button"
-            aria-label="Previous stage frame"
-            onClick={moveToPreviousFrame}
-            disabled={frameIndex === 0}
-          >
-            ▲
-          </button>
-          <div className="stage-shell__frame-dots">
-            {currentGroup.frames.map((frame, index) => (
-              <button
-                key={frame.id}
-                type="button"
-                className={`stage-shell__frame-dot${index === frameIndex ? ' stage-shell__frame-dot--active' : ''}`}
-                aria-label={`Go to frame ${index + 1}`}
-                onClick={() => setFrameIndex(index)}
-              />
-            ))}
-          </div>
+            className="stage-shell__nav-zone stage-shell__nav-zone--left"
+            aria-label="Previous stage step"
+            onClick={retreatWithinStage}
+          />
           <button
             type="button"
-            className="stage-shell__frame-button"
-            aria-label="Next stage frame"
-            onClick={moveToNextFrame}
-            disabled={frameIndex === currentFrameCount - 1}
-          >
-            ▼
-          </button>
-        </aside>
+            className="stage-shell__nav-zone stage-shell__nav-zone--right"
+            aria-label="Next stage step"
+            onClick={advance}
+          />
 
-        <div className="stage-shell__hud">
-          <div className="stage-shell__status">
-            <div className="stage-shell__status-title">{currentGroup.title}</div>
-            <div className="stage-shell__status-meta">
-              <span data-stage-group-counter="true">
-                {groupIndex + 1} / {deck.groups.length}
-              </span>
-              {hasVerticalFrames ? (
-                <span data-stage-frame-counter="true">
-                  {groupIndex + 1}-{frameIndex + 1}
-                </span>
-              ) : null}
+          <div className="stage-shell__deck">
+            <div className="stage-paper" data-stage-group-index={groupIndex} data-stage-frame-index={frameIndex}>
+              <div className="doc-paper doc-paper--stage stage-frame">
+                {currentFrame.includeDocumentHeader ? <DocumentHeader doc={doc} variant="stage" /> : null}
+
+                <section
+                  className={`doc-section${currentGroup.kind === 'lead' ? ' doc-section--lead' : ''}${currentFrame.continued ? ' stage-frame__section--continued' : ''}`}
+                  data-stage-article="true"
+                  data-section-id={currentFrame.sectionId ?? currentGroup.id}
+                  data-stage-frame-content-kind={currentFrameContentKind}
+                >
+                  {sectionHeading}
+                  <div className="doc-section__blocks" data-stage-frame-content-kind={currentFrameContentKind}>
+                    {currentFrame.blocks.map((block, blockIndex) => (
+                      <BlockRenderer
+                        key={`${currentFrame.id}-${block.kind}-${blockIndex}`}
+                        block={block}
+                        variant="stage"
+                        doc={doc}
+                        sectionId={currentFrame.sectionId ?? currentGroup.id}
+                        blockIndex={blockIndex}
+                      />
+                    ))}
+                  </div>
+                </section>
+              </div>
             </div>
           </div>
 
+          <aside
+            className="stage-shell__frame-rail"
+            data-stage-frame-rail="true"
+            data-stage-frame-count={currentFrameCount}
+            aria-label="Stage frames"
+            hidden={!hasVerticalFrames}
+          >
+            <button
+              type="button"
+              className="stage-shell__frame-button"
+              aria-label="Previous stage frame"
+              onClick={moveToPreviousFrame}
+              disabled={frameIndex === 0}
+            >
+              ^
+            </button>
+            <div className="stage-shell__frame-dots">
+              {currentGroup.frames.map((frame, index) => (
+                <button
+                  key={frame.id}
+                  type="button"
+                  className={`stage-shell__frame-dot${index === frameIndex ? ' stage-shell__frame-dot--active' : ''}`}
+                  aria-label={`Go to frame ${index + 1}`}
+                  onClick={() => setFrameIndex(index)}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              className="stage-shell__frame-button"
+              aria-label="Next stage frame"
+              onClick={moveToNextFrame}
+              disabled={frameIndex === currentFrameCount - 1}
+            >
+              v
+            </button>
+          </aside>
+        </div>
+
+        <div className="stage-shell__controls-bar">
           <div className="stage-shell__controls">
             <button type="button" className="stage-shell__control" aria-label="First stage group" onClick={moveToFirstGroup}>
               |&lt;

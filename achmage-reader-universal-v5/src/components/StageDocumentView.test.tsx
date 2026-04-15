@@ -4,12 +4,42 @@ import {act} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-import type {NormalizedDoc} from '../core/content';
+import type {NormalizedDoc, ThemeMode} from '../core/content';
 
 import {StageDocumentView} from './StageDocumentView';
 
-const makeDoc = (): NormalizedDoc => {
+const makeDoc = ({
+  title = 'Stage UI Lab',
+  theme = 'dark',
+  sections,
+}: {
+  title?: string;
+  theme?: ThemeMode;
+  sections?: NormalizedDoc['sections'];
+} = {}): NormalizedDoc => {
   const longParagraph = `<p>${'Stage paragraph '.repeat(180)}</p>`.repeat(8);
+  const defaultSections: NormalizedDoc['sections'] = [
+    {
+      id: 'lead',
+      title: 'Overview',
+      depth: 1,
+      blocks: [{kind: 'prose', html: '<p>Lead block</p>'}],
+    },
+    {
+      id: 'section-one',
+      title: 'Section One',
+      depth: 2,
+      anchorId: 'section-one',
+      blocks: [{kind: 'prose', html: longParagraph}],
+    },
+    {
+      id: 'section-two',
+      title: 'Section Two',
+      depth: 2,
+      anchorId: 'section-two',
+      blocks: [{kind: 'prose', html: '<p>Tail section</p>'}],
+    },
+  ];
 
   return {
     filePath: 'C:/vault/stage-ui.md',
@@ -21,10 +51,10 @@ const makeDoc = (): NormalizedDoc => {
     headings: [],
     warnings: [],
     meta: {
-      title: 'Stage UI Lab',
+      title,
       docType: 'note',
       outputs: ['reader'],
-      theme: 'dark',
+      theme,
       tags: [],
       toc: 'auto',
       tocMaxDepth: 'auto',
@@ -41,39 +71,28 @@ const makeDoc = (): NormalizedDoc => {
         showToc: true,
       },
     },
-    sections: [
-      {
-        id: 'lead',
-        title: 'Overview',
-        depth: 1,
-        blocks: [{kind: 'prose', html: '<p>Lead block</p>'}],
-      },
-      {
-        id: 'section-one',
-        title: 'Section One',
-        depth: 2,
-        anchorId: 'section-one',
-        blocks: [{kind: 'prose', html: longParagraph}],
-      },
-      {
-        id: 'section-two',
-        title: 'Section Two',
-        depth: 2,
-        anchorId: 'section-two',
-        blocks: [{kind: 'prose', html: '<p>Tail section</p>'}],
-      },
-    ],
+    sections: sections ?? defaultSections,
   };
 };
 
-const mountStageView = async (doc: NormalizedDoc) => {
+const mountStageView = async (doc: NormalizedDoc, options: {theme?: ThemeMode; width?: number} = {}) => {
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root = createRoot(container);
   const onNavigateDoc = vi.fn();
+  const theme = options.theme ?? doc.meta.theme;
+  const width = options.width ?? 1440;
+
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+  document.documentElement.dataset.theme = theme;
+  document.body.className = 'mode-stage';
 
   await act(async () => {
-    root.render(<StageDocumentView doc={doc} onNavigateDoc={onNavigateDoc} />);
+    root.render(<StageDocumentView doc={doc} theme={theme} onNavigateDoc={onNavigateDoc} />);
     await Promise.resolve();
   });
 
@@ -117,6 +136,34 @@ describe('StageDocumentView', () => {
     }
     vi.unstubAllGlobals();
     document.body.innerHTML = '';
+    document.documentElement.removeAttribute('data-theme');
+  });
+
+  it('keeps the status dock outside the slide paper and collapses to compact mode on narrower widths', async () => {
+    const mounted = await mountStageView(
+      makeDoc({
+        title:
+          'A very long stage section title that should stay readable in the left dock without spilling into the slide paper',
+      }),
+      {width: 1500},
+    );
+    root = mounted.root;
+
+    const stageRoot = document.querySelector<HTMLElement>('[data-stage-root="true"]');
+    const statusDock = document.querySelector<HTMLElement>('[data-stage-status-dock="true"]');
+
+    expect(stageRoot?.dataset.stageLayoutMode).toBe('dock');
+    expect(statusDock).toBeTruthy();
+    expect(statusDock?.closest('.stage-paper')).toBeNull();
+    expect(statusDock?.querySelector('[data-stage-group-counter="true"]')?.textContent).toBe('1 / 3');
+
+    await act(async () => {
+      window.innerWidth = 980;
+      window.dispatchEvent(new Event('resize'));
+      await Promise.resolve();
+    });
+
+    expect(stageRoot?.dataset.stageLayoutMode).toBe('compact');
   });
 
   it('uses the right-side rail for frame navigation and the bottom bar for logical groups', async () => {
@@ -193,6 +240,33 @@ describe('StageDocumentView', () => {
     expect(groupCounter()).toBe('2 / 3');
     expect(frameCounter()).toBe('2-1');
     expect(frameRail()?.hidden).toBe(false);
+  });
+
+  it('renders light-theme stage section titles above the divider line', async () => {
+    const mounted = await mountStageView(makeDoc({theme: 'light'}), {theme: 'light'});
+    root = mounted.root;
+
+    const nextGroupButton = document.querySelector<HTMLButtonElement>('button[aria-label="Next stage group"]');
+    if (!nextGroupButton) {
+      throw new Error('next group button not found');
+    }
+
+    await act(async () => {
+      nextGroupButton.click();
+      await Promise.resolve();
+    });
+
+    const heading = document.querySelector<HTMLElement>('[data-stage-heading-style="title-above-rule"]');
+    const title = heading?.querySelector('.doc-section__title');
+    const rule = heading?.querySelector('.stage-section-heading__rule');
+
+    expect(heading).toBeTruthy();
+    expect(title?.textContent).toContain('Section One');
+    expect(rule).toBeTruthy();
+    if (!title || !rule) {
+      throw new Error('light theme stage heading nodes not found');
+    }
+    expect(Boolean(title.compareDocumentPosition(rule) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
   });
 
   it('matches ultra-v3 keyboard semantics for logical groups and continued frames', async () => {

@@ -1,5 +1,16 @@
 # Release Notes
 
+## v6.0.0-beta.6
+
+This release polishes the packaged desktop stage mode so the HUD no longer overlaps the slide, oversized screenshots fit inside the paper more reliably, and Light theme stage headers recover the intended title-above-rule structure.
+
+### Changed
+
+- Moved the desktop stage title and counters into a docked status column that lives outside the slide paper and collapses into a compact strip on narrower widths
+- Added stage-only image viewport fitting with runtime landscape / portrait / square detection so large screenshots use `contain` without cropping and portrait captures stay comfortably inside the frame
+- Corrected Light theme stage section headers so titles render above the black divider rule, including continued frames, while the other themes keep their existing presentation
+- Bumped the renderer, desktop app, and Tauri packaging metadata to `6.0.0-beta.6`
+
 ## v6.0.0-beta.5
 
 This release keeps the beta.4 stage navigation parity fix intact and adds the CI compatibility correction needed to publish the desktop installers successfully.

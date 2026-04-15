@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState, type SyntheticEvent} from 'react';
 
 import {resolveAxisTableLayoutHints, resolveBlockLayoutHints, buildPretextTargetAttributes} from '../core/pretext/hints';
 import {resolveMediaEmbed} from '../core/content/media';
@@ -82,9 +82,42 @@ function CalloutBlock({calloutType, title, content}: {calloutType: string; title
   );
 }
 
-function ImageBlock({src, alt, caption, doc}: {src: string; alt?: string; caption?: string; doc: NormalizedDoc}) {
+type StageImageShape = 'unknown' | 'landscape' | 'portrait' | 'square';
+
+const resolveStageImageShape = (width: number, height: number): StageImageShape => {
+  if (width <= 0 || height <= 0) {
+    return 'unknown';
+  }
+
+  const ratio = width / height;
+  if (ratio >= 1.08) {
+    return 'landscape';
+  }
+
+  if (ratio <= 0.92) {
+    return 'portrait';
+  }
+
+  return 'square';
+};
+
+function ImageBlock({
+  src,
+  alt,
+  caption,
+  doc,
+  variant,
+}: {
+  src: string;
+  alt?: string;
+  caption?: string;
+  doc: NormalizedDoc;
+  variant: Variant;
+}) {
   const embed = useMemo(() => resolveMediaEmbed(src, alt ?? caption), [alt, caption, src]);
   const [resolvedSrc, setResolvedSrc] = useState(src);
+  const [stageImageShape, setStageImageShape] = useState<StageImageShape>('unknown');
+  const imageRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,7 +146,34 @@ function ImageBlock({src, alt, caption, doc}: {src: string; alt?: string; captio
     };
   }, [doc.filePath, doc.sourceRoot, src]);
 
+  useEffect(() => {
+    if (variant !== 'stage') {
+      return;
+    }
+
+    setStageImageShape('unknown');
+  }, [resolvedSrc, variant]);
+
   const captionText = caption ?? alt;
+  const syncStageImageShape = (image: HTMLImageElement | null) => {
+    if (variant !== 'stage' || !image) {
+      return;
+    }
+
+    const width = image.naturalWidth || image.width;
+    const height = image.naturalHeight || image.height;
+    if (width > 0 && height > 0) {
+      setStageImageShape(resolveStageImageShape(width, height));
+    }
+  };
+
+  const onStageImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    syncStageImageShape(event.currentTarget);
+  };
+
+  useEffect(() => {
+    syncStageImageShape(imageRef.current);
+  }, [resolvedSrc, variant]);
 
   if (embed) {
     return (
@@ -133,6 +193,17 @@ function ImageBlock({src, alt, caption, doc}: {src: string; alt?: string; captio
             {embed.title}
           </a>
         </figcaption>
+      </figure>
+    );
+  }
+
+  if (variant === 'stage') {
+    return (
+      <figure className="image-block image-block--stage" data-stage-image-shape={stageImageShape}>
+        <div className="image-block__stage-viewport" data-stage-image-viewport="true">
+          <img ref={imageRef} src={resolvedSrc} alt={alt ?? ''} loading="lazy" onLoad={onStageImageLoad} />
+        </div>
+        {captionText ? <figcaption className="image-block__caption image-block__caption--stage">{captionText}</figcaption> : null}
       </figure>
     );
   }
@@ -356,7 +427,7 @@ export function BlockRenderer({block, variant, doc, sectionId, blockIndex}: Bloc
     case 'prose':
       return <HtmlBlock html={block.html} className="prose-block" />;
     case 'image':
-      return <ImageBlock src={block.src} alt={block.alt} caption={block.caption} doc={doc} />;
+      return <ImageBlock src={block.src} alt={block.alt} caption={block.caption} doc={doc} variant={variant} />;
     default:
       return null;
   }
