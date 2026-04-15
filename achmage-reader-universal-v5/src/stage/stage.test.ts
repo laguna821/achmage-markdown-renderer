@@ -266,6 +266,49 @@ Just body copy with no headings.
     expect(denseFrame?.occupancyRatio).toBeGreaterThanOrEqual(0.58);
   });
 
+  test('classifies solo card-like frames as focus-card with a bounded focus scale', () => {
+    const doc = makeDoc({
+      sections: [
+        {id: 'lead', title: 'Overview', depth: 1, blocks: []},
+        {
+          id: 'summary',
+          title: 'Summary',
+          depth: 2,
+          blocks: [{kind: 'callout', calloutType: 'summary', title: '3줄 요약', content: '<p>짧은 핵심 요약.</p>'}],
+        },
+        {
+          id: 'quote',
+          title: 'Quote',
+          depth: 2,
+          blocks: [{kind: 'docQuote', content: '<p>짧은 인용문.</p>'}],
+        },
+        {
+          id: 'evidence-panel',
+          title: 'Evidence',
+          depth: 2,
+          blocks: [{kind: 'evidencePanel', item: {title: 'Panel', body: '<p>짧은 근거.</p>'}}],
+        },
+      ],
+    });
+
+    const deck = buildStageDeck(doc, {
+      frameHeight: 720,
+      frameWidth: 1120,
+    });
+
+    const summaryFrame = deck.groups.find((group) => group.id === 'summary')?.frames[0];
+    const quoteFrame = deck.groups.find((group) => group.id === 'quote')?.frames[0];
+    const panelFrame = deck.groups.find((group) => group.id === 'evidence-panel')?.frames[0];
+
+    expect(summaryFrame?.layoutIntent).toBe('focus-card');
+    expect(summaryFrame?.focusScale).toBeGreaterThan(1);
+    expect(summaryFrame?.focusScale).toBeLessThanOrEqual(1.38);
+    expect(quoteFrame?.layoutIntent).toBe('focus-card');
+    expect(quoteFrame?.focusScale).toBeGreaterThan(1);
+    expect(panelFrame?.layoutIntent).toBe('focus-card');
+    expect(panelFrame?.focusScale).toBeGreaterThan(1);
+  });
+
   test('splits long prose into continued frames while isolating images and dense tables', () => {
     const longParagraph = 'A long paragraph for pagination. '.repeat(90);
     const longProse: NormalizedBlock = {

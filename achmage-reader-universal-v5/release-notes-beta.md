@@ -1,4 +1,4 @@
-Achmage Markdown Renderer v6 Desktop Beta 7
+Achmage Markdown Renderer v6 Desktop Beta 8
 
 - Windows installer `.msi`
 - Windows portable `.zip`
@@ -13,14 +13,11 @@ Notes
 - macOS release assets ship as two public variants: universal `.dmg` and `.app.zip`.
 - Windows MSI installers use Tauri's offline WebView2 installer path so a fresh PC does not need to download WebView2 during setup.
 - Portable `.zip` remains available as a fallback path when the installer is blocked or WebView2 is already present.
-- This beta line ships the corrected desktop-native V6 universal stage integration.
-- Stage now opens for every packaged desktop note, including reader-only notes.
-- Desktop stage now uses a real full-bleed deck with horizontal groups and vertical continuation frames instead of the old scroll-highlight shell.
-- Stage title and counters now live in a dock outside the slide instead of overlaying the paper, with a compact fallback on narrower widths.
-- Stage image frames now use contain-only fitting with runtime orientation detection so large screenshots stay fully visible and portrait captures scale down more comfortably.
-- Light theme stage section titles now render above the black divider rule, including continued frames, so the slide body recovers vertical space.
-- Stage frames now carry layout intent metadata so sparse text slides, image slides, and header-only lead slides can use the paper differently without changing navigation semantics.
-- Header-only lead slides no longer render an empty lower section card, and sparse frames now expand beyond reader-width constraints so stage uses more of the slide surface across all themes.
+- This beta line keeps the desktop-native V6 universal stage integration and ultra-v3 navigation baseline intact.
+- Stage now reflows isolated `Summary / Key Trigger`, `Quote`, thesis, provenance, log, and other solo card-like frames after pagination so they use the slide at stage scale instead of reader scale.
+- Solo card frames now carry `focus-card` intent plus bounded focus scaling metadata so the desktop renderer can safely enlarge card footprint and typography without overflowing the paper.
+- Desktop stage now exposes explicit stage-only block hooks for card-like blocks, letting focus-card slides use dedicated layout and typography rules without changing reader or newsletter styling.
+- Stage image frames still use contain-only fitting with runtime orientation detection, and sparse / header-only slides keep the beta.7 paper-usage improvements.
 - Move markdown link interception from React synthetic capture to native article-level click delegation so raw rendered anchors in the reader respond reliably.
 - Keep internal note routes, in-document hash links, and external links on the same routing policy while adding dev-only link debug tracing for packaged runtime diagnosis.
 - Add regression coverage for Korean wiki-link rendering and direct text-node clicks so note-to-note jumps stay locked for packaged builds.

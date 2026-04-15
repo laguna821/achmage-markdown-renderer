@@ -81,6 +81,7 @@
 .stage-frame {
   --stage-text-max-width: 58rem;
   --stage-sparse-max-width: 72rem;
+  --stage-focus-scale: 1;
   --stage-frame-max-width: var(--stage-text-max-width);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -126,6 +127,10 @@
 }
 
 .stage-frame .doc-section[data-stage-layout-intent='image'] {
+  --stage-frame-max-width: 100%;
+}
+
+.stage-frame .doc-section[data-stage-layout-intent='focus-card'] {
   --stage-frame-max-width: 100%;
 }
 
@@ -196,7 +201,17 @@
   align-content: stretch;
 }
 
+.stage-frame .doc-section[data-stage-layout-intent='focus-card'] .doc-section__blocks {
+  place-content: center stretch;
+  justify-items: stretch;
+}
+
 .stage-frame .doc-section[data-stage-layout-intent='image'] .doc-section__blocks > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+.stage-frame .doc-section[data-stage-layout-intent='focus-card'] .doc-section__blocks > * {
   width: 100%;
   max-width: 100%;
 }
@@ -245,6 +260,99 @@
   font-size: 0.88rem;
   line-height: 1.5;
   text-align: center;
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] [data-stage-block-kind='callout'],
+.stage-frame[data-stage-layout-intent='focus-card'] [data-stage-block-kind='docQuote'],
+.stage-frame[data-stage-layout-intent='focus-card'] [data-stage-block-kind='evidencePanel'],
+.stage-frame[data-stage-layout-intent='focus-card'] [data-stage-block-kind='thesis'],
+.stage-frame[data-stage-layout-intent='focus-card'] [data-stage-block-kind='provenance'],
+.stage-frame[data-stage-layout-intent='focus-card'] [data-stage-block-kind='log'],
+.stage-frame[data-stage-layout-intent='focus-card'] [data-stage-block-kind='questionReset'],
+.stage-frame[data-stage-layout-intent='focus-card'] [data-stage-block-kind='evidenceGrid'] {
+  width: 100%;
+  max-width: 100%;
+  min-height: clamp(18rem, 72%, 36rem);
+  align-self: stretch;
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .callout-block--stage,
+.stage-frame[data-stage-layout-intent='focus-card'] .evidence-panel--stage,
+.stage-frame[data-stage-layout-intent='focus-card'] .provenance-panel--stage,
+.stage-frame[data-stage-layout-intent='focus-card'] .log-block--stage,
+.stage-frame[data-stage-layout-intent='focus-card'] .thesis-block--stage {
+  display: grid;
+  align-content: center;
+  gap: calc(0.75rem * var(--stage-focus-scale));
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .callout-block--stage {
+  padding: calc(1.3rem * var(--stage-focus-scale)) calc(1.45rem * var(--stage-focus-scale));
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .callout-block--stage .callout-block__title {
+  gap: calc(0.65rem * var(--stage-focus-scale));
+  margin-bottom: calc(0.6rem * var(--stage-focus-scale));
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .callout-block--stage .callout-block__icon {
+  width: calc(1.65rem * var(--stage-focus-scale));
+  height: calc(1.65rem * var(--stage-focus-scale));
+  font-size: calc(0.88rem * var(--stage-focus-scale));
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .callout-block--stage .callout-block__title-text,
+.stage-frame[data-stage-layout-intent='focus-card'] .evidence-panel--stage .evidence-panel__title,
+.stage-frame[data-stage-layout-intent='focus-card'] .question-reset--stage .question-reset__title,
+.stage-frame[data-stage-layout-intent='focus-card'] .evidence-grid--stage .evidence-card__title,
+.stage-frame[data-stage-layout-intent='focus-card'] .provenance-panel--stage .provenance-panel__eyebrow,
+.stage-frame[data-stage-layout-intent='focus-card'] .thesis-block--stage .thesis-block__label {
+  font-size: calc(1.02rem * var(--stage-focus-scale));
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .callout-block--stage .callout-block__body,
+.stage-frame[data-stage-layout-intent='focus-card'] .evidence-panel--stage .evidence-panel__body,
+.stage-frame[data-stage-layout-intent='focus-card'] .question-reset--stage .question-reset__body,
+.stage-frame[data-stage-layout-intent='focus-card'] .evidence-grid--stage .evidence-card__body,
+.stage-frame[data-stage-layout-intent='focus-card'] .provenance-panel--stage dd,
+.stage-frame[data-stage-layout-intent='focus-card'] .thesis-block--stage .thesis-block__content,
+.stage-frame[data-stage-layout-intent='focus-card'] .log-block--stage pre {
+  font-size: calc(1rem * var(--stage-focus-scale));
+  line-height: calc(1.65em);
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .doc-quote--stage {
+  width: 100%;
+  max-width: 100%;
+  min-height: clamp(18rem, 70%, 34rem);
+  display: grid;
+  align-content: center;
+  padding: calc(1.45rem * var(--stage-focus-scale)) calc(1.55rem * var(--stage-focus-scale));
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .doc-quote--stage .doc-quote__content {
+  font-size: calc(1.08rem * var(--stage-focus-scale));
+  line-height: calc(1.7em);
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .evidence-panel--stage,
+.stage-frame[data-stage-layout-intent='focus-card'] .provenance-panel--stage,
+.stage-frame[data-stage-layout-intent='focus-card'] .log-block--stage,
+.stage-frame[data-stage-layout-intent='focus-card'] .thesis-block--stage {
+  padding: calc(1.3rem * var(--stage-focus-scale)) calc(1.45rem * var(--stage-focus-scale));
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .question-reset--stage,
+.stage-frame[data-stage-layout-intent='focus-card'] .evidence-grid--stage {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: center;
+  gap: calc(0.9rem * var(--stage-focus-scale));
+}
+
+.stage-frame[data-stage-layout-intent='focus-card'] .question-reset--stage .question-reset__card,
+.stage-frame[data-stage-layout-intent='focus-card'] .evidence-grid--stage .evidence-card {
+  min-height: clamp(16rem, 58%, 28rem);
 }
 
 .stage-shell__status {

@@ -333,6 +333,62 @@ describe('StageDocumentView', () => {
     expect(imageFigure?.dataset.stageImageShape).toBe('unknown');
   });
 
+  it('exposes focus-card metadata for solo card frames and keeps stage-only block hooks', async () => {
+    const doc = makeDoc({
+      sections: [
+        {id: 'lead', title: 'Overview', depth: 1, blocks: []},
+        {
+          id: 'summary',
+          title: 'Summary or Key Trigger',
+          depth: 2,
+          blocks: [{kind: 'callout', calloutType: 'summary', title: '3줄 요약', content: '<p>짧은 핵심 요약.</p>'}],
+        },
+        {
+          id: 'quote',
+          title: 'Quote',
+          depth: 2,
+          blocks: [{kind: 'docQuote', content: '<p>짧은 인용문.</p>'}],
+        },
+      ],
+    });
+
+    const mounted = await mountStageView(doc);
+    root = mounted.root;
+
+    const nextGroupButton = document.querySelector<HTMLButtonElement>('button[aria-label="Next stage group"]');
+    if (!nextGroupButton) {
+      throw new Error('next group button not found');
+    }
+
+    await act(async () => {
+      nextGroupButton.click();
+      await Promise.resolve();
+    });
+
+    const summaryFrame = document.querySelector<HTMLElement>('.stage-frame');
+    const summarySection = document.querySelector<HTMLElement>('.doc-section');
+    const summaryCallout = document.querySelector<HTMLElement>('.callout-block--stage');
+
+    expect(summaryFrame?.dataset.stageLayoutIntent).toBe('focus-card');
+    expect(summaryFrame?.dataset.stageFocusScale).toBeTruthy();
+    expect(summaryFrame?.dataset.stageSoloBlockKind).toBe('callout');
+    expect(summarySection?.dataset.stageLayoutIntent).toBe('focus-card');
+    expect(summarySection?.dataset.stageSoloBlockKind).toBe('callout');
+    expect(summaryCallout?.dataset.stageBlockKind).toBe('callout');
+
+    await act(async () => {
+      nextGroupButton.click();
+      await Promise.resolve();
+    });
+
+    const quoteFrame = document.querySelector<HTMLElement>('.stage-frame');
+    const quoteBlock = document.querySelector<HTMLElement>('.doc-quote--stage');
+
+    expect(quoteFrame?.dataset.stageLayoutIntent).toBe('focus-card');
+    expect(quoteFrame?.dataset.stageSoloBlockKind).toBe('docQuote');
+    expect(quoteBlock?.dataset.stageBlockKind).toBe('docQuote');
+  });
+
   it('matches ultra-v3 keyboard semantics for logical groups and continued frames', async () => {
     const mounted = await mountStageView(makeDoc());
     root = mounted.root;

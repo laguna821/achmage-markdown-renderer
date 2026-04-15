@@ -1,6 +1,6 @@
 [package]
 name = "achmage-reader-universal-v5"
-version = "6.0.0-beta.7"
+version = "6.0.0-beta.8"
 description = "Achmage Markdown Renderer v6 Desktop Beta 7"
 authors = ["Achmage"]
 edition = "2021"

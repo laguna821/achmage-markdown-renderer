@@ -16,6 +16,10 @@ const HEADER_SIDE_PADDING = 72;
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 const SPARSE_OCCUPANCY_THRESHOLD = 0.58;
+const FOCUS_CARD_TARGET_OCCUPANCY = 0.76;
+const FOCUS_CARD_MAX_BODY_OCCUPANCY = 0.92;
+const FOCUS_CARD_MIN_SCALE = 1;
+const FOCUS_CARD_MAX_SCALE = 1.38;
 const TEXTUAL_BLOCK_KINDS = new Set<NormalizedBlock['kind']>([
   'thesis',
   'callout',
@@ -26,6 +30,14 @@ const TEXTUAL_BLOCK_KINDS = new Set<NormalizedBlock['kind']>([
   'evidencePanel',
   'log',
   'provenance',
+]);
+const DIRECT_FOCUS_CARD_KINDS = new Set<NormalizedBlock['kind']>([
+  'callout',
+  'docQuote',
+  'evidencePanel',
+  'thesis',
+  'provenance',
+  'log',
 ]);
 
 const getTypography = (frameWidth: number): StageTypographyConfig => ({
@@ -160,6 +172,72 @@ const resolveLayoutIntent = ({
   return 'default';
 };
 
+const getFocusCardBlock = (blocks: readonly NormalizedBlock[]): NormalizedBlock | null => {
+  if (blocks.length !== 1) {
+    return null;
+  }
+
+  const [block] = blocks;
+  if (!block) {
+    return null;
+  }
+
+  if (DIRECT_FOCUS_CARD_KINDS.has(block.kind)) {
+    return block;
+  }
+
+  if (block.kind === 'questionReset') {
+    return block.items.length === 1 ? block : null;
+  }
+
+  if (block.kind === 'evidenceGrid') {
+    return block.items.length === 1 ? block : null;
+  }
+
+  return null;
+};
+
+const resolveFocusCardScale = ({
+  block,
+  occupancyRatio,
+  typography,
+  frameHeight,
+  frameWidth,
+  availableHeight,
+}: {
+  block: NormalizedBlock;
+  occupancyRatio: number;
+  typography: StageTypographyConfig;
+  frameHeight: number;
+  frameWidth: number;
+  availableHeight: number;
+}): number => {
+  let scale = clamp(
+    FOCUS_CARD_TARGET_OCCUPANCY / Math.max(occupancyRatio, 0.01),
+    FOCUS_CARD_MIN_SCALE,
+    FOCUS_CARD_MAX_SCALE,
+  );
+  const maxScaledHeight = availableHeight * FOCUS_CARD_MAX_BODY_OCCUPANCY;
+
+  while (scale > FOCUS_CARD_MIN_SCALE) {
+    const scaledHeight = measureStageBlockHeight({
+      block,
+      typo: typography,
+      frameHeight,
+      frameWidth,
+      focusScale: scale,
+    });
+
+    if (scaledHeight <= maxScaledHeight) {
+      break;
+    }
+
+    scale = Math.max(FOCUS_CARD_MIN_SCALE, Number((scale - 0.02).toFixed(2)));
+  }
+
+  return Number(scale.toFixed(2));
+};
+
 const buildFramesForGroup = ({
   doc,
   groupId,
@@ -264,16 +342,30 @@ const buildFramesForGroup = ({
     .map((frame, index) => {
       const availableHeight = index === 0 ? firstFrameAvailable : continuedAvailable;
       const occupancyRatio = clamp((frameBodyHeights[index] ?? 0) / Math.max(availableHeight, 1), 0, 1);
+      const baseLayoutIntent = resolveLayoutIntent({
+        kind,
+        blocks: frame.blocks,
+        continued: frame.continued,
+        occupancyRatio,
+      });
+      const focusCardBlock = baseLayoutIntent === 'header-only' || baseLayoutIntent === 'image' ? null : getFocusCardBlock(frame.blocks);
+      const focusScale =
+        focusCardBlock === null
+          ? undefined
+          : resolveFocusCardScale({
+              block: focusCardBlock,
+              occupancyRatio,
+              typography,
+              frameHeight,
+              frameWidth: contentWidth,
+              availableHeight,
+            });
 
       return {
         ...frame,
         occupancyRatio,
-        layoutIntent: resolveLayoutIntent({
-          kind,
-          blocks: frame.blocks,
-          continued: frame.continued,
-          occupancyRatio,
-        }),
+        layoutIntent: focusCardBlock ? 'focus-card' : baseLayoutIntent,
+        focusScale,
       };
     });
 };

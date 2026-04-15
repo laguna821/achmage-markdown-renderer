@@ -26,7 +26,10 @@ function HtmlBlock({html, className, ...attrs}: HtmlProps) {
 
 function ThesisBlock({content, variant}: {content: string; variant: Variant}) {
   return (
-    <aside className={`thesis-block thesis-block--${variant}`}>
+    <aside
+      className={`thesis-block thesis-block--${variant}`}
+      data-stage-block-kind={variant === 'stage' ? 'thesis' : undefined}
+    >
       <div className="thesis-block__label">THESIS</div>
       <HtmlBlock html={content} className="thesis-block__content prose-block" />
     </aside>
@@ -35,13 +38,27 @@ function ThesisBlock({content, variant}: {content: string; variant: Variant}) {
 
 function DocQuoteBlock({content, variant}: {content: string; variant: Variant}) {
   return (
-    <blockquote className="doc-quote" data-pretext-pull-quote={variant === 'newsletter' ? 'true' : undefined}>
+    <blockquote
+      className={`doc-quote${variant === 'stage' ? ' doc-quote--stage' : ''}`}
+      data-pretext-pull-quote={variant === 'newsletter' ? 'true' : undefined}
+      data-stage-block-kind={variant === 'stage' ? 'docQuote' : undefined}
+    >
       <HtmlBlock html={content} className="doc-quote__content prose-block" />
     </blockquote>
   );
 }
 
-function CalloutBlock({calloutType, title, content}: {calloutType: string; title: string; content: string}) {
+function CalloutBlock({
+  calloutType,
+  title,
+  content,
+  variant,
+}: {
+  calloutType: string;
+  title: string;
+  content: string;
+  variant: Variant;
+}) {
   const normalizedType =
     calloutType
       .normalize('NFKC')
@@ -70,7 +87,11 @@ function CalloutBlock({calloutType, title, content}: {calloutType: string; title
   };
 
   return (
-    <aside className="callout-block" data-callout-type={normalizedType}>
+    <aside
+      className={`callout-block${variant === 'stage' ? ' callout-block--stage' : ''}`}
+      data-callout-type={normalizedType}
+      data-stage-block-kind={variant === 'stage' ? 'callout' : undefined}
+    >
       <div className="callout-block__title">
         <span className="callout-block__icon" aria-hidden="true">
           {iconMap[normalizedType] ?? 'i'}
@@ -313,7 +334,11 @@ function EvidenceGrid({
     : {};
 
   return (
-    <section className={`evidence-grid${variant === 'newsletter' ? ' evidence-grid--newsletter' : ''}`} {...pretextAttributes}>
+    <section
+      className={`evidence-grid${variant === 'newsletter' ? ' evidence-grid--newsletter' : ''}${variant === 'stage' ? ' evidence-grid--stage' : ''}`}
+      data-stage-block-kind={variant === 'stage' ? 'evidenceGrid' : undefined}
+      {...pretextAttributes}
+    >
       {items.map((item) => (
         <article key={`${item.id ?? item.title}`} className="evidence-card">
           {item.tag ? <div className="evidence-card__tag">{item.tag}</div> : null}
@@ -327,9 +352,18 @@ function EvidenceGrid({
   );
 }
 
-function EvidencePanel({item}: {item: {id?: string; title: string; body: string; tag?: string}}) {
+function EvidencePanel({
+  item,
+  variant,
+}: {
+  item: {id?: string; title: string; body: string; tag?: string};
+  variant: Variant;
+}) {
   return (
-    <article className="evidence-panel">
+    <article
+      className={`evidence-panel${variant === 'stage' ? ' evidence-panel--stage' : ''}`}
+      data-stage-block-kind={variant === 'stage' ? 'evidencePanel' : undefined}
+    >
       {item.tag ? <div className="evidence-panel__tag">{item.tag}</div> : null}
       <h3 id={item.id} className="evidence-panel__title">
         {item.title}
@@ -339,9 +373,18 @@ function EvidencePanel({item}: {item: {id?: string; title: string; body: string;
   );
 }
 
-function QuestionReset({items}: {items: Array<{id?: string; title: string; body: string}>}) {
+function QuestionReset({
+  items,
+  variant,
+}: {
+  items: Array<{id?: string; title: string; body: string}>;
+  variant: Variant;
+}) {
   return (
-    <section className="question-reset">
+    <section
+      className={`question-reset${variant === 'stage' ? ' question-reset--stage' : ''}`}
+      data-stage-block-kind={variant === 'stage' ? 'questionReset' : undefined}
+    >
       {items.map((item, index) => (
         <article key={`${item.id ?? item.title}-${index}`} className="question-reset__card">
           <div className="question-reset__index">{index === 0 ? 'BEFORE' : 'REFRAME'}</div>
@@ -355,9 +398,12 @@ function QuestionReset({items}: {items: Array<{id?: string; title: string; body:
   );
 }
 
-function ProvenancePanel({ai}: {ai: NonNullable<NormalizedDoc['meta']['ai']>}) {
+function ProvenancePanel({ai, variant}: {ai: NonNullable<NormalizedDoc['meta']['ai']>; variant: Variant}) {
   return (
-    <aside className="provenance-panel">
+    <aside
+      className={`provenance-panel${variant === 'stage' ? ' provenance-panel--stage' : ''}`}
+      data-stage-block-kind={variant === 'stage' ? 'provenance' : undefined}
+    >
       <div className="provenance-panel__eyebrow">AI PROVENANCE</div>
       <dl className="provenance-panel__grid">
         <div>
@@ -393,9 +439,12 @@ function ProvenancePanel({ai}: {ai: NonNullable<NormalizedDoc['meta']['ai']>}) {
   );
 }
 
-function LogBlock({language = 'log', code}: {language?: string; code: string}) {
+function LogBlock({language = 'log', code, variant}: {language?: string; code: string; variant: Variant}) {
   return (
-    <section className="log-block">
+    <section
+      className={`log-block${variant === 'stage' ? ' log-block--stage' : ''}`}
+      data-stage-block-kind={variant === 'stage' ? 'log' : undefined}
+    >
       <div className="log-block__label">{language.toUpperCase()}</div>
       <pre>
         <code>{code}</code>
@@ -409,21 +458,21 @@ export function BlockRenderer({block, variant, doc, sectionId, blockIndex}: Bloc
     case 'thesis':
       return <ThesisBlock content={block.content} variant={variant} />;
     case 'callout':
-      return <CalloutBlock calloutType={block.calloutType} title={block.title} content={block.content} />;
+      return <CalloutBlock calloutType={block.calloutType} title={block.title} content={block.content} variant={variant} />;
     case 'questionReset':
-      return <QuestionReset items={block.items} />;
+      return <QuestionReset items={block.items} variant={variant} />;
     case 'evidenceGrid':
       return <EvidenceGrid items={block.items} variant={variant} doc={doc} sectionId={sectionId} blockIndex={blockIndex} />;
     case 'evidencePanel':
-      return <EvidencePanel item={block.item} />;
+      return <EvidencePanel item={block.item} variant={variant} />;
     case 'axisTable':
       return <AxisTable headers={block.headers} rows={block.rows} variant={variant} doc={doc} sectionId={sectionId} blockIndex={blockIndex} />;
     case 'docQuote':
       return <DocQuoteBlock content={block.content} variant={variant} />;
     case 'log':
-      return <LogBlock language={block.language} code={block.code} />;
+      return <LogBlock language={block.language} code={block.code} variant={variant} />;
     case 'provenance':
-      return <ProvenancePanel ai={block.ai} />;
+      return <ProvenancePanel ai={block.ai} variant={variant} />;
     case 'prose':
       return <HtmlBlock html={block.html} className="prose-block" />;
     case 'image':

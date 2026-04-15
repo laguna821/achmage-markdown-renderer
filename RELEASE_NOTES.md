@@ -1,5 +1,17 @@
 # Release Notes
 
+## v6.0.0-beta.8
+
+This release adds a stage-only solo-card reflow pass so isolated `Summary / Key Trigger`, `Quote`, and similar card frames stop rendering at reader scale after pagination splits them into their own slides.
+
+### Changed
+
+- Added a new stage frame `focus-card` intent plus bounded `focusScale` metadata so single card-like frames can be enlarged after pagination without changing horizontal or vertical deck counts
+- Re-measure isolated `callout`, `docQuote`, `evidencePanel`, `thesis`, `provenance`, `log`, and single-card `questionReset` / `evidenceGrid` frames with stage-aware scaling so they safely target a fuller slide occupancy
+- Exposed solo-card stage metadata and explicit stage block hooks in the desktop renderer so focus-card frames can opt into stage-only layout and typography rules without altering reader or newsletter rendering
+- Reworked stage CSS for focus-card frames so isolated cards expand toward slide scale, use the available body width, and vertically distribute short content instead of sitting in the upper half of the paper
+- Bumped the renderer, desktop app, and Tauri packaging metadata to `6.0.0-beta.8`
+
 ## v6.0.0-beta.7
 
 This release improves desktop stage space utilization so sparse slides stop feeling pinned to the upper half of the paper while preserving the existing ultra-v3 navigation and pagination model.

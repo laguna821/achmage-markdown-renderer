@@ -48,8 +48,10 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
   const currentFrameCount = currentGroup?.frames.length ?? 0;
   const hasVerticalFrames = currentFrameCount > 1;
   const hasFrameBody = (currentFrame?.blocks.length ?? 0) > 0;
+  const currentFrameFocusScale = currentFrame?.focusScale ?? 1;
   const currentFrameContentKind =
     currentFrame?.blocks.length === 1 ? currentFrame.blocks[0]?.kind ?? 'mixed' : 'mixed';
+  const currentFrameSoloBlockKind = currentFrame?.blocks.length === 1 ? currentFrame.blocks[0]?.kind : undefined;
   const isLightStageTheme = theme === 'light';
 
   const moveToGroup = (nextIndex: number) => {
@@ -378,6 +380,9 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
                 className="doc-paper doc-paper--stage stage-frame"
                 data-stage-layout-intent={currentFrame.layoutIntent}
                 data-stage-frame-has-body={hasFrameBody ? 'true' : 'false'}
+                data-stage-focus-scale={String(currentFrameFocusScale)}
+                data-stage-solo-block-kind={currentFrameSoloBlockKind}
+                style={{'--stage-focus-scale': String(currentFrameFocusScale)} as CSSProperties}
               >
                 {currentFrame.includeDocumentHeader ? <DocumentHeader doc={doc} variant="stage" /> : null}
 
@@ -389,6 +394,8 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
                     data-stage-frame-content-kind={currentFrameContentKind}
                     data-stage-layout-intent={currentFrame.layoutIntent}
                     data-stage-frame-has-body="true"
+                    data-stage-focus-scale={String(currentFrameFocusScale)}
+                    data-stage-solo-block-kind={currentFrameSoloBlockKind}
                   >
                     {sectionHeading}
                     <div className="doc-section__blocks" data-stage-frame-content-kind={currentFrameContentKind}>

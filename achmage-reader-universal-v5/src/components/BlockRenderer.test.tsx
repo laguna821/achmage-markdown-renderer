@@ -177,4 +177,30 @@ describe('BlockRenderer', () => {
       expect(caption.textContent).toContain('Stage image caption');
     }
   });
+
+  it('adds stage-specific hooks for solo card block kinds', () => {
+    const calloutMarkup = renderToStaticMarkup(
+      <BlockRenderer
+        block={{kind: 'callout', calloutType: 'summary', title: '3줄 요약', content: '<p>짧은 요약.</p>'}}
+        variant="stage"
+        doc={baseDoc}
+        sectionId="section-1"
+        blockIndex={0}
+      />,
+    );
+    const quoteMarkup = renderToStaticMarkup(
+      <BlockRenderer
+        block={{kind: 'docQuote', content: '<p>짧은 인용문.</p>'}}
+        variant="stage"
+        doc={baseDoc}
+        sectionId="section-2"
+        blockIndex={0}
+      />,
+    );
+
+    expect(calloutMarkup).toContain('callout-block--stage');
+    expect(calloutMarkup).toContain('data-stage-block-kind="callout"');
+    expect(quoteMarkup).toContain('doc-quote--stage');
+    expect(quoteMarkup).toContain('data-stage-block-kind="docQuote"');
+  });
 });

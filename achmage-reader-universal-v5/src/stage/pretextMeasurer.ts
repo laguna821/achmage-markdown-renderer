@@ -125,72 +125,103 @@ const measureGridCardHeight = ({
   body,
   width,
   typo,
+  scale = 1,
 }: {
   title: string;
   body: string;
   width: number;
   typo: StageTypographyConfig;
+  scale?: number;
 }): number =>
-  44 +
+  44 * scale +
   measureTextHeight({
     text: title,
-    font: `${typo.headingFontWeight} 23px ${typo.headingFontFamily}`,
+    font: `${typo.headingFontWeight} ${23 * scale}px ${typo.headingFontFamily}`,
     width,
-    lineHeight: 28,
+    lineHeight: 28 * scale,
   }) +
   measureTextHeight({
     text: body,
-    font: typo.bodyFont,
+    font: `${500} ${typo.bodyFontSize * scale}px ${DEFAULT_FONT_FAMILY}`,
     width,
-    lineHeight: 34,
+    lineHeight: 34 * scale,
   });
+
+const SCALEABLE_SOLO_BLOCK_KINDS = new Set<NormalizedBlock['kind']>([
+  'thesis',
+  'callout',
+  'docQuote',
+  'evidencePanel',
+  'log',
+  'provenance',
+]);
+
+const isScaleableSoloBlock = (block: NormalizedBlock): boolean => {
+  if (SCALEABLE_SOLO_BLOCK_KINDS.has(block.kind)) {
+    return true;
+  }
+
+  if (block.kind === 'questionReset') {
+    return block.items.length === 1;
+  }
+
+  if (block.kind === 'evidenceGrid') {
+    return block.items.length === 1;
+  }
+
+  return false;
+};
 
 export const measureStageBlockHeight = ({
   block,
   typo,
   frameHeight,
   frameWidth,
+  focusScale = 1,
 }: {
   block: NormalizedBlock;
   typo: StageTypographyConfig;
   frameHeight: number;
   frameWidth: number;
+  focusScale?: number;
 }): number => {
+  const scale = focusScale > 1 && isScaleableSoloBlock(block) ? focusScale : 1;
+
   switch (block.kind) {
     case 'thesis':
       return (
-        54 +
+        54 * scale +
         measureTextHeight({
           text: richText(block.rich, block.content),
-          font: `${typo.headingFontWeight} 31px ${typo.headingFontFamily}`,
+          font: `${typo.headingFontWeight} ${31 * scale}px ${typo.headingFontFamily}`,
           width: frameWidth,
-          lineHeight: 44,
+          lineHeight: 44 * scale,
         })
       );
     case 'callout':
       return (
-        82 +
+        82 * scale +
         measureTextHeight({
           text: block.title,
-          font: `${typo.headingFontWeight} 25px ${typo.headingFontFamily}`,
+          font: `${typo.headingFontWeight} ${25 * scale}px ${typo.headingFontFamily}`,
           width: frameWidth - 16,
-          lineHeight: 30,
+          lineHeight: 30 * scale,
         }) +
         measureTextHeight({
           text: stripHtml(block.content),
-          font: typo.bodyFont,
+          font: `${500} ${typo.bodyFontSize * scale}px ${DEFAULT_FONT_FAMILY}`,
           width: frameWidth - 16,
-          lineHeight: 38,
+          lineHeight: 38 * scale,
         })
       );
     case 'docQuote':
       return (
-        58 +
+        58 * scale +
         measureTextHeight({
           text: richText(block.rich, block.content),
-          font: `500 27px ${typo.headingFontFamily}`,
+          font: `500 ${27 * scale}px ${typo.headingFontFamily}`,
           width: frameWidth - 40,
-          lineHeight: 40,
+          lineHeight: 40 * scale,
         })
       );
     case 'prose':
@@ -205,23 +236,23 @@ export const measureStageBlockHeight = ({
       );
     case 'questionReset':
       return (
-        48 +
+        48 * scale +
         block.items.reduce((sum, item) => {
           return (
             sum +
             measureTextHeight({
               text: item.title,
-              font: `${typo.headingFontWeight} 24px ${typo.headingFontFamily}`,
+              font: `${typo.headingFontWeight} ${24 * scale}px ${typo.headingFontFamily}`,
               width: frameWidth,
-              lineHeight: 30,
+              lineHeight: 30 * scale,
             }) +
             measureTextHeight({
               text: stripHtml(item.body),
-              font: typo.bodyFont,
+              font: `${500} ${typo.bodyFontSize * scale}px ${DEFAULT_FONT_FAMILY}`,
               width: frameWidth,
-              lineHeight: 34,
+              lineHeight: 34 * scale,
             }) +
-            20
+            20 * scale
           );
         }, 0)
       );
@@ -234,28 +265,29 @@ export const measureStageBlockHeight = ({
           body: stripHtml(item.body),
           width: cardWidth,
           typo,
+          scale,
         }),
       );
       const rows = Math.ceil(cardHeights.length / columns);
       const rowHeights = Array.from({length: rows}, (_, rowIndex) =>
         Math.max(...cardHeights.slice(rowIndex * columns, rowIndex * columns + columns)),
       );
-      return 28 + rowHeights.reduce((sum, height) => sum + height, 0) + Math.max(rows - 1, 0) * 18;
+      return 28 * scale + rowHeights.reduce((sum, height) => sum + height, 0) + Math.max(rows - 1, 0) * 18 * scale;
     }
     case 'evidencePanel':
       return (
-        42 +
+        42 * scale +
         measureTextHeight({
           text: block.item.title,
-          font: `${typo.headingFontWeight} 24px ${typo.headingFontFamily}`,
+          font: `${typo.headingFontWeight} ${24 * scale}px ${typo.headingFontFamily}`,
           width: frameWidth,
-          lineHeight: 30,
+          lineHeight: 30 * scale,
         }) +
         measureTextHeight({
           text: stripHtml(block.item.body),
-          font: typo.bodyFont,
+          font: `${500} ${typo.bodyFontSize * scale}px ${DEFAULT_FONT_FAMILY}`,
           width: frameWidth,
-          lineHeight: 34,
+          lineHeight: 34 * scale,
         })
       );
     case 'axisTable': {
@@ -267,10 +299,10 @@ export const measureStageBlockHeight = ({
     }
     case 'log': {
       const lineCount = block.code.split(/\r?\n/).length;
-      return 56 + lineCount * typo.codeLineHeight;
+      return 56 * scale + lineCount * typo.codeLineHeight * scale;
     }
     case 'provenance':
-      return 150 + Math.max(block.ai.basedOn.length - 1, 0) * 18;
+      return 150 * scale + Math.max(block.ai.basedOn.length - 1, 0) * 18 * scale;
     case 'image':
       return Math.max(frameHeight * 0.52, 320);
   }
