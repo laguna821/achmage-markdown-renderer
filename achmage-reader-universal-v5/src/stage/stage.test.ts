@@ -203,7 +203,7 @@ Just body copy with no headings.
     });
   });
 
-  test('marks empty lead frames as header-only with zero occupancy', () => {
+  test('marks empty lead frames as lead frames with packed body budget metadata', () => {
     const doc = makeDoc({
       sections: [{id: 'lead', title: 'Overview', depth: 1, blocks: []}],
     });
@@ -213,12 +213,13 @@ Just body copy with no headings.
 
     expect(leadFrame).toMatchObject({
       includeDocumentHeader: true,
-      layoutIntent: 'header-only',
+      layoutIntent: 'lead',
       occupancyRatio: 0,
     });
+    expect(leadFrame?.availableHeight).toBeGreaterThan(0);
   });
 
-  test('classifies sparse, image, and dense frames with stage layout intent metadata', () => {
+  test('classifies section-text and media frames while keeping packed body budgets', () => {
     const longParagraph = 'Dense stage paragraph '.repeat(140);
     const doc = makeDoc({
       sections: [
@@ -258,15 +259,18 @@ Just body copy with no headings.
     const imageFrame = deck.groups.find((group) => group.id === 'image-group')?.frames[0];
     const denseFrame = deck.groups.find((group) => group.id === 'dense-group')?.frames[0];
 
-    expect(sparseFrame?.layoutIntent).toBe('sparse');
+    expect(sparseFrame?.layoutIntent).toBe('section-text');
+    expect(sparseFrame?.availableHeight).toBeGreaterThan(0);
     expect(sparseFrame?.occupancyRatio).toBeLessThan(0.58);
-    expect(imageFrame?.layoutIntent).toBe('image');
+    expect(imageFrame?.layoutIntent).toBe('media');
+    expect(imageFrame?.availableHeight).toBeGreaterThan(0);
     expect(imageFrame?.occupancyRatio).toBeGreaterThan(0);
-    expect(denseFrame?.layoutIntent).toBe('default');
+    expect(denseFrame?.layoutIntent).toBe('section-text');
+    expect(denseFrame?.availableHeight).toBeGreaterThan(0);
     expect(denseFrame?.occupancyRatio).toBeGreaterThanOrEqual(0.58);
   });
 
-  test('classifies solo card-like frames as focus-card with a bounded focus scale', () => {
+  test('keeps solo card-like focus scaling as auxiliary metadata on section-text frames', () => {
     const doc = makeDoc({
       sections: [
         {id: 'lead', title: 'Overview', depth: 1, blocks: []},
@@ -300,13 +304,52 @@ Just body copy with no headings.
     const quoteFrame = deck.groups.find((group) => group.id === 'quote')?.frames[0];
     const panelFrame = deck.groups.find((group) => group.id === 'evidence-panel')?.frames[0];
 
-    expect(summaryFrame?.layoutIntent).toBe('focus-card');
+    expect(summaryFrame?.layoutIntent).toBe('section-text');
     expect(summaryFrame?.focusScale).toBeGreaterThan(1);
     expect(summaryFrame?.focusScale).toBeLessThanOrEqual(1.38);
-    expect(quoteFrame?.layoutIntent).toBe('focus-card');
+    expect(quoteFrame?.layoutIntent).toBe('section-text');
     expect(quoteFrame?.focusScale).toBeGreaterThan(1);
-    expect(panelFrame?.layoutIntent).toBe('focus-card');
+    expect(panelFrame?.layoutIntent).toBe('section-text');
     expect(panelFrame?.focusScale).toBeGreaterThan(1);
+  });
+
+  test('splits oversized card blocks into separate continued frames from measured height budgets', () => {
+    const denseSummary = 'Summary point '.repeat(120);
+    const denseQuote = 'Quoted line '.repeat(100);
+    const doc = makeDoc({
+      sections: [
+        {id: 'lead', title: 'Overview', depth: 1, blocks: []},
+        {
+          id: 'summary-quote',
+          title: 'Summary or Key Trigger',
+          depth: 2,
+          blocks: [
+            {
+              kind: 'callout',
+              calloutType: 'summary',
+              title: 'Summary',
+              content: `<p>${denseSummary}</p><p>${denseSummary}</p>`,
+            },
+            {
+              kind: 'docQuote',
+              content: `<p>${denseQuote}</p><p>${denseQuote}</p>`,
+            },
+          ],
+        },
+      ],
+    });
+
+    const deck = buildStageDeck(doc, {
+      frameHeight: 430,
+      frameWidth: 960,
+    });
+    const group = deck.groups.find((candidate) => candidate.id === 'summary-quote');
+
+    expect(group?.frames).toHaveLength(2);
+    expect(group?.frames[0]?.blocks).toHaveLength(1);
+    expect(group?.frames[0]?.blocks[0]?.kind).toBe('callout');
+    expect(group?.frames[1]?.blocks).toHaveLength(1);
+    expect(group?.frames[1]?.blocks[0]?.kind).toBe('docQuote');
   });
 
   test('splits long prose into continued frames while isolating images and dense tables', () => {
@@ -342,9 +385,13 @@ Just body copy with no headings.
       frameWidth: 960,
     });
     const group = deck.groups[1];
+    const firstBudget = group.frames[0]?.availableHeight ?? 0;
+    const continuedBudgets = group.frames.slice(1).map((frame) => frame.availableHeight);
 
     expect(group.frames.length).toBeGreaterThanOrEqual(4);
     expect(group.frames[1]?.continued).toBe(true);
+    expect(firstBudget).not.toBe(continuedBudgets[0] ?? 0);
+    expect(new Set(continuedBudgets).size).toBe(1);
     expect(group.frames.some((frame) => frame.blocks.length === 1 && frame.blocks[0]?.kind === 'image')).toBe(true);
     expect(group.frames.some((frame) => frame.blocks.length === 1 && frame.blocks[0]?.kind === 'axisTable')).toBe(true);
   });

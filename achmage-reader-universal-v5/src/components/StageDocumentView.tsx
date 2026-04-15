@@ -49,10 +49,12 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
   const hasVerticalFrames = currentFrameCount > 1;
   const hasFrameBody = (currentFrame?.blocks.length ?? 0) > 0;
   const currentFrameFocusScale = currentFrame?.focusScale ?? 1;
+  const currentFrameAvailableHeight = currentFrame?.availableHeight ?? 0;
   const currentFrameContentKind =
     currentFrame?.blocks.length === 1 ? currentFrame.blocks[0]?.kind ?? 'mixed' : 'mixed';
   const currentFrameSoloBlockKind = currentFrame?.blocks.length === 1 ? currentFrame.blocks[0]?.kind : undefined;
   const isLightStageTheme = theme === 'light';
+  const isLeadFrame = currentGroup?.kind === 'lead';
 
   const moveToGroup = (nextIndex: number) => {
     const clamped = Math.max(0, Math.min(nextIndex, deck.groups.length - 1));
@@ -313,20 +315,22 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
   }
 
   const sectionHeading =
-    currentGroup.kind !== 'lead' ? (
+    !isLeadFrame ? (
       isLightStageTheme ? (
         <div className="stage-section-heading" data-stage-heading-style="title-above-rule">
-          <h2 className="doc-section__title" id={!currentFrame.continued ? currentFrame.sectionId : undefined}>
+          <h2 className="stage-surface__title" id={!currentFrame.continued ? currentFrame.sectionId : undefined}>
             {currentFrame.title}
             {currentFrame.continued ? <span className="stage-frame__continued">CONT.</span> : null}
           </h2>
           <div className="stage-section-heading__rule" aria-hidden="true" />
         </div>
       ) : (
-        <h2 className="doc-section__title" id={!currentFrame.continued ? currentFrame.sectionId : undefined}>
-          {currentFrame.title}
-          {currentFrame.continued ? <span className="stage-frame__continued">CONT.</span> : null}
-        </h2>
+        <div className="stage-surface__heading" data-stage-heading-style="rule-above-title">
+          <h2 className="stage-surface__title" id={!currentFrame.continued ? currentFrame.sectionId : undefined}>
+            {currentFrame.title}
+            {currentFrame.continued ? <span className="stage-frame__continued">CONT.</span> : null}
+          </h2>
+        </div>
       )
     ) : null;
 
@@ -377,40 +381,79 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
           <div className="stage-shell__deck">
             <div className="stage-paper" data-stage-group-index={groupIndex} data-stage-frame-index={frameIndex}>
               <div
-                className="doc-paper doc-paper--stage stage-frame"
+                className="stage-frame"
                 data-stage-layout-intent={currentFrame.layoutIntent}
                 data-stage-frame-has-body={hasFrameBody ? 'true' : 'false'}
                 data-stage-focus-scale={String(currentFrameFocusScale)}
                 data-stage-solo-block-kind={currentFrameSoloBlockKind}
-                style={{'--stage-focus-scale': String(currentFrameFocusScale)} as CSSProperties}
+                data-stage-available-height={String(currentFrameAvailableHeight)}
+                style={
+                  {
+                    '--stage-focus-scale': String(currentFrameFocusScale),
+                    '--stage-packed-body-budget': String(currentFrameAvailableHeight),
+                  } as CSSProperties
+                }
               >
                 {currentFrame.includeDocumentHeader ? <DocumentHeader doc={doc} variant="stage" /> : null}
 
                 {hasFrameBody ? (
-                  <section
-                    className={`doc-section${currentGroup.kind === 'lead' ? ' doc-section--lead' : ''}${currentFrame.continued ? ' stage-frame__section--continued' : ''}`}
-                    data-stage-article="true"
-                    data-section-id={currentFrame.sectionId ?? currentGroup.id}
-                    data-stage-frame-content-kind={currentFrameContentKind}
-                    data-stage-layout-intent={currentFrame.layoutIntent}
-                    data-stage-frame-has-body="true"
-                    data-stage-focus-scale={String(currentFrameFocusScale)}
-                    data-stage-solo-block-kind={currentFrameSoloBlockKind}
-                  >
-                    {sectionHeading}
-                    <div className="doc-section__blocks" data-stage-frame-content-kind={currentFrameContentKind}>
-                      {currentFrame.blocks.map((block, blockIndex) => (
-                        <BlockRenderer
-                          key={`${currentFrame.id}-${block.kind}-${blockIndex}`}
-                          block={block}
-                          variant="stage"
-                          doc={doc}
-                          sectionId={currentFrame.sectionId ?? currentGroup.id}
-                          blockIndex={blockIndex}
-                        />
-                      ))}
-                    </div>
-                  </section>
+                  isLeadFrame ? (
+                    <section
+                      className={`doc-section doc-section--lead${currentFrame.continued ? ' stage-frame__section--continued' : ''}`}
+                      data-stage-article="true"
+                      data-section-id={currentFrame.sectionId ?? currentGroup.id}
+                      data-stage-frame-content-kind={currentFrameContentKind}
+                      data-stage-layout-intent={currentFrame.layoutIntent}
+                      data-stage-frame-has-body="true"
+                      data-stage-focus-scale={String(currentFrameFocusScale)}
+                      data-stage-solo-block-kind={currentFrameSoloBlockKind}
+                      data-stage-available-height={String(currentFrameAvailableHeight)}
+                    >
+                      <div className="doc-section__blocks" data-stage-frame-content-kind={currentFrameContentKind}>
+                        {currentFrame.blocks.map((block, blockIndex) => (
+                          <BlockRenderer
+                            key={`${currentFrame.id}-${block.kind}-${blockIndex}`}
+                            block={block}
+                            variant="stage"
+                            doc={doc}
+                            sectionId={currentFrame.sectionId ?? currentGroup.id}
+                            blockIndex={blockIndex}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  ) : (
+                    <section
+                      className={`stage-surface${currentFrame.continued ? ' stage-surface--continued' : ''}`}
+                      data-stage-surface="true"
+                      data-stage-article="true"
+                      data-section-id={currentFrame.sectionId ?? currentGroup.id}
+                      data-stage-frame-content-kind={currentFrameContentKind}
+                      data-stage-layout-intent={currentFrame.layoutIntent}
+                      data-stage-frame-has-body="true"
+                      data-stage-focus-scale={String(currentFrameFocusScale)}
+                      data-stage-solo-block-kind={currentFrameSoloBlockKind}
+                      data-stage-available-height={String(currentFrameAvailableHeight)}
+                    >
+                      {sectionHeading}
+                      <div
+                        className="stage-surface__body"
+                        data-stage-surface-body="true"
+                        data-stage-frame-content-kind={currentFrameContentKind}
+                      >
+                        {currentFrame.blocks.map((block, blockIndex) => (
+                          <BlockRenderer
+                            key={`${currentFrame.id}-${block.kind}-${blockIndex}`}
+                            block={block}
+                            variant="stage"
+                            doc={doc}
+                            sectionId={currentFrame.sectionId ?? currentGroup.id}
+                            blockIndex={blockIndex}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  )
                 ) : null}
               </div>
             </div>

@@ -23,18 +23,18 @@ const DEFAULT_CODE_FONT =
   "'IBM Plex Mono', 'SFMono-Regular', 'JetBrains Mono', 'Consolas', 'Liberation Mono', monospace";
 
 export const DEFAULT_STAGE_TYPOGRAPHY: StageTypographyConfig = {
-  bodyFont: `500 24px ${DEFAULT_FONT_FAMILY}`,
-  bodyFontSize: 24,
-  bodyLineHeight: 38,
+  bodyFont: `500 28px ${DEFAULT_FONT_FAMILY}`,
+  bodyFontSize: 28,
+  bodyLineHeight: 46,
   headingFontFamily: DEFAULT_FONT_FAMILY,
   headingFontWeight: 760,
-  h1FontSize: 54,
-  h2FontSize: 38,
-  h3FontSize: 30,
+  h1FontSize: 48,
+  h2FontSize: 40,
+  h3FontSize: 34,
   codeFontFamily: DEFAULT_CODE_FONT,
-  codeFontSize: 22,
-  codeLineHeight: 32,
-  contentWidth: 1000,
+  codeFontSize: 24,
+  codeLineHeight: 38,
+  contentWidth: 1152,
 };
 
 const PREPARED_CACHE = new Map<string, ReturnType<typeof prepare>>();
@@ -133,18 +133,18 @@ const measureGridCardHeight = ({
   typo: StageTypographyConfig;
   scale?: number;
 }): number =>
-  44 * scale +
+  58 * scale +
   measureTextHeight({
     text: title,
-    font: `${typo.headingFontWeight} ${23 * scale}px ${typo.headingFontFamily}`,
+    font: `${typo.headingFontWeight} ${26 * scale}px ${typo.headingFontFamily}`,
     width,
-    lineHeight: 28 * scale,
+    lineHeight: 34 * scale,
   }) +
   measureTextHeight({
     text: body,
     font: `${500} ${typo.bodyFontSize * scale}px ${DEFAULT_FONT_FAMILY}`,
     width,
-    lineHeight: 34 * scale,
+    lineHeight: 40 * scale,
   });
 
 const SCALEABLE_SOLO_BLOCK_KINDS = new Set<NormalizedBlock['kind']>([
@@ -190,43 +190,43 @@ export const measureStageBlockHeight = ({
   switch (block.kind) {
     case 'thesis':
       return (
-        54 * scale +
+        64 * scale +
         measureTextHeight({
           text: richText(block.rich, block.content),
-          font: `${typo.headingFontWeight} ${31 * scale}px ${typo.headingFontFamily}`,
+          font: `${typo.headingFontWeight} ${34 * scale}px ${typo.headingFontFamily}`,
           width: frameWidth,
-          lineHeight: 44 * scale,
+          lineHeight: 48 * scale,
         })
       );
     case 'callout':
       return (
-        82 * scale +
+        98 * scale +
         measureTextHeight({
           text: block.title,
-          font: `${typo.headingFontWeight} ${25 * scale}px ${typo.headingFontFamily}`,
-          width: frameWidth - 16,
-          lineHeight: 30 * scale,
+          font: `${typo.headingFontWeight} ${28 * scale}px ${typo.headingFontFamily}`,
+          width: frameWidth - 24,
+          lineHeight: 36 * scale,
         }) +
         measureTextHeight({
           text: stripHtml(block.content),
           font: `${500} ${typo.bodyFontSize * scale}px ${DEFAULT_FONT_FAMILY}`,
-          width: frameWidth - 16,
-          lineHeight: 38 * scale,
+          width: frameWidth - 24,
+          lineHeight: 42 * scale,
         })
       );
     case 'docQuote':
       return (
-        58 * scale +
+        80 * scale +
         measureTextHeight({
           text: richText(block.rich, block.content),
-          font: `500 ${27 * scale}px ${typo.headingFontFamily}`,
-          width: frameWidth - 40,
-          lineHeight: 40 * scale,
+          font: `500 ${30 * scale}px ${typo.headingFontFamily}`,
+          width: frameWidth - 48,
+          lineHeight: 46 * scale,
         })
       );
     case 'prose':
       return (
-        18 +
+        20 +
         measureTextHeight({
           text: stripHtml(block.html),
           font: typo.bodyFont,
@@ -236,23 +236,23 @@ export const measureStageBlockHeight = ({
       );
     case 'questionReset':
       return (
-        48 * scale +
+        68 * scale +
         block.items.reduce((sum, item) => {
           return (
             sum +
             measureTextHeight({
               text: item.title,
-              font: `${typo.headingFontWeight} ${24 * scale}px ${typo.headingFontFamily}`,
+              font: `${typo.headingFontWeight} ${28 * scale}px ${typo.headingFontFamily}`,
               width: frameWidth,
-              lineHeight: 30 * scale,
+              lineHeight: 36 * scale,
             }) +
             measureTextHeight({
               text: stripHtml(item.body),
               font: `${500} ${typo.bodyFontSize * scale}px ${DEFAULT_FONT_FAMILY}`,
               width: frameWidth,
-              lineHeight: 34 * scale,
+              lineHeight: 40 * scale,
             }) +
-            20 * scale
+            26 * scale
           );
         }, 0)
       );
@@ -272,38 +272,38 @@ export const measureStageBlockHeight = ({
       const rowHeights = Array.from({length: rows}, (_, rowIndex) =>
         Math.max(...cardHeights.slice(rowIndex * columns, rowIndex * columns + columns)),
       );
-      return 28 * scale + rowHeights.reduce((sum, height) => sum + height, 0) + Math.max(rows - 1, 0) * 18 * scale;
+      return 40 * scale + rowHeights.reduce((sum, height) => sum + height, 0) + Math.max(rows - 1, 0) * 22 * scale;
     }
     case 'evidencePanel':
       return (
-        42 * scale +
+        60 * scale +
         measureTextHeight({
           text: block.item.title,
-          font: `${typo.headingFontWeight} ${24 * scale}px ${typo.headingFontFamily}`,
+          font: `${typo.headingFontWeight} ${28 * scale}px ${typo.headingFontFamily}`,
           width: frameWidth,
-          lineHeight: 30 * scale,
+          lineHeight: 36 * scale,
         }) +
         measureTextHeight({
           text: stripHtml(block.item.body),
           font: `${500} ${typo.bodyFontSize * scale}px ${DEFAULT_FONT_FAMILY}`,
           width: frameWidth,
-          lineHeight: 34 * scale,
+          lineHeight: 40 * scale,
         })
       );
     case 'axisTable': {
       const rowCount = Math.max(block.rows.length + 1, 1);
       const columnCount = Math.max(block.headers.length, 1);
       const cellDensity = block.rows.flat().join(' ').length / Math.max(block.rows.length * columnCount, 1);
-      const rowHeight = cellDensity > 70 ? 68 : cellDensity > 40 ? 56 : 46;
-      return 54 + rowCount * rowHeight;
+      const rowHeight = cellDensity > 70 ? 82 : cellDensity > 40 ? 68 : 56;
+      return 68 + rowCount * rowHeight;
     }
     case 'log': {
       const lineCount = block.code.split(/\r?\n/).length;
-      return 56 * scale + lineCount * typo.codeLineHeight * scale;
+      return 72 * scale + lineCount * typo.codeLineHeight * scale;
     }
     case 'provenance':
-      return 150 * scale + Math.max(block.ai.basedOn.length - 1, 0) * 18 * scale;
+      return 190 * scale + Math.max(block.ai.basedOn.length - 1, 0) * 24 * scale;
     case 'image':
-      return Math.max(frameHeight * 0.52, 320);
+      return Math.max(frameHeight * 0.64, 360);
   }
 };

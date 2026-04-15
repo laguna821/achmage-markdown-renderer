@@ -15,7 +15,7 @@ export type StageDeckOptions = {
   blockGap?: number;
 };
 
-export type StageLayoutIntent = 'header-only' | 'image' | 'sparse' | 'focus-card' | 'default';
+export type StageLayoutIntent = 'lead' | 'section-text' | 'media';
 
 export type StageFrame = {
   id: string;
@@ -26,6 +26,7 @@ export type StageFrame = {
   sectionTitle?: string;
   blocks: NormalizedBlock[];
   layoutIntent: StageLayoutIntent;
+  availableHeight: number;
   occupancyRatio: number;
   focusScale?: number;
 };

@@ -1,5 +1,17 @@
 # Release Notes
 
+## v6.0.0-beta.9
+
+This release replaces the remaining nested card-based desktop stage shell with an ultra-v3-style packed stage surface so continued frames use the slide itself instead of rendering reader-scale sections inside another paper.
+
+### Changed
+
+- Rebased desktop stage packing around ultra-v3 slide constants and larger Pretext measurement defaults so frame budgets reflect the actual stage surface instead of the older reader-shell assumptions
+- Added packed body-budget metadata to stage frames and kept solo-card focus scaling only as auxiliary metadata rather than the primary fill mechanism
+- Replaced non-lead desktop stage rendering with a native `stage-surface` heading/body shell, removing the old `doc-section` card wrapper from continued and section frames
+- Reworked stage CSS so prose, summary, quote, evidence panel, table, and image frames lay out directly on the slide surface and use the packed body area more aggressively across all four themes
+- Bumped the renderer, desktop app, and Tauri packaging metadata to `6.0.0-beta.9`
+
 ## v6.0.0-beta.8
 
 This release adds a stage-only solo-card reflow pass so isolated `Summary / Key Trigger`, `Quote`, and similar card frames stop rendering at reader scale after pagination splits them into their own slides.

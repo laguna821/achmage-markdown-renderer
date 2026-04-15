@@ -1,4 +1,4 @@
-Achmage Markdown Renderer v6 Desktop Beta 8
+Achmage Markdown Renderer v6 Desktop Beta 9
 
 - Windows installer `.msi`
 - Windows portable `.zip`
@@ -14,10 +14,10 @@ Notes
 - Windows MSI installers use Tauri's offline WebView2 installer path so a fresh PC does not need to download WebView2 during setup.
 - Portable `.zip` remains available as a fallback path when the installer is blocked or WebView2 is already present.
 - This beta line keeps the desktop-native V6 universal stage integration and ultra-v3 navigation baseline intact.
-- Stage now reflows isolated `Summary / Key Trigger`, `Quote`, thesis, provenance, log, and other solo card-like frames after pagination so they use the slide at stage scale instead of reader scale.
-- Solo card frames now carry `focus-card` intent plus bounded focus scaling metadata so the desktop renderer can safely enlarge card footprint and typography without overflowing the paper.
-- Desktop stage now exposes explicit stage-only block hooks for card-like blocks, letting focus-card slides use dedicated layout and typography rules without changing reader or newsletter styling.
-- Stage image frames still use contain-only fitting with runtime orientation detection, and sparse / header-only slides keep the beta.7 paper-usage improvements.
+- Desktop stage now measures and packs non-lead slides against ultra-v3 style `1280x720` body budgets so vertical pagination is driven by stage surface constraints instead of nested reader-shell cards.
+- Non-lead stage frames now render through a dedicated `stage-surface` shell, removing the old `doc-section` wrapper so continued slides use the full paper instead of showing a second card inside the slide.
+- Summary, quote, evidence, prose, table, and image frames now sit directly on the stage surface, with packed body metadata controlling layout while solo-card focus scaling remains only a secondary refinement.
+- Stage image frames still use contain-only fitting with runtime orientation detection, and lead slides keep the current document-header path.
 - Move markdown link interception from React synthetic capture to native article-level click delegation so raw rendered anchors in the reader respond reliably.
 - Keep internal note routes, in-document hash links, and external links on the same routing policy while adding dev-only link debug tracing for packaged runtime diagnosis.
 - Add regression coverage for Korean wiki-link rendering and direct text-node clicks so note-to-note jumps stay locked for packaged builds.

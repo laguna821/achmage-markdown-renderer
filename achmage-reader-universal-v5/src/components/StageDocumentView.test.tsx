@@ -194,7 +194,7 @@ describe('StageDocumentView', () => {
 
     expect(groupCounter()).toBe('2 / 3');
     expect(frameCounter()).toBe('2-1');
-    expect(document.querySelector('.doc-section__title')?.textContent).toContain('Section One');
+    expect(document.querySelector('.stage-surface__title')?.textContent).toContain('Section One');
     expect(frameRail()?.hidden).toBe(false);
     expect(frameDots()).toHaveLength(Number(frameRail()?.dataset.stageFrameCount ?? '0'));
 
@@ -225,7 +225,7 @@ describe('StageDocumentView', () => {
     expect(groupCounter()).toBe('3 / 3');
     expect(frameCounter()).toBeNull();
     expect(frameRail()?.hidden).toBe(true);
-    expect(document.querySelector('.doc-section__title')?.textContent).toContain('Section Two');
+    expect(document.querySelector('.stage-surface__title')?.textContent).toContain('Section Two');
 
     const previousGroupButton = document.querySelector<HTMLButtonElement>('button[aria-label="Previous stage group"]');
     if (!previousGroupButton) {
@@ -257,7 +257,7 @@ describe('StageDocumentView', () => {
     });
 
     const heading = document.querySelector<HTMLElement>('[data-stage-heading-style="title-above-rule"]');
-    const title = heading?.querySelector('.doc-section__title');
+    const title = heading?.querySelector('.stage-surface__title');
     const rule = heading?.querySelector('.stage-section-heading__rule');
 
     expect(heading).toBeTruthy();
@@ -283,7 +283,7 @@ describe('StageDocumentView', () => {
     expect(document.querySelector('[data-stage-frame-has-body="false"]')).toBeTruthy();
   });
 
-  it('exposes sparse and image layout intent markers without changing navigation semantics', async () => {
+  it('renders non-lead frames as stage surfaces instead of doc-section shells', async () => {
     const sparseDoc = makeDoc({
       sections: [
         {id: 'lead', title: 'Overview', depth: 1, blocks: []},
@@ -315,25 +315,30 @@ describe('StageDocumentView', () => {
       await Promise.resolve();
     });
 
-    const sparseSection = document.querySelector<HTMLElement>('.doc-section');
-    expect(sparseSection?.dataset.stageLayoutIntent).toBe('sparse');
-    expect(sparseSection?.dataset.stageFrameHasBody).toBe('true');
+    const sparseSurface = document.querySelector<HTMLElement>('[data-stage-surface="true"]');
+    const sparseBody = document.querySelector<HTMLElement>('[data-stage-surface-body="true"]');
+    expect(document.querySelector('.doc-section')).toBeNull();
+    expect(sparseSurface?.dataset.stageLayoutIntent).toBe('section-text');
+    expect(sparseSurface?.dataset.stageFrameHasBody).toBe('true');
+    expect(sparseSurface?.dataset.stageAvailableHeight).toBeTruthy();
+    expect(sparseBody).toBeTruthy();
 
     await act(async () => {
       nextGroupButton.click();
       await Promise.resolve();
     });
 
-    const imageSection = document.querySelector<HTMLElement>('.doc-section');
+    const imageSurface = document.querySelector<HTMLElement>('[data-stage-surface="true"]');
     const imageViewport = document.querySelector<HTMLElement>('.image-block__stage-viewport');
     const imageFigure = document.querySelector<HTMLElement>('.image-block--stage');
 
-    expect(imageSection?.dataset.stageLayoutIntent).toBe('image');
+    expect(document.querySelector('.doc-section')).toBeNull();
+    expect(imageSurface?.dataset.stageLayoutIntent).toBe('media');
     expect(imageViewport?.dataset.stageImageViewport).toBe('true');
     expect(imageFigure?.dataset.stageImageShape).toBe('unknown');
   });
 
-  it('exposes focus-card metadata for solo card frames and keeps stage-only block hooks', async () => {
+  it('renders summary and quote frames as stage-native surfaces while keeping stage block hooks', async () => {
     const doc = makeDoc({
       sections: [
         {id: 'lead', title: 'Overview', depth: 1, blocks: []},
@@ -366,14 +371,17 @@ describe('StageDocumentView', () => {
     });
 
     const summaryFrame = document.querySelector<HTMLElement>('.stage-frame');
-    const summarySection = document.querySelector<HTMLElement>('.doc-section');
+    const summarySurface = document.querySelector<HTMLElement>('[data-stage-surface="true"]');
+    const summaryBody = document.querySelector<HTMLElement>('[data-stage-surface-body="true"]');
     const summaryCallout = document.querySelector<HTMLElement>('.callout-block--stage');
 
-    expect(summaryFrame?.dataset.stageLayoutIntent).toBe('focus-card');
+    expect(summaryFrame?.dataset.stageLayoutIntent).toBe('section-text');
     expect(summaryFrame?.dataset.stageFocusScale).toBeTruthy();
     expect(summaryFrame?.dataset.stageSoloBlockKind).toBe('callout');
-    expect(summarySection?.dataset.stageLayoutIntent).toBe('focus-card');
-    expect(summarySection?.dataset.stageSoloBlockKind).toBe('callout');
+    expect(summarySurface?.dataset.stageLayoutIntent).toBe('section-text');
+    expect(summarySurface?.dataset.stageSoloBlockKind).toBe('callout');
+    expect(summaryBody).toBeTruthy();
+    expect(document.querySelector('.doc-section')).toBeNull();
     expect(summaryCallout?.dataset.stageBlockKind).toBe('callout');
 
     await act(async () => {
@@ -384,8 +392,9 @@ describe('StageDocumentView', () => {
     const quoteFrame = document.querySelector<HTMLElement>('.stage-frame');
     const quoteBlock = document.querySelector<HTMLElement>('.doc-quote--stage');
 
-    expect(quoteFrame?.dataset.stageLayoutIntent).toBe('focus-card');
+    expect(quoteFrame?.dataset.stageLayoutIntent).toBe('section-text');
     expect(quoteFrame?.dataset.stageSoloBlockKind).toBe('docQuote');
+    expect(document.querySelector<HTMLElement>('[data-stage-surface="true"]')).toBeTruthy();
     expect(quoteBlock?.dataset.stageBlockKind).toBe('docQuote');
   });
 

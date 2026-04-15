@@ -8,29 +8,21 @@ import {
 } from './pretextMeasurer';
 import type {StageDeck, StageDeckOptions, StageFrame, StageGroup, StageLayoutIntent} from './types';
 
-const DEFAULT_FRAME_HEIGHT = 720;
-const DEFAULT_FRAME_WIDTH = 1120;
-const DEFAULT_BLOCK_GAP = 26;
-const FRAME_PADDING_Y = 64;
-const HEADER_SIDE_PADDING = 72;
+const SLIDE_WIDTH = 1280;
+const SLIDE_HEIGHT = 720;
+const DEFAULT_FRAME_HEIGHT = SLIDE_HEIGHT;
+const DEFAULT_FRAME_WIDTH = SLIDE_WIDTH;
+const DEFAULT_BLOCK_GAP = 28;
+const SECTION_PADDING_V = 96;
+const SECTION_PADDING_X = 64;
+const UI_RESERVED_BOTTOM = 100;
+const CONTINUED_HEADING_HEIGHT = 70;
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
-const SPARSE_OCCUPANCY_THRESHOLD = 0.58;
 const FOCUS_CARD_TARGET_OCCUPANCY = 0.76;
 const FOCUS_CARD_MAX_BODY_OCCUPANCY = 0.92;
 const FOCUS_CARD_MIN_SCALE = 1;
 const FOCUS_CARD_MAX_SCALE = 1.38;
-const TEXTUAL_BLOCK_KINDS = new Set<NormalizedBlock['kind']>([
-  'thesis',
-  'callout',
-  'docQuote',
-  'prose',
-  'questionReset',
-  'evidenceGrid',
-  'evidencePanel',
-  'log',
-  'provenance',
-]);
 const DIRECT_FOCUS_CARD_KINDS = new Set<NormalizedBlock['kind']>([
   'callout',
   'docQuote',
@@ -42,7 +34,7 @@ const DIRECT_FOCUS_CARD_KINDS = new Set<NormalizedBlock['kind']>([
 
 const getTypography = (frameWidth: number): StageTypographyConfig => ({
   ...DEFAULT_STAGE_TYPOGRAPHY,
-  contentWidth: Math.max(frameWidth - HEADER_SIDE_PADDING * 2, 320),
+  contentWidth: Math.max(frameWidth - SECTION_PADDING_X * 2, 320),
 });
 
 const measureTextBlock = ({
@@ -78,26 +70,26 @@ const measureDocumentHeaderHeight = (doc: NormalizedDoc, frameWidth: number): nu
     text: doc.meta.title,
     fontSize: 54,
     lineHeight: 58,
-    width: frameWidth - HEADER_SIDE_PADDING * 2,
+    width: frameWidth - SECTION_PADDING_X * 2,
     weight: 760,
   });
   const metaCount = 1 + (doc.meta.heroLabel ? 1 : 0) + (doc.meta.date ? 1 : 0);
   const metaHeight = metaCount > 0 ? 42 : 0;
   const authorHeight = doc.meta.author ? 34 : 0;
 
-  return 92 + metaHeight + titleHeight + authorHeight;
+  return 104 + metaHeight + titleHeight + authorHeight;
 };
 
 const measureGroupTitleHeight = (title: string, frameWidth: number, continued: boolean): number =>
-  28 +
+  (continued ? 26 : 32) +
   measureTextBlock({
     text: title,
-    fontSize: continued ? 30 : 36,
-    lineHeight: continued ? 36 : 42,
-    width: frameWidth - HEADER_SIDE_PADDING * 2,
+    fontSize: continued ? 34 : 38,
+    lineHeight: continued ? 42 : 48,
+    width: frameWidth - SECTION_PADDING_X * 2,
     weight: 720,
   }) +
-  (continued ? 20 : 26);
+  (continued ? 18 : 24);
 
 const isDedicatedFrameBlock = ({
   block,
@@ -137,39 +129,29 @@ const createFrame = ({
   sectionId,
   sectionTitle: title,
   blocks: [],
-  layoutIntent: 'default',
+  layoutIntent: includeDocumentHeader ? 'lead' : 'section-text',
+  availableHeight: 0,
   occupancyRatio: 0,
 });
 
 const isImageFrame = (blocks: readonly NormalizedBlock[]): boolean => blocks.length > 0 && blocks.every((block) => block.kind === 'image');
 
-const isTextualFrame = (blocks: readonly NormalizedBlock[]): boolean =>
-  blocks.length > 0 && blocks.every((block) => TEXTUAL_BLOCK_KINDS.has(block.kind));
-
 const resolveLayoutIntent = ({
   kind,
   blocks,
-  continued,
-  occupancyRatio,
 }: {
   kind: 'lead' | 'section';
   blocks: readonly NormalizedBlock[];
-  continued: boolean;
-  occupancyRatio: number;
 }): StageLayoutIntent => {
-  if (kind === 'lead' && blocks.length === 0) {
-    return 'header-only';
+  if (kind === 'lead') {
+    return 'lead';
   }
 
-  if (isImageFrame(blocks)) {
-    return 'image';
+  if (isImageFrame(blocks) || (blocks.length === 1 && blocks[0]?.kind === 'axisTable')) {
+    return 'media';
   }
 
-  if (!continued && occupancyRatio < SPARSE_OCCUPANCY_THRESHOLD && isTextualFrame(blocks)) {
-    return 'sparse';
-  }
-
-  return 'default';
+  return 'section-text';
 };
 
 const getFocusCardBlock = (blocks: readonly NormalizedBlock[]): NormalizedBlock | null => {
@@ -260,13 +242,16 @@ const buildFramesForGroup = ({
   blockGap: number;
 }): StageFrame[] => {
   const expandedBlocks = expandStageBlocks(blocks);
-  const contentWidth = Math.max(frameWidth - HEADER_SIDE_PADDING * 2, 320);
+  const contentWidth = Math.max(frameWidth - SECTION_PADDING_X * 2, 320);
   const typography = getTypography(frameWidth);
-  const baseAvailable = frameHeight - FRAME_PADDING_Y * 2;
+  const baseAvailable = frameHeight - SECTION_PADDING_V - UI_RESERVED_BOTTOM;
+  const continuedHeadingReserve = Math.max(CONTINUED_HEADING_HEIGHT, measureGroupTitleHeight(title, frameWidth, true));
   const firstFrameAvailable =
     baseAvailable -
-    (kind === 'lead' ? measureDocumentHeaderHeight(doc, frameWidth) : measureGroupTitleHeight(title, frameWidth, false));
-  const continuedAvailable = baseAvailable - measureGroupTitleHeight(title, frameWidth, true);
+    (kind === 'lead'
+      ? measureDocumentHeaderHeight(doc, frameWidth)
+      : Math.max(CONTINUED_HEADING_HEIGHT + 8, measureGroupTitleHeight(title, frameWidth, false)));
+  const continuedAvailable = baseAvailable - continuedHeadingReserve;
 
   const frames: StageFrame[] = [
     createFrame({
@@ -345,10 +330,8 @@ const buildFramesForGroup = ({
       const baseLayoutIntent = resolveLayoutIntent({
         kind,
         blocks: frame.blocks,
-        continued: frame.continued,
-        occupancyRatio,
       });
-      const focusCardBlock = baseLayoutIntent === 'header-only' || baseLayoutIntent === 'image' ? null : getFocusCardBlock(frame.blocks);
+      const focusCardBlock = baseLayoutIntent === 'media' || kind === 'lead' ? null : getFocusCardBlock(frame.blocks);
       const focusScale =
         focusCardBlock === null
           ? undefined
@@ -363,8 +346,9 @@ const buildFramesForGroup = ({
 
       return {
         ...frame,
+        availableHeight,
         occupancyRatio,
-        layoutIntent: focusCardBlock ? 'focus-card' : baseLayoutIntent,
+        layoutIntent: baseLayoutIntent,
         focusScale,
       };
     });
