@@ -15,6 +15,8 @@ export type StageDeckOptions = {
   blockGap?: number;
 };
 
+export type StageLayoutIntent = 'header-only' | 'image' | 'sparse' | 'default';
+
 export type StageFrame = {
   id: string;
   title: string;
@@ -23,6 +25,8 @@ export type StageFrame = {
   sectionId?: string;
   sectionTitle?: string;
   blocks: NormalizedBlock[];
+  layoutIntent: StageLayoutIntent;
+  occupancyRatio: number;
 };
 
 export type StageGroup = {

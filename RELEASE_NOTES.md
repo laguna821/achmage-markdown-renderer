@@ -1,5 +1,16 @@
 # Release Notes
 
+## v6.0.0-beta.7
+
+This release improves desktop stage space utilization so sparse slides stop feeling pinned to the upper half of the paper while preserving the existing ultra-v3 navigation and pagination model.
+
+### Changed
+
+- Added stage frame `layoutIntent` and `occupancyRatio` metadata so the desktop deck can distinguish header-only, sparse, image, and default frames without changing group or frame counts
+- Removed the empty lower section from header-only lead slides and widened sparse frames so TOC-like and short-text slides use the paper more deliberately across all four themes
+- Reworked stage-only body sizing to override reader-width constraints inside stage, keep dense frames top-aligned, and let image frames fill the available body height while still using `contain`
+- Bumped the renderer, desktop app, and Tauri packaging metadata to `6.0.0-beta.7`
+
 ## v6.0.0-beta.6
 
 This release polishes the packaged desktop stage mode so the HUD no longer overlaps the slide, oversized screenshots fit inside the paper more reliably, and Light theme stage headers recover the intended title-above-rule structure.

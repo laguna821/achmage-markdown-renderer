@@ -203,6 +203,69 @@ Just body copy with no headings.
     });
   });
 
+  test('marks empty lead frames as header-only with zero occupancy', () => {
+    const doc = makeDoc({
+      sections: [{id: 'lead', title: 'Overview', depth: 1, blocks: []}],
+    });
+
+    const deck = buildStageDeck(doc);
+    const leadFrame = deck.groups[0]?.frames[0];
+
+    expect(leadFrame).toMatchObject({
+      includeDocumentHeader: true,
+      layoutIntent: 'header-only',
+      occupancyRatio: 0,
+    });
+  });
+
+  test('classifies sparse, image, and dense frames with stage layout intent metadata', () => {
+    const longParagraph = 'Dense stage paragraph '.repeat(140);
+    const doc = makeDoc({
+      sections: [
+        {id: 'lead', title: 'Overview', depth: 1, blocks: []},
+        {
+          id: 'toc-like',
+          title: 'Table of Contents',
+          depth: 2,
+          blocks: [
+            {
+              kind: 'prose',
+              html: '<ul><li>One item</li><li>Two item</li><li>Three item</li><li>Four item</li></ul>',
+            },
+          ],
+        },
+        {
+          id: 'image-group',
+          title: 'Image Group',
+          depth: 2,
+          blocks: [{kind: 'image', src: '/assets/stage-lab.png', alt: 'Stage image'}],
+        },
+        {
+          id: 'dense-group',
+          title: 'Dense Group',
+          depth: 2,
+          blocks: [{kind: 'prose', html: `<p>${longParagraph}</p><p>${longParagraph}</p><p>${longParagraph}</p>`}],
+        },
+      ],
+    });
+
+    const deck = buildStageDeck(doc, {
+      frameHeight: 720,
+      frameWidth: 1120,
+    });
+
+    const sparseFrame = deck.groups.find((group) => group.id === 'toc-like')?.frames[0];
+    const imageFrame = deck.groups.find((group) => group.id === 'image-group')?.frames[0];
+    const denseFrame = deck.groups.find((group) => group.id === 'dense-group')?.frames[0];
+
+    expect(sparseFrame?.layoutIntent).toBe('sparse');
+    expect(sparseFrame?.occupancyRatio).toBeLessThan(0.58);
+    expect(imageFrame?.layoutIntent).toBe('image');
+    expect(imageFrame?.occupancyRatio).toBeGreaterThan(0);
+    expect(denseFrame?.layoutIntent).toBe('default');
+    expect(denseFrame?.occupancyRatio).toBeGreaterThanOrEqual(0.58);
+  });
+
   test('splits long prose into continued frames while isolating images and dense tables', () => {
     const longParagraph = 'A long paragraph for pagination. '.repeat(90);
     const longProse: NormalizedBlock = {

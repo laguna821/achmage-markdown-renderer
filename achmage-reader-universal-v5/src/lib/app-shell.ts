@@ -2,7 +2,7 @@ import type {OutputMode} from '../core/content';
 import type {AppSettings} from './bridge';
 
 export const APP_DISPLAY_NAME = 'Achmage Markdown Renderer';
-export const APP_RELEASE_TITLE = 'Achmage Markdown Renderer v6 Desktop Beta 6';
+export const APP_RELEASE_TITLE = 'Achmage Markdown Renderer v6 Desktop Beta 7';
 
 export type AppRoute =
   | {screen: 'home'}

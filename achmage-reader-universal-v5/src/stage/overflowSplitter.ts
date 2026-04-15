@@ -6,7 +6,7 @@ import {
   measureStageBlockHeight,
   type StageTypographyConfig,
 } from './pretextMeasurer';
-import type {StageDeck, StageDeckOptions, StageFrame, StageGroup} from './types';
+import type {StageDeck, StageDeckOptions, StageFrame, StageGroup, StageLayoutIntent} from './types';
 
 const DEFAULT_FRAME_HEIGHT = 720;
 const DEFAULT_FRAME_WIDTH = 1120;
@@ -15,6 +15,18 @@ const FRAME_PADDING_Y = 64;
 const HEADER_SIDE_PADDING = 72;
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+const SPARSE_OCCUPANCY_THRESHOLD = 0.58;
+const TEXTUAL_BLOCK_KINDS = new Set<NormalizedBlock['kind']>([
+  'thesis',
+  'callout',
+  'docQuote',
+  'prose',
+  'questionReset',
+  'evidenceGrid',
+  'evidencePanel',
+  'log',
+  'provenance',
+]);
 
 const getTypography = (frameWidth: number): StageTypographyConfig => ({
   ...DEFAULT_STAGE_TYPOGRAPHY,
@@ -113,7 +125,40 @@ const createFrame = ({
   sectionId,
   sectionTitle: title,
   blocks: [],
+  layoutIntent: 'default',
+  occupancyRatio: 0,
 });
+
+const isImageFrame = (blocks: readonly NormalizedBlock[]): boolean => blocks.length > 0 && blocks.every((block) => block.kind === 'image');
+
+const isTextualFrame = (blocks: readonly NormalizedBlock[]): boolean =>
+  blocks.length > 0 && blocks.every((block) => TEXTUAL_BLOCK_KINDS.has(block.kind));
+
+const resolveLayoutIntent = ({
+  kind,
+  blocks,
+  continued,
+  occupancyRatio,
+}: {
+  kind: 'lead' | 'section';
+  blocks: readonly NormalizedBlock[];
+  continued: boolean;
+  occupancyRatio: number;
+}): StageLayoutIntent => {
+  if (kind === 'lead' && blocks.length === 0) {
+    return 'header-only';
+  }
+
+  if (isImageFrame(blocks)) {
+    return 'image';
+  }
+
+  if (!continued && occupancyRatio < SPARSE_OCCUPANCY_THRESHOLD && isTextualFrame(blocks)) {
+    return 'sparse';
+  }
+
+  return 'default';
+};
 
 const buildFramesForGroup = ({
   doc,
@@ -155,6 +200,7 @@ const buildFramesForGroup = ({
       sectionId,
     }),
   ];
+  const frameBodyHeights: number[] = [0];
   let frameIndex = 0;
   let currentHeight = 0;
   let currentAvailable = firstFrameAvailable;
@@ -173,6 +219,7 @@ const buildFramesForGroup = ({
     );
     currentHeight = 0;
     currentAvailable = continuedAvailable;
+    frameBodyHeights[frameIndex] = 0;
   };
 
   for (const block of expandedBlocks) {
@@ -205,13 +252,30 @@ const buildFramesForGroup = ({
     frames[frameIndex]?.blocks.push(block);
     currentHeight += (frames[frameIndex]?.blocks.length ?? 0) > 1 ? blockGap : 0;
     currentHeight += blockHeight;
+    frameBodyHeights[frameIndex] = currentHeight;
 
     if (dedicated && block !== expandedBlocks[expandedBlocks.length - 1]) {
       startNextFrame();
     }
   }
 
-  return frames.filter((frame, index) => frame.blocks.length > 0 || index === 0);
+  return frames
+    .filter((frame, index) => frame.blocks.length > 0 || index === 0)
+    .map((frame, index) => {
+      const availableHeight = index === 0 ? firstFrameAvailable : continuedAvailable;
+      const occupancyRatio = clamp((frameBodyHeights[index] ?? 0) / Math.max(availableHeight, 1), 0, 1);
+
+      return {
+        ...frame,
+        occupancyRatio,
+        layoutIntent: resolveLayoutIntent({
+          kind,
+          blocks: frame.blocks,
+          continued: frame.continued,
+          occupancyRatio,
+        }),
+      };
+    });
 };
 
 export const buildStageDeck = (doc: NormalizedDoc, options: StageDeckOptions = {}): StageDeck => {

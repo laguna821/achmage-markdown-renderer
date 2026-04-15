@@ -47,6 +47,7 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
   const currentFrame = currentGroup?.frames[frameIndex] ?? currentGroup?.frames[0];
   const currentFrameCount = currentGroup?.frames.length ?? 0;
   const hasVerticalFrames = currentFrameCount > 1;
+  const hasFrameBody = (currentFrame?.blocks.length ?? 0) > 0;
   const currentFrameContentKind =
     currentFrame?.blocks.length === 1 ? currentFrame.blocks[0]?.kind ?? 'mixed' : 'mixed';
   const isLightStageTheme = theme === 'light';
@@ -373,29 +374,37 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
 
           <div className="stage-shell__deck">
             <div className="stage-paper" data-stage-group-index={groupIndex} data-stage-frame-index={frameIndex}>
-              <div className="doc-paper doc-paper--stage stage-frame">
+              <div
+                className="doc-paper doc-paper--stage stage-frame"
+                data-stage-layout-intent={currentFrame.layoutIntent}
+                data-stage-frame-has-body={hasFrameBody ? 'true' : 'false'}
+              >
                 {currentFrame.includeDocumentHeader ? <DocumentHeader doc={doc} variant="stage" /> : null}
 
-                <section
-                  className={`doc-section${currentGroup.kind === 'lead' ? ' doc-section--lead' : ''}${currentFrame.continued ? ' stage-frame__section--continued' : ''}`}
-                  data-stage-article="true"
-                  data-section-id={currentFrame.sectionId ?? currentGroup.id}
-                  data-stage-frame-content-kind={currentFrameContentKind}
-                >
-                  {sectionHeading}
-                  <div className="doc-section__blocks" data-stage-frame-content-kind={currentFrameContentKind}>
-                    {currentFrame.blocks.map((block, blockIndex) => (
-                      <BlockRenderer
-                        key={`${currentFrame.id}-${block.kind}-${blockIndex}`}
-                        block={block}
-                        variant="stage"
-                        doc={doc}
-                        sectionId={currentFrame.sectionId ?? currentGroup.id}
-                        blockIndex={blockIndex}
-                      />
-                    ))}
-                  </div>
-                </section>
+                {hasFrameBody ? (
+                  <section
+                    className={`doc-section${currentGroup.kind === 'lead' ? ' doc-section--lead' : ''}${currentFrame.continued ? ' stage-frame__section--continued' : ''}`}
+                    data-stage-article="true"
+                    data-section-id={currentFrame.sectionId ?? currentGroup.id}
+                    data-stage-frame-content-kind={currentFrameContentKind}
+                    data-stage-layout-intent={currentFrame.layoutIntent}
+                    data-stage-frame-has-body="true"
+                  >
+                    {sectionHeading}
+                    <div className="doc-section__blocks" data-stage-frame-content-kind={currentFrameContentKind}>
+                      {currentFrame.blocks.map((block, blockIndex) => (
+                        <BlockRenderer
+                          key={`${currentFrame.id}-${block.kind}-${blockIndex}`}
+                          block={block}
+                          variant="stage"
+                          doc={doc}
+                          sectionId={currentFrame.sectionId ?? currentGroup.id}
+                          blockIndex={blockIndex}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
               </div>
             </div>
           </div>

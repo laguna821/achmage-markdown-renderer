@@ -1,4 +1,4 @@
-Achmage Markdown Renderer v6 Desktop Beta 6
+Achmage Markdown Renderer v6 Desktop Beta 7
 
 - Windows installer `.msi`
 - Windows portable `.zip`
@@ -19,6 +19,8 @@ Notes
 - Stage title and counters now live in a dock outside the slide instead of overlaying the paper, with a compact fallback on narrower widths.
 - Stage image frames now use contain-only fitting with runtime orientation detection so large screenshots stay fully visible and portrait captures scale down more comfortably.
 - Light theme stage section titles now render above the black divider rule, including continued frames, so the slide body recovers vertical space.
+- Stage frames now carry layout intent metadata so sparse text slides, image slides, and header-only lead slides can use the paper differently without changing navigation semantics.
+- Header-only lead slides no longer render an empty lower section card, and sparse frames now expand beyond reader-width constraints so stage uses more of the slide surface across all themes.
 - Move markdown link interception from React synthetic capture to native article-level click delegation so raw rendered anchors in the reader respond reliably.
 - Keep internal note routes, in-document hash links, and external links on the same routing policy while adding dev-only link debug tracing for packaged runtime diagnosis.
 - Add regression coverage for Korean wiki-link rendering and direct text-node clicks so note-to-note jumps stay locked for packaged builds.

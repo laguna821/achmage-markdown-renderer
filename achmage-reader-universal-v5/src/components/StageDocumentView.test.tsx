@@ -269,6 +269,70 @@ describe('StageDocumentView', () => {
     expect(Boolean(title.compareDocumentPosition(rule) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
   });
 
+  it('skips the empty lower section for header-only lead frames', async () => {
+    const mounted = await mountStageView(
+      makeDoc({
+        title: 'Header Only Lead',
+        sections: [{id: 'lead', title: 'Overview', depth: 1, blocks: []}],
+      }),
+    );
+    root = mounted.root;
+
+    expect(document.querySelector('.doc-header')).toBeTruthy();
+    expect(document.querySelector('.doc-section')).toBeNull();
+    expect(document.querySelector('[data-stage-frame-has-body="false"]')).toBeTruthy();
+  });
+
+  it('exposes sparse and image layout intent markers without changing navigation semantics', async () => {
+    const sparseDoc = makeDoc({
+      sections: [
+        {id: 'lead', title: 'Overview', depth: 1, blocks: []},
+        {
+          id: 'toc-like',
+          title: 'Contents',
+          depth: 2,
+          blocks: [{kind: 'prose', html: '<ul><li>Alpha</li><li>Beta</li><li>Gamma</li></ul>'}],
+        },
+        {
+          id: 'image-group',
+          title: 'Image Group',
+          depth: 2,
+          blocks: [{kind: 'image', src: '/assets/sparse-image.png', alt: 'Sparse image', caption: 'Image caption'}],
+        },
+      ],
+    });
+
+    const mounted = await mountStageView(sparseDoc);
+    root = mounted.root;
+
+    const nextGroupButton = document.querySelector<HTMLButtonElement>('button[aria-label="Next stage group"]');
+    if (!nextGroupButton) {
+      throw new Error('next group button not found');
+    }
+
+    await act(async () => {
+      nextGroupButton.click();
+      await Promise.resolve();
+    });
+
+    const sparseSection = document.querySelector<HTMLElement>('.doc-section');
+    expect(sparseSection?.dataset.stageLayoutIntent).toBe('sparse');
+    expect(sparseSection?.dataset.stageFrameHasBody).toBe('true');
+
+    await act(async () => {
+      nextGroupButton.click();
+      await Promise.resolve();
+    });
+
+    const imageSection = document.querySelector<HTMLElement>('.doc-section');
+    const imageViewport = document.querySelector<HTMLElement>('.image-block__stage-viewport');
+    const imageFigure = document.querySelector<HTMLElement>('.image-block--stage');
+
+    expect(imageSection?.dataset.stageLayoutIntent).toBe('image');
+    expect(imageViewport?.dataset.stageImageViewport).toBe('true');
+    expect(imageFigure?.dataset.stageImageShape).toBe('unknown');
+  });
+
   it('matches ultra-v3 keyboard semantics for logical groups and continued frames', async () => {
     const mounted = await mountStageView(makeDoc());
     root = mounted.root;
