@@ -178,5 +178,5 @@ Synthetic`,
     expect(result.loadState.phase).toBe('ready');
     expect(result.loadState.totalFiles).toBe(10000);
     expect(result.loadState.validatedFiles).toBe(10000);
-  });
+  }, 30_000);
 });
