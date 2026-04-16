@@ -1,5 +1,15 @@
 # Release Notes
 
+## v6.0.0-beta.11
+
+This release republishes the beta.10 desktop stage stabilization work with the dependency fix required for GitHub Actions to package and publish the release successfully.
+
+### Changed
+
+- Added explicit Node typings for the new desktop CSS regression test so `node:fs` resolves correctly during `tsc` in fresh `npm ci` environments
+- Kept the beta.10 stage canvas geometry, inline `(cont.)` continuation titles, stage-only lead shell, typography scaling, and non-light mode-switch polish as the shipped feature baseline
+- Bumped the renderer, desktop app, and Tauri packaging metadata to `6.0.0-beta.11`
+
 ## v6.0.0-beta.10
 
 This release stabilizes the packaged desktop stage surface so the lead slide, continued frames, and top-bar mode switch all behave like native stage UI instead of inheriting leftover reader-shell behavior.
