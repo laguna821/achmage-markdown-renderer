@@ -256,11 +256,12 @@ function AxisTable({
 
   return (
     <div
-      className="axis-table__wrap"
+      className={`axis-table__wrap${variant === 'stage' ? ' axis-table__wrap--stage' : ''}`}
       data-pretext-axis-table={hasPretext ? 'true' : undefined}
       data-pretext-section-id={hasPretext ? sectionId : undefined}
       data-pretext-block-index={hasPretext ? String(blockIndex) : undefined}
       data-axis-table-view="table"
+      data-stage-block-kind={variant === 'stage' ? 'axisTable' : undefined}
     >
       <table className="axis-table">
         <thead>
@@ -474,7 +475,13 @@ export function BlockRenderer({block, variant, doc, sectionId, blockIndex}: Bloc
     case 'provenance':
       return <ProvenancePanel ai={block.ai} variant={variant} />;
     case 'prose':
-      return <HtmlBlock html={block.html} className="prose-block" />;
+      return (
+        <HtmlBlock
+          html={block.html}
+          className={`prose-block${variant === 'stage' ? ' prose-block--stage' : ''}`}
+          data-stage-block-kind={variant === 'stage' ? 'prose' : undefined}
+        />
+      );
     case 'image':
       return <ImageBlock src={block.src} alt={block.alt} caption={block.caption} doc={doc} variant={variant} />;
     default:

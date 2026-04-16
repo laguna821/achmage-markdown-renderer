@@ -1,4 +1,5 @@
 import type {NormalizedBlock, NormalizedDoc, OutputMode} from '../core/content';
+import type {StageScalePreset} from './scale';
 
 export type StageMode = OutputMode;
 
@@ -9,11 +10,17 @@ export type DocumentModeLink = {
   active: boolean;
 };
 
-export type StageDeckOptions = {
-  frameHeight?: number;
-  frameWidth?: number;
+export type StageViewportBudget = {
+  width: number;
+  height: number;
+  rightRailReserve: number;
+  bottomControlsReserve: number;
+  headingReserve: number;
+  continuedHeadingReserve: number;
   blockGap?: number;
 };
+
+export type StageDeckOptions = Partial<StageViewportBudget>;
 
 export type StageLayoutIntent = 'lead' | 'section-text' | 'media';
 
@@ -28,6 +35,7 @@ export type StageFrame = {
   layoutIntent: StageLayoutIntent;
   availableHeight: number;
   occupancyRatio: number;
+  scalePreset: StageScalePreset;
   focusScale?: number;
 };
 
@@ -43,6 +51,7 @@ export type StageDeck = {
   slug: string;
   title: string;
   keyboardNav: boolean;
+  scalePreset: StageScalePreset;
   groups: StageGroup[];
 };
 

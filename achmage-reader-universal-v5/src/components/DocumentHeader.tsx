@@ -19,6 +19,31 @@ export function DocumentHeader({doc, variant}: DocumentHeaderProps) {
     : {};
   const insights = deriveDocumentInsights(doc);
 
+  if (variant === 'stage') {
+    return (
+      <header
+        className="stage-lead-header"
+        data-mega={doc.meta.docType.toUpperCase()}
+        data-doc-type={doc.meta.docType}
+        data-stage-header="true"
+      >
+        <div className="stage-lead-header__meta-top" aria-label="Document metadata">
+          {insights.metaTrail.map((item, index) => (
+            <span key={`${item}-${index}`} className="stage-lead-header__meta-item">
+              {item}
+            </span>
+          ))}
+        </div>
+        <div className="stage-lead-header__kicker">{insights.kicker}</div>
+        <h1 className="stage-lead-header__title" {...titlePretextAttributes}>
+          {doc.meta.title}
+        </h1>
+        {insights.standfirst ? <p className="stage-lead-header__standfirst">{insights.standfirst}</p> : null}
+        {doc.meta.author ? <p className="stage-lead-header__author">by {doc.meta.author}</p> : null}
+      </header>
+    );
+  }
+
   return (
     <header
       className={`doc-header doc-header--${variant}`}

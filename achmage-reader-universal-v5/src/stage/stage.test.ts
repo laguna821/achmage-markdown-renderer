@@ -4,6 +4,15 @@ import {normalizeVaultSnapshot, type NormalizedBlock, type NormalizedDoc, type V
 
 import {buildStageDeck, getDocumentModeLinks, getDocumentsForStage} from './index';
 
+const FULL_VIEWPORT_BUDGET = {
+  width: 1440,
+  height: 920,
+  rightRailReserve: 72,
+  bottomControlsReserve: 96,
+  headingReserve: 84,
+  continuedHeadingReserve: 72,
+};
+
 const makeSnapshot = (content: string, slug = 'stage-lab.md'): VaultSnapshot => ({
   state: {
     rootPath: 'C:/vault',
@@ -157,6 +166,7 @@ Beta
     });
     expect(deck.groups.slice(1).map((group) => group.title)).toEqual(doc.sections.slice(1).map((section) => section.title));
     expect(deck.groups[0]?.frames[0]?.includeDocumentHeader).toBe(true);
+    expect(deck.scalePreset).toBe('compact');
   });
 
   test('uses the first actual normalized section when source content starts at h3', () => {
@@ -250,16 +260,15 @@ Just body copy with no headings.
       ],
     });
 
-    const deck = buildStageDeck(doc, {
-      frameHeight: 720,
-      frameWidth: 1120,
-    });
+    const deck = buildStageDeck(doc, FULL_VIEWPORT_BUDGET);
 
     const sparseFrame = deck.groups.find((group) => group.id === 'toc-like')?.frames[0];
     const imageFrame = deck.groups.find((group) => group.id === 'image-group')?.frames[0];
     const denseFrame = deck.groups.find((group) => group.id === 'dense-group')?.frames[0];
 
+    expect(deck.scalePreset).toBe('standard');
     expect(sparseFrame?.layoutIntent).toBe('section-text');
+    expect(sparseFrame?.scalePreset).toBe('standard');
     expect(sparseFrame?.availableHeight).toBeGreaterThan(0);
     expect(sparseFrame?.occupancyRatio).toBeLessThan(0.58);
     expect(imageFrame?.layoutIntent).toBe('media');
@@ -295,10 +304,7 @@ Just body copy with no headings.
       ],
     });
 
-    const deck = buildStageDeck(doc, {
-      frameHeight: 720,
-      frameWidth: 1120,
-    });
+    const deck = buildStageDeck(doc, FULL_VIEWPORT_BUDGET);
 
     const summaryFrame = deck.groups.find((group) => group.id === 'summary')?.frames[0];
     const quoteFrame = deck.groups.find((group) => group.id === 'quote')?.frames[0];
@@ -340,8 +346,9 @@ Just body copy with no headings.
     });
 
     const deck = buildStageDeck(doc, {
-      frameHeight: 430,
-      frameWidth: 960,
+      ...FULL_VIEWPORT_BUDGET,
+      width: 1120,
+      height: 580,
     });
     const group = deck.groups.find((candidate) => candidate.id === 'summary-quote');
 
@@ -350,6 +357,61 @@ Just body copy with no headings.
     expect(group?.frames[0]?.blocks[0]?.kind).toBe('callout');
     expect(group?.frames[1]?.blocks).toHaveLength(1);
     expect(group?.frames[1]?.blocks[0]?.kind).toBe('docQuote');
+  });
+
+  test('starts a new continued frame when an internal prose heading follows body content', () => {
+    const doc = makeDoc({
+      sections: [
+        {id: 'lead', title: 'Overview', depth: 1, blocks: []},
+        {
+          id: 'subheading-lab',
+          title: 'Subheading Lab',
+          depth: 2,
+          blocks: [
+            {
+              kind: 'prose',
+              html: '<p>Opening paragraph.</p><h3>2.1 Hybrid format definition</h3><p>Follow-up paragraph.</p>',
+            },
+          ],
+        },
+      ],
+    });
+
+    const deck = buildStageDeck(doc, FULL_VIEWPORT_BUDGET);
+    const group = deck.groups.find((candidate) => candidate.id === 'subheading-lab');
+
+    expect(group?.frames).toHaveLength(2);
+    expect(group?.frames[0]?.blocks).toHaveLength(1);
+    expect(group?.frames[0]?.blocks[0]?.kind).toBe('prose');
+    expect(group?.frames[1]?.blocks).toHaveLength(2);
+    expect(group?.frames[1]?.blocks[0]?.kind).toBe('prose');
+  });
+
+  test('coerces image-only prose fragments into dedicated image frames', () => {
+    const doc = makeDoc({
+      sections: [
+        {id: 'lead', title: 'Overview', depth: 1, blocks: []},
+        {
+          id: 'image-fragment-lab',
+          title: 'Image Fragment Lab',
+          depth: 2,
+          blocks: [
+            {kind: 'prose', html: '<p>Intro paragraph.</p><figure><img src="/assets/prose-image.png" alt="Fragment image" /><figcaption>Fragment caption</figcaption></figure><p>Outro paragraph.</p>'},
+          ],
+        },
+      ],
+    });
+
+    const deck = buildStageDeck(doc, {
+      ...FULL_VIEWPORT_BUDGET,
+      width: 1120,
+      height: 580,
+    });
+    const group = deck.groups.find((candidate) => candidate.id === 'image-fragment-lab');
+    const kinds = group?.frames.flatMap((frame) => frame.blocks.map((block) => block.kind)) ?? [];
+
+    expect(kinds).toEqual(['prose', 'image', 'prose']);
+    expect(group?.frames.some((frame) => frame.blocks.length === 1 && frame.blocks[0]?.kind === 'image')).toBe(true);
   });
 
   test('splits long prose into continued frames while isolating images and dense tables', () => {
@@ -381,8 +443,9 @@ Just body copy with no headings.
     });
 
     const deck = buildStageDeck(doc, {
-      frameHeight: 430,
-      frameWidth: 960,
+      ...FULL_VIEWPORT_BUDGET,
+      width: 1120,
+      height: 580,
     });
     const group = deck.groups[1];
     const firstBudget = group.frames[0]?.availableHeight ?? 0;
@@ -414,8 +477,9 @@ Just body copy with no headings.
     });
 
     const deck = buildStageDeck(doc, {
-      frameHeight: 430,
-      frameWidth: 960,
+      ...FULL_VIEWPORT_BUDGET,
+      width: 1120,
+      height: 580,
     });
     const frames = deck.groups[1]?.frames ?? [];
     const kinds = frames.flatMap((frame) => frame.blocks.map((block) => block.kind));
@@ -423,6 +487,46 @@ Just body copy with no headings.
     expect(kinds[0]).toBe('prose');
     expect(kinds).toContain('callout');
     expect(kinds[kinds.length - 1]).toBe('image');
+  });
+
+  test('re-computes packed body budgets when the viewport changes', () => {
+    const longParagraph = 'Viewport-aware stage paragraph '.repeat(88);
+    const doc = makeDoc({
+      sections: [
+        {id: 'lead', title: 'Overview', depth: 1, blocks: []},
+        {
+          id: 'viewport-lab',
+          title: 'Viewport Lab',
+          depth: 2,
+          blocks: [
+            {
+              kind: 'prose',
+              html: `<p>${longParagraph}</p><p>${longParagraph}</p><p>${longParagraph}</p><p>${longParagraph}</p><p>${longParagraph}</p>`,
+            },
+          ],
+        },
+      ],
+    });
+
+    const wideDeck = buildStageDeck(doc, {
+      ...FULL_VIEWPORT_BUDGET,
+      width: 1960,
+      height: 980,
+    });
+    const narrowDeck = buildStageDeck(doc, {
+      ...FULL_VIEWPORT_BUDGET,
+      width: 760,
+      height: 520,
+    });
+
+    const wideFirstFrame = wideDeck.groups.find((group) => group.id === 'viewport-lab')?.frames[0];
+    const narrowFirstFrame = narrowDeck.groups.find((group) => group.id === 'viewport-lab')?.frames[0];
+
+    expect(wideDeck.scalePreset).toBe('wide');
+    expect(narrowDeck.scalePreset).toBe('compact');
+    expect(wideFirstFrame?.scalePreset).toBe('wide');
+    expect(narrowFirstFrame?.scalePreset).toBe('compact');
+    expect(wideFirstFrame?.availableHeight).toBeGreaterThan(narrowFirstFrame?.availableHeight ?? 0);
   });
 
   test('propagates keyboard navigation settings from document frontmatter', () => {

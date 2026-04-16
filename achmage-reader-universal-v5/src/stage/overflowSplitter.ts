@@ -1,22 +1,20 @@
 import type {NormalizedBlock, NormalizedDoc} from '../core/content';
+import {deriveDocumentInsights} from '../lib/document-insights';
 
 import {
-  DEFAULT_STAGE_TYPOGRAPHY,
+  createStageTypographyConfig,
   expandStageBlocks,
+  isStageHeadingProseBlock,
   measureStageBlockHeight,
+  measureStageTextHeight,
   type StageTypographyConfig,
 } from './pretextMeasurer';
-import type {StageDeck, StageDeckOptions, StageFrame, StageGroup, StageLayoutIntent} from './types';
+import {getStageTypographyScale, resolveStageScalePreset} from './scale';
+import type {StageDeck, StageDeckOptions, StageFrame, StageGroup, StageLayoutIntent, StageViewportBudget} from './types';
 
-const SLIDE_WIDTH = 1280;
-const SLIDE_HEIGHT = 720;
-const DEFAULT_FRAME_HEIGHT = SLIDE_HEIGHT;
-const DEFAULT_FRAME_WIDTH = SLIDE_WIDTH;
+const DEFAULT_VIEWPORT_WIDTH = 1280;
+const DEFAULT_VIEWPORT_HEIGHT = 720;
 const DEFAULT_BLOCK_GAP = 28;
-const SECTION_PADDING_V = 96;
-const SECTION_PADDING_X = 64;
-const UI_RESERVED_BOTTOM = 100;
-const CONTINUED_HEADING_HEIGHT = 70;
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 const FOCUS_CARD_TARGET_OCCUPANCY = 0.76;
@@ -32,64 +30,116 @@ const DIRECT_FOCUS_CARD_KINDS = new Set<NormalizedBlock['kind']>([
   'log',
 ]);
 
-const getTypography = (frameWidth: number): StageTypographyConfig => ({
-  ...DEFAULT_STAGE_TYPOGRAPHY,
-  contentWidth: Math.max(frameWidth - SECTION_PADDING_X * 2, 320),
+export const DEFAULT_STAGE_VIEWPORT_BUDGET: StageViewportBudget = {
+  width: DEFAULT_VIEWPORT_WIDTH,
+  height: DEFAULT_VIEWPORT_HEIGHT,
+  rightRailReserve: 72,
+  bottomControlsReserve: 96,
+  headingReserve: 84,
+  continuedHeadingReserve: 72,
+  blockGap: DEFAULT_BLOCK_GAP,
+};
+
+const resolveViewportBudget = (options: StageDeckOptions = {}): StageViewportBudget => ({
+  width: Math.max(options.width ?? DEFAULT_STAGE_VIEWPORT_BUDGET.width, 640),
+  height: Math.max(options.height ?? DEFAULT_STAGE_VIEWPORT_BUDGET.height, 420),
+  rightRailReserve: Math.max(options.rightRailReserve ?? DEFAULT_STAGE_VIEWPORT_BUDGET.rightRailReserve, 0),
+  bottomControlsReserve: Math.max(options.bottomControlsReserve ?? DEFAULT_STAGE_VIEWPORT_BUDGET.bottomControlsReserve, 0),
+  headingReserve: Math.max(options.headingReserve ?? DEFAULT_STAGE_VIEWPORT_BUDGET.headingReserve, 0),
+  continuedHeadingReserve: Math.max(
+    options.continuedHeadingReserve ?? DEFAULT_STAGE_VIEWPORT_BUDGET.continuedHeadingReserve,
+    0,
+  ),
+  blockGap: clamp(options.blockGap ?? DEFAULT_STAGE_VIEWPORT_BUDGET.blockGap ?? DEFAULT_BLOCK_GAP, 12, 48),
 });
+
+const getSurfacePadding = (budget: StageViewportBudget): number => {
+  const preset = resolveStageScalePreset(budget);
+  return getStageTypographyScale(preset).cardPadding;
+};
+
+const getUsableContentWidth = (budget: StageViewportBudget): number => {
+  const surfacePadding = getSurfacePadding(budget);
+  return Math.max(budget.width - budget.rightRailReserve - surfacePadding * 2, 320);
+};
+
+const getBaseBodyHeight = (budget: StageViewportBudget): number => {
+  const surfacePadding = getSurfacePadding(budget);
+  return Math.max(budget.height - budget.bottomControlsReserve - surfacePadding * 2, 180);
+};
+
+const getTypography = (budget: StageViewportBudget): StageTypographyConfig =>
+  createStageTypographyConfig({
+    preset: resolveStageScalePreset(budget),
+    contentWidth: getUsableContentWidth(budget),
+  });
 
 const measureTextBlock = ({
   text,
   fontSize,
   lineHeight,
   width,
-  weight = DEFAULT_STAGE_TYPOGRAPHY.headingFontWeight,
+  typography,
+  weight,
 }: {
   text: string;
   fontSize: number;
   lineHeight: number;
   width: number;
+  typography: StageTypographyConfig;
   weight?: number;
 }): number =>
-  measureStageBlockHeight({
-    block: {
-      kind: 'prose',
-      html: `<p>${text}</p>`,
-    },
-    typo: {
-      ...DEFAULT_STAGE_TYPOGRAPHY,
-      bodyFont: `${weight} ${fontSize}px ${DEFAULT_STAGE_TYPOGRAPHY.headingFontFamily}`,
-      bodyLineHeight: lineHeight,
-      contentWidth: width,
-    },
-    frameHeight: DEFAULT_FRAME_HEIGHT,
-    frameWidth: width,
-  }) - 18;
+  measureStageTextHeight({
+    text,
+    font: `${weight ?? typography.headingFontWeight} ${fontSize}px ${typography.headingFontFamily}`,
+    width,
+    lineHeight,
+  });
 
-const measureDocumentHeaderHeight = (doc: NormalizedDoc, frameWidth: number): number => {
+const measureDocumentHeaderHeight = (doc: NormalizedDoc, typography: StageTypographyConfig): number => {
+  const insights = deriveDocumentInsights(doc);
   const titleHeight = measureTextBlock({
     text: doc.meta.title,
-    fontSize: 54,
-    lineHeight: 58,
-    width: frameWidth - SECTION_PADDING_X * 2,
-    weight: 760,
+    fontSize: typography.leadTitleFontSize,
+    lineHeight: typography.leadTitleLineHeight,
+    width: typography.leadTitleWidth,
+    typography,
   });
-  const metaCount = 1 + (doc.meta.heroLabel ? 1 : 0) + (doc.meta.date ? 1 : 0);
-  const metaHeight = metaCount > 0 ? 42 : 0;
-  const authorHeight = doc.meta.author ? 34 : 0;
+  const metaHeight = insights.metaTrail.length > 0 ? typography.scale.metaLineHeight + typography.scale.surfaceGap : 0;
+  const kickerHeight = typography.scale.kickerLineHeight + typography.scale.surfaceGap;
+  const standfirstHeight = insights.standfirst
+    ? measureTextBlock({
+        text: insights.standfirst,
+        fontSize: typography.scale.subheading,
+        lineHeight: typography.scale.subheadingLineHeight,
+        width: Math.min(typography.contentWidth, typography.listMeasureWidth),
+        typography,
+        weight: 650,
+      }) + typography.scale.surfaceGap
+    : 0;
+  const authorHeight = doc.meta.author ? typography.scale.bodyLineHeight : 0;
 
-  return 104 + metaHeight + titleHeight + authorHeight;
+  return metaHeight + kickerHeight + titleHeight + standfirstHeight + authorHeight + typography.scale.cardPadding;
 };
 
-const measureGroupTitleHeight = (title: string, frameWidth: number, continued: boolean): number =>
-  (continued ? 26 : 32) +
+const measureGroupTitleHeight = ({
+  title,
+  typography,
+  continued,
+}: {
+  title: string;
+  typography: StageTypographyConfig;
+  continued: boolean;
+}): number =>
+  (continued ? typography.scale.surfaceGap : typography.scale.cardPadding) +
   measureTextBlock({
     text: title,
-    fontSize: continued ? 34 : 38,
-    lineHeight: continued ? 42 : 48,
-    width: frameWidth - SECTION_PADDING_X * 2,
-    weight: 720,
+    fontSize: typography.sectionTitleFontSize,
+    lineHeight: typography.sectionTitleLineHeight,
+    width: typography.fullMeasureWidth,
+    typography,
   }) +
-  (continued ? 18 : 24);
+  (continued ? typography.scale.surfaceGap : typography.scale.cardPadding);
 
 const isDedicatedFrameBlock = ({
   block,
@@ -132,6 +182,7 @@ const createFrame = ({
   layoutIntent: includeDocumentHeader ? 'lead' : 'section-text',
   availableHeight: 0,
   occupancyRatio: 0,
+  scalePreset: 'standard',
 });
 
 const isImageFrame = (blocks: readonly NormalizedBlock[]): boolean => blocks.length > 0 && blocks.every((block) => block.kind === 'image');
@@ -183,15 +234,11 @@ const resolveFocusCardScale = ({
   block,
   occupancyRatio,
   typography,
-  frameHeight,
-  frameWidth,
   availableHeight,
 }: {
   block: NormalizedBlock;
   occupancyRatio: number;
   typography: StageTypographyConfig;
-  frameHeight: number;
-  frameWidth: number;
   availableHeight: number;
 }): number => {
   let scale = clamp(
@@ -205,8 +252,8 @@ const resolveFocusCardScale = ({
     const scaledHeight = measureStageBlockHeight({
       block,
       typo: typography,
-      frameHeight,
-      frameWidth,
+      frameHeight: availableHeight,
+      frameWidth: typography.contentWidth,
       focusScale: scale,
     });
 
@@ -227,9 +274,7 @@ const buildFramesForGroup = ({
   kind,
   sectionId,
   blocks,
-  frameHeight,
-  frameWidth,
-  blockGap,
+  budget,
 }: {
   doc: NormalizedDoc;
   groupId: string;
@@ -237,21 +282,33 @@ const buildFramesForGroup = ({
   kind: 'lead' | 'section';
   sectionId?: string;
   blocks: NormalizedBlock[];
-  frameHeight: number;
-  frameWidth: number;
-  blockGap: number;
+  budget: StageViewportBudget;
 }): StageFrame[] => {
   const expandedBlocks = expandStageBlocks(blocks);
-  const contentWidth = Math.max(frameWidth - SECTION_PADDING_X * 2, 320);
-  const typography = getTypography(frameWidth);
-  const baseAvailable = frameHeight - SECTION_PADDING_V - UI_RESERVED_BOTTOM;
-  const continuedHeadingReserve = Math.max(CONTINUED_HEADING_HEIGHT, measureGroupTitleHeight(title, frameWidth, true));
-  const firstFrameAvailable =
-    baseAvailable -
-    (kind === 'lead'
-      ? measureDocumentHeaderHeight(doc, frameWidth)
-      : Math.max(CONTINUED_HEADING_HEIGHT + 8, measureGroupTitleHeight(title, frameWidth, false)));
-  const continuedAvailable = baseAvailable - continuedHeadingReserve;
+  const typography = getTypography(budget);
+  const baseAvailable = getBaseBodyHeight(budget);
+  const scalePreset = resolveStageScalePreset(budget);
+  const firstFrameHeadingReserve =
+    kind === 'lead'
+      ? measureDocumentHeaderHeight(doc, typography)
+      : Math.max(
+          budget.headingReserve,
+          measureGroupTitleHeight({
+            title,
+            typography,
+            continued: false,
+          }),
+        );
+  const continuedHeadingReserve = Math.max(
+    budget.continuedHeadingReserve,
+    measureGroupTitleHeight({
+      title,
+      typography,
+      continued: true,
+    }),
+  );
+  const firstFrameAvailable = Math.max(baseAvailable - firstFrameHeadingReserve, 96);
+  const continuedAvailable = Math.max(baseAvailable - continuedHeadingReserve, 96);
 
   const frames: StageFrame[] = [
     createFrame({
@@ -289,10 +346,18 @@ const buildFramesForGroup = ({
     const blockHeight = measureStageBlockHeight({
       block,
       typo: typography,
-      frameHeight,
-      frameWidth: contentWidth,
+      frameHeight: baseAvailable,
+      frameWidth: typography.contentWidth,
     });
-    const gap = frames[frameIndex]?.blocks.length ? blockGap : 0;
+    const startsSubsection = isStageHeadingProseBlock(block);
+    const currentFrameHasBodyContent =
+      frames[frameIndex]?.blocks.some((existingBlock) => !isStageHeadingProseBlock(existingBlock)) ?? false;
+
+    if (startsSubsection && currentFrameHasBodyContent) {
+      startNextFrame();
+    }
+
+    const gap = frames[frameIndex]?.blocks.length ? budget.blockGap ?? DEFAULT_BLOCK_GAP : 0;
     const dedicated = isDedicatedFrameBlock({
       block,
       blockHeight,
@@ -313,7 +378,7 @@ const buildFramesForGroup = ({
     }
 
     frames[frameIndex]?.blocks.push(block);
-    currentHeight += (frames[frameIndex]?.blocks.length ?? 0) > 1 ? blockGap : 0;
+    currentHeight += (frames[frameIndex]?.blocks.length ?? 0) > 1 ? budget.blockGap ?? DEFAULT_BLOCK_GAP : 0;
     currentHeight += blockHeight;
     frameBodyHeights[frameIndex] = currentHeight;
 
@@ -339,8 +404,6 @@ const buildFramesForGroup = ({
               block: focusCardBlock,
               occupancyRatio,
               typography,
-              frameHeight,
-              frameWidth: contentWidth,
               availableHeight,
             });
 
@@ -349,15 +412,14 @@ const buildFramesForGroup = ({
         availableHeight,
         occupancyRatio,
         layoutIntent: baseLayoutIntent,
+        scalePreset,
         focusScale,
       };
     });
 };
 
 export const buildStageDeck = (doc: NormalizedDoc, options: StageDeckOptions = {}): StageDeck => {
-  const frameHeight = options.frameHeight ?? DEFAULT_FRAME_HEIGHT;
-  const frameWidth = options.frameWidth ?? DEFAULT_FRAME_WIDTH;
-  const blockGap = clamp(options.blockGap ?? DEFAULT_BLOCK_GAP, 12, 48);
+  const budget = resolveViewportBudget(options);
   const leadSection = doc.sections.find((section) => section.id === 'lead');
   const contentSections = doc.sections.filter((section) => section.id !== 'lead');
   const groups: StageGroup[] = [];
@@ -374,9 +436,7 @@ export const buildStageDeck = (doc: NormalizedDoc, options: StageDeckOptions = {
       kind: 'lead',
       sectionId: leadSection?.id,
       blocks: leadSection?.blocks ?? [],
-      frameHeight,
-      frameWidth,
-      blockGap,
+      budget,
     }),
   });
 
@@ -393,9 +453,7 @@ export const buildStageDeck = (doc: NormalizedDoc, options: StageDeckOptions = {
         kind: 'section',
         sectionId: section.id,
         blocks: section.blocks,
-        frameHeight,
-        frameWidth,
-        blockGap,
+        budget,
       }),
     });
   }
@@ -404,6 +462,7 @@ export const buildStageDeck = (doc: NormalizedDoc, options: StageDeckOptions = {
     slug: doc.slug,
     title: doc.meta.title,
     keyboardNav: doc.meta.stage.keyboardNav,
+    scalePreset: resolveStageScalePreset(budget),
     groups,
   };
 };

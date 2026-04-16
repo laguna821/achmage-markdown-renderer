@@ -5,6 +5,7 @@ import type {DocumentModeLink, StageMode} from './types';
 
 export * from './overflowSplitter';
 export * from './pretextMeasurer';
+export * from './scale';
 export * from './types';
 
 export const getDocumentsForStage = (documents: readonly NormalizedDoc[]): NormalizedDoc[] => [...documents];

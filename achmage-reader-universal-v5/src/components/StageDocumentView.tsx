@@ -2,7 +2,8 @@ import {useEffect, useMemo, useState, type CSSProperties} from 'react';
 
 import type {NormalizedDoc, OutputMode, ThemeMode} from '../core/content';
 import {openExternal} from '../lib/bridge';
-import {buildStageDeck} from '../stage';
+import {buildStageDeck, createStageTypographyConfig, DEFAULT_STAGE_VIEWPORT_BUDGET, type StageViewportBudget} from '../stage';
+import {getStageTypographyScale} from '../stage/scale';
 
 import {handleArticleLinkClick, type ArticleLinkDebugEntry} from './document-links';
 import {BlockRenderer} from './BlockRenderer';
@@ -20,7 +21,14 @@ declare global {
   }
 }
 
-const STAGE_DOCK_BREAKPOINT = 1120;
+const STAGE_ROOT_PAD_X = 18;
+const STAGE_ROOT_PAD_TOP = 16;
+const STAGE_ROOT_PAD_BOTTOM = 12;
+
+const getViewportSize = () => ({
+  width: typeof window === 'undefined' ? DEFAULT_STAGE_VIEWPORT_BUDGET.width : window.innerWidth,
+  height: typeof window === 'undefined' ? DEFAULT_STAGE_VIEWPORT_BUDGET.height : window.innerHeight,
+});
 
 const isNavigationTarget = (event: KeyboardEvent): boolean => {
   if (event.altKey || event.ctrlKey || event.metaKey) {
@@ -35,13 +43,59 @@ const isNavigationTarget = (event: KeyboardEvent): boolean => {
   return true;
 };
 
+const resolveStageViewportBudget = ({
+  viewportWidth,
+  viewportHeight,
+  headerHeight,
+}: {
+  viewportWidth: number;
+  viewportHeight: number;
+  headerHeight: number;
+}): StageViewportBudget => {
+  const stageHeight = Math.max(viewportHeight - headerHeight, 320);
+  const canvasWidth = Math.max(viewportWidth - STAGE_ROOT_PAD_X * 2, 640);
+  const canvasHeight = Math.max(stageHeight - STAGE_ROOT_PAD_TOP - STAGE_ROOT_PAD_BOTTOM, 420);
+
+  return {
+    width: canvasWidth,
+    height: canvasHeight,
+    rightRailReserve: DEFAULT_STAGE_VIEWPORT_BUDGET.rightRailReserve,
+    bottomControlsReserve: DEFAULT_STAGE_VIEWPORT_BUDGET.bottomControlsReserve,
+    headingReserve: DEFAULT_STAGE_VIEWPORT_BUDGET.headingReserve,
+    continuedHeadingReserve: DEFAULT_STAGE_VIEWPORT_BUDGET.continuedHeadingReserve,
+    blockGap: DEFAULT_STAGE_VIEWPORT_BUDGET.blockGap,
+  };
+};
+
 export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentViewProps) {
-  const deck = useMemo(() => buildStageDeck(doc), [doc]);
+  const initialViewport = getViewportSize();
   const [groupIndex, setGroupIndex] = useState(0);
   const [frameIndex, setFrameIndex] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(initialViewport.width);
+  const [viewportHeight, setViewportHeight] = useState(initialViewport.height);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<'dock' | 'compact'>('dock');
+
+  const viewportBudget = useMemo(
+    () =>
+      resolveStageViewportBudget({
+        viewportWidth,
+        viewportHeight,
+        headerHeight,
+      }),
+    [headerHeight, viewportHeight, viewportWidth],
+  );
+
+  const deck = useMemo(() => buildStageDeck(doc, viewportBudget), [doc, viewportBudget]);
+  const stageScale = useMemo(() => getStageTypographyScale(deck.scalePreset), [deck.scalePreset]);
+  const stageTypography = useMemo(
+    () =>
+      createStageTypographyConfig({
+        preset: deck.scalePreset,
+        contentWidth: Math.max(viewportBudget.width - viewportBudget.rightRailReserve - stageScale.cardPadding * 2, 320),
+      }),
+    [deck.scalePreset, stageScale.cardPadding, viewportBudget.rightRailReserve, viewportBudget.width],
+  );
 
   const currentGroup = deck.groups[groupIndex] ?? deck.groups[0];
   const currentFrame = currentGroup?.frames[frameIndex] ?? currentGroup?.frames[0];
@@ -53,8 +107,9 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
   const currentFrameContentKind =
     currentFrame?.blocks.length === 1 ? currentFrame.blocks[0]?.kind ?? 'mixed' : 'mixed';
   const currentFrameSoloBlockKind = currentFrame?.blocks.length === 1 ? currentFrame.blocks[0]?.kind : undefined;
+  const currentVerticalBalance =
+    currentFrame?.layoutIntent === 'section-text' && (currentFrame?.occupancyRatio ?? 1) <= 0.78 ? 'center' : 'start';
   const isLightStageTheme = theme === 'light';
-  const isLeadFrame = currentGroup?.kind === 'lead';
 
   const moveToGroup = (nextIndex: number) => {
     const clamped = Math.max(0, Math.min(nextIndex, deck.groups.length - 1));
@@ -139,28 +194,20 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
   useEffect(() => {
     const syncStageMetrics = () => {
       const header = document.querySelector<HTMLElement>('.site-header');
+      const nextViewport = getViewportSize();
       setHeaderHeight(Math.ceil(header?.getBoundingClientRect().height ?? 0));
-      setLayoutMode(window.innerWidth < STAGE_DOCK_BREAKPOINT ? 'compact' : 'dock');
+      setViewportWidth(nextViewport.width);
+      setViewportHeight(nextViewport.height);
+      setIsFullscreen(Boolean(document.fullscreenElement));
     };
 
     syncStageMetrics();
     window.addEventListener('resize', syncStageMetrics);
+    document.addEventListener('fullscreenchange', syncStageMetrics);
 
     return () => {
       window.removeEventListener('resize', syncStageMetrics);
-    };
-  }, []);
-
-  useEffect(() => {
-    const onFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-
-    onFullscreenChange();
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-
-    return () => {
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      document.removeEventListener('fullscreenchange', syncStageMetrics);
     };
   }, []);
 
@@ -308,27 +355,44 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
     await document.documentElement.requestFullscreen?.();
   };
 
-  const stageHeight = headerHeight > 0 ? `calc(100dvh - ${headerHeight}px)` : '100dvh';
+  const stageHeightPx = Math.max(viewportHeight - headerHeight, 320);
+  const stageHeight = `${stageHeightPx}px`;
 
   if (!currentGroup || !currentFrame) {
     return null;
   }
 
-  const sectionHeading =
-    !isLeadFrame ? (
+  const surfaceHeading =
+    !currentFrame.includeDocumentHeader ? (
       isLightStageTheme ? (
         <div className="stage-section-heading" data-stage-heading-style="title-above-rule">
-          <h2 className="stage-surface__title" id={!currentFrame.continued ? currentFrame.sectionId : undefined}>
-            {currentFrame.title}
-            {currentFrame.continued ? <span className="stage-frame__continued">CONT.</span> : null}
+          <h2
+            className="stage-surface__title"
+            id={!currentFrame.continued ? currentFrame.sectionId : undefined}
+            data-stage-continued={currentFrame.continued ? 'true' : undefined}
+          >
+            <span className="stage-surface__title-text">{currentFrame.title}</span>
+            {currentFrame.continued ? (
+              <em className="stage-surface__continued-inline" data-stage-continued-inline="true">
+                (cont.)
+              </em>
+            ) : null}
           </h2>
           <div className="stage-section-heading__rule" aria-hidden="true" />
         </div>
       ) : (
         <div className="stage-surface__heading" data-stage-heading-style="rule-above-title">
-          <h2 className="stage-surface__title" id={!currentFrame.continued ? currentFrame.sectionId : undefined}>
-            {currentFrame.title}
-            {currentFrame.continued ? <span className="stage-frame__continued">CONT.</span> : null}
+          <h2
+            className="stage-surface__title"
+            id={!currentFrame.continued ? currentFrame.sectionId : undefined}
+            data-stage-continued={currentFrame.continued ? 'true' : undefined}
+          >
+            <span className="stage-surface__title-text">{currentFrame.title}</span>
+            {currentFrame.continued ? (
+              <em className="stage-surface__continued-inline" data-stage-continued-inline="true">
+                (cont.)
+              </em>
+            ) : null}
           </h2>
         </div>
       )
@@ -338,183 +402,210 @@ export function StageDocumentView({doc, theme, onNavigateDoc}: StageDocumentView
     <main
       className="stage-shell"
       data-stage-root="true"
-      data-stage-layout-mode={layoutMode}
+      data-stage-scale-preset={deck.scalePreset}
       style={
         {
-          '--stage-viewport-height': stageHeight,
           height: stageHeight,
           minHeight: stageHeight,
+          '--stage-root-height': stageHeight,
+          '--stage-root-pad-x': `${STAGE_ROOT_PAD_X}px`,
+          '--stage-root-pad-top': `${STAGE_ROOT_PAD_TOP}px`,
+          '--stage-root-pad-bottom': `${STAGE_ROOT_PAD_BOTTOM}px`,
         } as CSSProperties
       }
     >
-      <aside className="stage-shell__status-dock" data-stage-status-dock="true">
-        <div className="stage-shell__status">
-          <div className="stage-shell__status-title">{currentGroup.title}</div>
-          <div className="stage-shell__status-meta">
-            <span data-stage-group-counter="true">
-              {groupIndex + 1} / {deck.groups.length}
-            </span>
-            {hasVerticalFrames ? (
-              <span data-stage-frame-counter="true">
-                {groupIndex + 1}-{frameIndex + 1}
-              </span>
-            ) : null}
-          </div>
-        </div>
-      </aside>
+      <div
+        className="stage-canvas"
+        data-stage-canvas="true"
+        data-stage-scale-preset={deck.scalePreset}
+        data-stage-budget-width={String(viewportBudget.width)}
+        data-stage-budget-height={String(viewportBudget.height)}
+        style={
+          {
+            '--stage-rail-reserve': `${viewportBudget.rightRailReserve}px`,
+            '--stage-controls-reserve': `${viewportBudget.bottomControlsReserve}px`,
+            '--stage-surface-pad-x': `${stageScale.cardPadding}px`,
+            '--stage-surface-pad-y': `${stageScale.cardPadding}px`,
+            '--stage-surface-gap': `${stageScale.surfaceGap}px`,
+            '--stage-meta-size': `${stageScale.meta}px`,
+            '--stage-meta-line-height': `${stageScale.metaLineHeight}px`,
+            '--stage-kicker-size': `${stageScale.kicker}px`,
+            '--stage-kicker-line-height': `${stageScale.kickerLineHeight}px`,
+            '--stage-lead-title-size': `${stageScale.leadTitle}px`,
+            '--stage-lead-title-line-height': `${stageScale.leadTitleLineHeight}px`,
+            '--stage-section-title-size': `${stageScale.sectionTitle}px`,
+            '--stage-section-title-line-height': `${stageScale.sectionTitleLineHeight}px`,
+            '--stage-subheading-size': `${stageScale.subheading}px`,
+            '--stage-subheading-line-height': `${stageScale.subheadingLineHeight}px`,
+            '--stage-body-size': `${stageScale.body}px`,
+            '--stage-body-line-height': `${stageScale.bodyLineHeight}px`,
+            '--stage-list-size': `${stageScale.list}px`,
+            '--stage-list-line-height': `${stageScale.listLineHeight}px`,
+            '--stage-quote-size': `${stageScale.quote}px`,
+            '--stage-quote-line-height': `${stageScale.quoteLineHeight}px`,
+            '--stage-callout-title-size': `${stageScale.calloutTitle}px`,
+            '--stage-callout-title-line-height': `${stageScale.calloutTitleLineHeight}px`,
+            '--stage-callout-body-size': `${stageScale.calloutBody}px`,
+            '--stage-callout-body-line-height': `${stageScale.calloutBodyLineHeight}px`,
+            '--stage-code-size': `${stageScale.code}px`,
+            '--stage-code-line-height': `${stageScale.codeLineHeight}px`,
+            '--stage-card-padding': `${stageScale.cardPadding}px`,
+            '--stage-continued-pill-size': `${stageScale.continuedPill}px`,
+            '--stage-lead-title-measure': `${stageTypography.leadTitleWidth}px`,
+            '--stage-prose-measure': `${stageTypography.proseMeasureWidth}px`,
+            '--stage-list-measure': `${stageTypography.listMeasureWidth}px`,
+            '--stage-subheading-measure': `${stageTypography.subheadingMeasureWidth}px`,
+          } as CSSProperties
+        }
+      >
+        <button
+          type="button"
+          className="stage-shell__nav-zone stage-shell__nav-zone--left"
+          aria-label="Previous stage step"
+          onClick={retreatWithinStage}
+        />
+        <button
+          type="button"
+          className="stage-shell__nav-zone stage-shell__nav-zone--right"
+          aria-label="Next stage step"
+          onClick={advance}
+        />
 
-      <div className="stage-shell__viewport-shell">
-        <div className="stage-shell__viewport">
-          <button
-            type="button"
-            className="stage-shell__nav-zone stage-shell__nav-zone--left"
-            aria-label="Previous stage step"
-            onClick={retreatWithinStage}
-          />
-          <button
-            type="button"
-            className="stage-shell__nav-zone stage-shell__nav-zone--right"
-            aria-label="Next stage step"
-            onClick={advance}
-          />
-
-          <div className="stage-shell__deck">
-            <div className="stage-paper" data-stage-group-index={groupIndex} data-stage-frame-index={frameIndex}>
-              <div
-                className="stage-frame"
-                data-stage-layout-intent={currentFrame.layoutIntent}
-                data-stage-frame-has-body={hasFrameBody ? 'true' : 'false'}
-                data-stage-focus-scale={String(currentFrameFocusScale)}
-                data-stage-solo-block-kind={currentFrameSoloBlockKind}
-                data-stage-available-height={String(currentFrameAvailableHeight)}
-                style={
-                  {
-                    '--stage-focus-scale': String(currentFrameFocusScale),
-                    '--stage-packed-body-budget': String(currentFrameAvailableHeight),
-                  } as CSSProperties
-                }
-              >
-                {currentFrame.includeDocumentHeader ? <DocumentHeader doc={doc} variant="stage" /> : null}
-
-                {hasFrameBody ? (
-                  isLeadFrame ? (
-                    <section
-                      className={`doc-section doc-section--lead${currentFrame.continued ? ' stage-frame__section--continued' : ''}`}
-                      data-stage-article="true"
-                      data-section-id={currentFrame.sectionId ?? currentGroup.id}
-                      data-stage-frame-content-kind={currentFrameContentKind}
-                      data-stage-layout-intent={currentFrame.layoutIntent}
-                      data-stage-frame-has-body="true"
-                      data-stage-focus-scale={String(currentFrameFocusScale)}
-                      data-stage-solo-block-kind={currentFrameSoloBlockKind}
-                      data-stage-available-height={String(currentFrameAvailableHeight)}
-                    >
-                      <div className="doc-section__blocks" data-stage-frame-content-kind={currentFrameContentKind}>
-                        {currentFrame.blocks.map((block, blockIndex) => (
-                          <BlockRenderer
-                            key={`${currentFrame.id}-${block.kind}-${blockIndex}`}
-                            block={block}
-                            variant="stage"
-                            doc={doc}
-                            sectionId={currentFrame.sectionId ?? currentGroup.id}
-                            blockIndex={blockIndex}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  ) : (
-                    <section
-                      className={`stage-surface${currentFrame.continued ? ' stage-surface--continued' : ''}`}
-                      data-stage-surface="true"
-                      data-stage-article="true"
-                      data-section-id={currentFrame.sectionId ?? currentGroup.id}
-                      data-stage-frame-content-kind={currentFrameContentKind}
-                      data-stage-layout-intent={currentFrame.layoutIntent}
-                      data-stage-frame-has-body="true"
-                      data-stage-focus-scale={String(currentFrameFocusScale)}
-                      data-stage-solo-block-kind={currentFrameSoloBlockKind}
-                      data-stage-available-height={String(currentFrameAvailableHeight)}
-                    >
-                      {sectionHeading}
-                      <div
-                        className="stage-surface__body"
-                        data-stage-surface-body="true"
-                        data-stage-frame-content-kind={currentFrameContentKind}
-                      >
-                        {currentFrame.blocks.map((block, blockIndex) => (
-                          <BlockRenderer
-                            key={`${currentFrame.id}-${block.kind}-${blockIndex}`}
-                            block={block}
-                            variant="stage"
-                            doc={doc}
-                            sectionId={currentFrame.sectionId ?? currentGroup.id}
-                            blockIndex={blockIndex}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <aside
-            className="stage-shell__frame-rail"
-            data-stage-frame-rail="true"
-            data-stage-frame-count={currentFrameCount}
-            aria-label="Stage frames"
-            hidden={!hasVerticalFrames}
+        <div className="stage-canvas__content">
+          <div
+            className="stage-frame"
+            data-stage-layout-intent={currentFrame.layoutIntent}
+            data-stage-frame-has-body={hasFrameBody ? 'true' : 'false'}
+            data-stage-scale-preset={currentFrame.scalePreset}
+            data-stage-focus-scale={String(currentFrameFocusScale)}
+            data-stage-solo-block-kind={currentFrameSoloBlockKind}
+            data-stage-available-height={String(currentFrameAvailableHeight)}
+            data-stage-vertical-balance={currentVerticalBalance}
+            style={
+              {
+                '--stage-focus-scale': String(currentFrameFocusScale),
+                '--stage-packed-body-budget': String(currentFrameAvailableHeight),
+              } as CSSProperties
+            }
           >
-            <button
-              type="button"
-              className="stage-shell__frame-button"
-              aria-label="Previous stage frame"
-              onClick={moveToPreviousFrame}
-              disabled={frameIndex === 0}
+            <section
+              className={`stage-surface${currentFrame.continued ? ' stage-surface--continued' : ''}${
+                currentFrame.includeDocumentHeader ? ' stage-surface--lead' : ''
+              }`}
+              data-stage-surface="true"
+              data-stage-article="true"
+              data-section-id={currentFrame.sectionId ?? currentGroup.id}
+              data-stage-frame-content-kind={currentFrameContentKind}
+              data-stage-layout-intent={currentFrame.layoutIntent}
+              data-stage-frame-has-body={hasFrameBody ? 'true' : 'false'}
+              data-stage-scale-preset={currentFrame.scalePreset}
+              data-stage-focus-scale={String(currentFrameFocusScale)}
+              data-stage-solo-block-kind={currentFrameSoloBlockKind}
+              data-stage-available-height={String(currentFrameAvailableHeight)}
+              data-stage-vertical-balance={currentVerticalBalance}
             >
-              ^
-            </button>
-            <div className="stage-shell__frame-dots">
-              {currentGroup.frames.map((frame, index) => (
-                <button
-                  key={frame.id}
-                  type="button"
-                  className={`stage-shell__frame-dot${index === frameIndex ? ' stage-shell__frame-dot--active' : ''}`}
-                  aria-label={`Go to frame ${index + 1}`}
-                  onClick={() => setFrameIndex(index)}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              className="stage-shell__frame-button"
-              aria-label="Next stage frame"
-              onClick={moveToNextFrame}
-              disabled={frameIndex === currentFrameCount - 1}
-            >
-              v
-            </button>
-          </aside>
+              {currentFrame.includeDocumentHeader ? (
+                <div className="stage-lead-shell" data-stage-lead-shell="true">
+                  <DocumentHeader doc={doc} variant="stage" />
+                </div>
+              ) : null}
+              {surfaceHeading}
+
+              {hasFrameBody ? (
+                <div
+                  className="stage-surface__body"
+                  data-stage-surface-body="true"
+                  data-stage-frame-content-kind={currentFrameContentKind}
+                  data-stage-vertical-balance={currentVerticalBalance}
+                >
+                  {currentFrame.blocks.map((block, blockIndex) => (
+                    <BlockRenderer
+                      key={`${currentFrame.id}-${block.kind}-${blockIndex}`}
+                      block={block}
+                      variant="stage"
+                      doc={doc}
+                      sectionId={currentFrame.sectionId ?? currentGroup.id}
+                      blockIndex={blockIndex}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          </div>
         </div>
 
-        <div className="stage-shell__controls-bar">
-          <div className="stage-shell__controls">
-            <button type="button" className="stage-shell__control" aria-label="First stage group" onClick={moveToFirstGroup}>
-              |&lt;
-            </button>
-            <button type="button" className="stage-shell__control" aria-label="Previous stage group" onClick={moveToPreviousGroup}>
-              &lt;
-            </button>
-            <button type="button" className="stage-shell__control" aria-label="Next stage group" onClick={moveToNextGroup}>
-              &gt;
-            </button>
-            <button type="button" className="stage-shell__control" aria-label="Last stage group" onClick={moveToLastGroup}>
-              &gt;|
-            </button>
-            <button type="button" className="stage-shell__control" aria-label="Toggle fullscreen" onClick={() => void onToggleFullscreen()}>
-              {isFullscreen ? 'Exit' : 'Full'}
-            </button>
+        <aside
+          className="stage-shell__frame-rail"
+          data-stage-frame-rail="true"
+          data-stage-frame-count={currentFrameCount}
+          aria-label="Stage frames"
+          hidden={!hasVerticalFrames}
+        >
+          <button
+            type="button"
+            className="stage-shell__frame-button"
+            aria-label="Previous stage frame"
+            onClick={moveToPreviousFrame}
+            disabled={frameIndex === 0}
+          >
+            ^
+          </button>
+          <div className="stage-shell__frame-dots">
+            {currentGroup.frames.map((frame, index) => (
+              <button
+                key={frame.id}
+                type="button"
+                className={`stage-shell__frame-dot${index === frameIndex ? ' stage-shell__frame-dot--active' : ''}`}
+                aria-label={`Go to frame ${index + 1}`}
+                onClick={() => setFrameIndex(index)}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            className="stage-shell__frame-button"
+            aria-label="Next stage frame"
+            onClick={moveToNextFrame}
+            disabled={frameIndex === currentFrameCount - 1}
+          >
+            v
+          </button>
+        </aside>
+
+        <div className="stage-shell__controls-bar" data-stage-controls-bar="true">
+          <div className="stage-shell__controls-panel">
+            <div className="stage-shell__controls-meta">
+              <span data-stage-group-counter="true">
+                {groupIndex + 1} / {deck.groups.length}
+              </span>
+              {hasVerticalFrames ? (
+                <span data-stage-frame-counter="true">
+                  {groupIndex + 1}-{frameIndex + 1}
+                </span>
+              ) : null}
+            </div>
+            <div className="stage-shell__controls">
+              <button type="button" className="stage-shell__control" aria-label="First stage group" onClick={moveToFirstGroup}>
+                |&lt;
+              </button>
+              <button type="button" className="stage-shell__control" aria-label="Previous stage group" onClick={moveToPreviousGroup}>
+                &lt;
+              </button>
+              <button type="button" className="stage-shell__control" aria-label="Next stage group" onClick={moveToNextGroup}>
+                &gt;
+              </button>
+              <button type="button" className="stage-shell__control" aria-label="Last stage group" onClick={moveToLastGroup}>
+                &gt;|
+              </button>
+              <button
+                type="button"
+                className="stage-shell__control"
+                aria-label="Toggle fullscreen"
+                onClick={() => void onToggleFullscreen()}
+              >
+                {isFullscreen ? 'Exit' : 'Full'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

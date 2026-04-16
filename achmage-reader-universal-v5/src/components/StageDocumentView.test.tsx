@@ -75,18 +75,24 @@ const makeDoc = ({
   };
 };
 
-const mountStageView = async (doc: NormalizedDoc, options: {theme?: ThemeMode; width?: number} = {}) => {
+const mountStageView = async (doc: NormalizedDoc, options: {theme?: ThemeMode; width?: number; height?: number} = {}) => {
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root = createRoot(container);
   const onNavigateDoc = vi.fn();
   const theme = options.theme ?? doc.meta.theme;
   const width = options.width ?? 1440;
+  const height = options.height ?? 980;
 
   Object.defineProperty(window, 'innerWidth', {
     configurable: true,
     writable: true,
     value: width,
+  });
+  Object.defineProperty(window, 'innerHeight', {
+    configurable: true,
+    writable: true,
+    value: height,
   });
   document.documentElement.dataset.theme = theme;
   document.body.className = 'mode-stage';
@@ -139,31 +145,29 @@ describe('StageDocumentView', () => {
     document.documentElement.removeAttribute('data-theme');
   });
 
-  it('keeps the status dock outside the slide paper and collapses to compact mode on narrower widths', async () => {
+  it('renders stage as a full-viewport canvas without the status dock or paper shell', async () => {
     const mounted = await mountStageView(
       makeDoc({
         title:
-          'A very long stage section title that should stay readable in the left dock without spilling into the slide paper',
+          'A very long stage section title that should render inside the shared stage canvas instead of a left dock',
       }),
       {width: 1500},
     );
     root = mounted.root;
 
     const stageRoot = document.querySelector<HTMLElement>('[data-stage-root="true"]');
-    const statusDock = document.querySelector<HTMLElement>('[data-stage-status-dock="true"]');
+    const stageCanvas = document.querySelector<HTMLElement>('[data-stage-canvas="true"]');
+    const controlsBar = document.querySelector<HTMLElement>('[data-stage-controls-bar="true"]');
 
-    expect(stageRoot?.dataset.stageLayoutMode).toBe('dock');
-    expect(statusDock).toBeTruthy();
-    expect(statusDock?.closest('.stage-paper')).toBeNull();
-    expect(statusDock?.querySelector('[data-stage-group-counter="true"]')?.textContent).toBe('1 / 3');
-
-    await act(async () => {
-      window.innerWidth = 980;
-      window.dispatchEvent(new Event('resize'));
-      await Promise.resolve();
-    });
-
-    expect(stageRoot?.dataset.stageLayoutMode).toBe('compact');
+    expect(stageRoot).toBeTruthy();
+    expect(stageCanvas).toBeTruthy();
+    expect(stageRoot?.dataset.stageScalePreset).toBe('standard');
+    expect(stageCanvas?.dataset.stageScalePreset).toBe('standard');
+    expect(document.querySelector('[data-stage-status-dock="true"]')).toBeNull();
+    expect(document.querySelector('.stage-paper')).toBeNull();
+    expect(document.querySelector('[data-stage-surface="true"]')).toBeTruthy();
+    expect(controlsBar).toBeTruthy();
+    expect(document.querySelector('[data-stage-group-counter="true"]')?.textContent).toBe('1 / 3');
   });
 
   it('uses the right-side rail for frame navigation and the bottom bar for logical groups', async () => {
@@ -210,7 +214,7 @@ describe('StageDocumentView', () => {
 
     expect(groupCounter()).toBe('2 / 3');
     expect(frameCounter()).toBe('2-2');
-    expect(document.querySelector('.stage-frame__continued')?.textContent).toBe('CONT.');
+    expect(document.querySelector('[data-stage-continued-inline="true"]')?.textContent).toBe('(cont.)');
 
     const nextBottomGroupButton = document.querySelector<HTMLButtonElement>('button[aria-label="Next stage group"]');
     if (!nextBottomGroupButton) {
@@ -269,7 +273,7 @@ describe('StageDocumentView', () => {
     expect(Boolean(title.compareDocumentPosition(rule) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
   });
 
-  it('skips the empty lower section for header-only lead frames', async () => {
+  it('renders lead frames inside the shared stage surface without doc-section shells', async () => {
     const mounted = await mountStageView(
       makeDoc({
         title: 'Header Only Lead',
@@ -278,7 +282,9 @@ describe('StageDocumentView', () => {
     );
     root = mounted.root;
 
-    expect(document.querySelector('.doc-header')).toBeTruthy();
+    expect(document.querySelector('.stage-lead-header')).toBeTruthy();
+    expect(document.querySelector('[data-stage-lead-shell="true"]')).toBeTruthy();
+    expect(document.querySelector('[data-stage-surface="true"]')).toBeTruthy();
     expect(document.querySelector('.doc-section')).toBeNull();
     expect(document.querySelector('[data-stage-frame-has-body="false"]')).toBeTruthy();
   });
@@ -376,6 +382,7 @@ describe('StageDocumentView', () => {
     const summaryCallout = document.querySelector<HTMLElement>('.callout-block--stage');
 
     expect(summaryFrame?.dataset.stageLayoutIntent).toBe('section-text');
+    expect(summaryFrame?.dataset.stageScalePreset).toBe('standard');
     expect(summaryFrame?.dataset.stageFocusScale).toBeTruthy();
     expect(summaryFrame?.dataset.stageSoloBlockKind).toBe('callout');
     expect(summarySurface?.dataset.stageLayoutIntent).toBe('section-text');
@@ -396,6 +403,71 @@ describe('StageDocumentView', () => {
     expect(quoteFrame?.dataset.stageSoloBlockKind).toBe('docQuote');
     expect(document.querySelector<HTMLElement>('[data-stage-surface="true"]')).toBeTruthy();
     expect(quoteBlock?.dataset.stageBlockKind).toBe('docQuote');
+  });
+
+  it('marks stage prose blocks with stage-specific hooks while keeping theme preset stable', async () => {
+    const mounted = await mountStageView(
+      makeDoc({
+        sections: [
+          {id: 'lead', title: 'Overview', depth: 1, blocks: []},
+          {id: 'toc-like', title: 'Contents', depth: 2, blocks: [{kind: 'prose', html: '<ul><li>Alpha</li><li>Beta</li></ul>'}]},
+        ],
+      }),
+      {theme: 'cyber_sanctuary', width: 1600},
+    );
+    root = mounted.root;
+
+    const nextGroupButton = document.querySelector<HTMLButtonElement>('button[aria-label="Next stage group"]');
+    if (!nextGroupButton) {
+      throw new Error('next group button not found');
+    }
+
+    await act(async () => {
+      nextGroupButton.click();
+      await Promise.resolve();
+    });
+
+    const stageRoot = document.querySelector<HTMLElement>('[data-stage-root="true"]');
+    const proseBlock = document.querySelector<HTMLElement>('.prose-block--stage');
+
+    expect(stageRoot?.dataset.stageScalePreset).toBe('standard');
+    expect(proseBlock?.dataset.stageBlockKind).toBe('prose');
+  });
+
+  it('uses centered stage balance for underfilled section-text frames', async () => {
+    const mounted = await mountStageView(
+      makeDoc({
+        sections: [
+          {id: 'lead', title: 'Overview', depth: 1, blocks: []},
+          {
+            id: 'underfilled',
+            title: 'Underfilled',
+            depth: 2,
+            blocks: [{kind: 'prose', html: '<p>Short stage paragraph.</p>'}],
+          },
+        ],
+      }),
+      {width: 1600, height: 980},
+    );
+    root = mounted.root;
+
+    const nextGroupButton = document.querySelector<HTMLButtonElement>('button[aria-label="Next stage group"]');
+    if (!nextGroupButton) {
+      throw new Error('next group button not found');
+    }
+
+    await act(async () => {
+      nextGroupButton.click();
+      await Promise.resolve();
+    });
+
+    const stageFrame = document.querySelector<HTMLElement>('.stage-frame');
+    const stageSurface = document.querySelector<HTMLElement>('[data-stage-surface="true"]');
+    const stageBody = document.querySelector<HTMLElement>('[data-stage-surface-body="true"]');
+
+    expect(stageFrame?.dataset.stageVerticalBalance).toBe('center');
+    expect(stageSurface?.dataset.stageVerticalBalance).toBe('center');
+    expect(stageBody?.dataset.stageVerticalBalance).toBe('center');
   });
 
   it('matches ultra-v3 keyboard semantics for logical groups and continued frames', async () => {

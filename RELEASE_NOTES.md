@@ -1,5 +1,18 @@
 # Release Notes
 
+## v6.0.0-beta.10
+
+This release stabilizes the packaged desktop stage surface so the lead slide, continued frames, and top-bar mode switch all behave like native stage UI instead of inheriting leftover reader-shell behavior.
+
+### Changed
+
+- Rebuilt the desktop stage canvas around viewport-based geometry and a dedicated stage lead shell so the first slide centers correctly and sparse frames balance against the real presentation surface
+- Switched continued vertical pagination headings to an inline `(cont.)` suffix and isolated stage headings from reader-style title decorations across all supported themes
+- Added stage typography scaling and measurement-budget refinements so short text, solo-card frames, and continued groups fit more predictably without changing ultra-v3 navigation semantics
+- Tuned the non-light `READER / STAGE` top-bar toggle skins so Dark, Aurora Glow, and Cyber Sanctuary use theme-matched surfaces instead of the previous bright shared treatment
+- Added regression coverage for stage geometry, continuation-title rendering, stage-only lead layout, and themed mode-switch styling
+- Bumped the renderer, desktop app, and Tauri packaging metadata to `6.0.0-beta.10`
+
 ## v6.0.0-beta.9
 
 This release replaces the remaining nested card-based desktop stage shell with an ultra-v3-style packed stage surface so continued frames use the slide itself instead of rendering reader-scale sections inside another paper.

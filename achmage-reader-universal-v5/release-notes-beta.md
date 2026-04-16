@@ -1,4 +1,4 @@
-Achmage Markdown Renderer v6 Desktop Beta 9
+Achmage Markdown Renderer v6 Desktop Beta 10
 
 - Windows installer `.msi`
 - Windows portable `.zip`
@@ -14,14 +14,11 @@ Notes
 - Windows MSI installers use Tauri's offline WebView2 installer path so a fresh PC does not need to download WebView2 during setup.
 - Portable `.zip` remains available as a fallback path when the installer is blocked or WebView2 is already present.
 - This beta line keeps the desktop-native V6 universal stage integration and ultra-v3 navigation baseline intact.
-- Desktop stage now measures and packs non-lead slides against ultra-v3 style `1280x720` body budgets so vertical pagination is driven by stage surface constraints instead of nested reader-shell cards.
-- Non-lead stage frames now render through a dedicated `stage-surface` shell, removing the old `doc-section` wrapper so continued slides use the full paper instead of showing a second card inside the slide.
-- Summary, quote, evidence, prose, table, and image frames now sit directly on the stage surface, with packed body metadata controlling layout while solo-card focus scaling remains only a secondary refinement.
-- Stage image frames still use contain-only fitting with runtime orientation detection, and lead slides keep the current document-header path.
-- Move markdown link interception from React synthetic capture to native article-level click delegation so raw rendered anchors in the reader respond reliably.
-- Keep internal note routes, in-document hash links, and external links on the same routing policy while adding dev-only link debug tracing for packaged runtime diagnosis.
-- Add regression coverage for Korean wiki-link rendering and direct text-node clicks so note-to-note jumps stay locked for packaged builds.
-- Render Pretext rich overlay links as real anchors with `href` plus `data-href` so visible wiki links and external links stay clickable in packaged runtime.
-- Keep the overlay itself non-interactive while re-enabling pointer events only for overlay anchors, with regression coverage for internal and external link segments.
+- Desktop stage now uses a full-viewport stage canvas with direct slide surfaces, replacing the remaining reader-style shell assumptions that caused first-slide alignment drift and underfilled layouts.
+- Lead slides render through a dedicated stage header path, while non-lead slides use the shared `stage-surface` shell so centered and sparse frames balance against the actual stage viewport instead of nested paper cards.
+- Continued vertical pagination now renders inline title suffixes as `(cont.)`, avoiding reader-style title decorations and keeping stage headings consistent across themes.
+- Added bounded stage typography scaling and updated pagination measurement budgets so short frames, solo-card frames, and continued groups fit more predictably without regressing navigation semantics.
+- Tuned the non-light theme `READER / STAGE` mode switch skin so dark, aurora, and cyber sanctuary top-bar chrome uses theme-matched surfaces instead of the previous bright white pill treatment.
+- Added regression coverage for stage canvas geometry, continued-title formatting, stage-only lead shells, vertical balance, and themed mode-switch styling.
 - This beta release is unsigned on Windows and macOS.
 - The app is read-focused: it indexes and renders vault content but does not edit Markdown files.

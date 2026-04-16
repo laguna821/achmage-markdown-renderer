@@ -325,7 +325,7 @@ const updateStageHeroFit = (variant: OutputMode, findings: PretextQaFinding[]): 
     return;
   }
 
-  const header = hero.querySelector<HTMLElement>('.doc-header');
+  const header = hero.querySelector<HTMLElement>('.doc-header, .stage-lead-header');
   const lead = hero.querySelector<HTMLElement>('.doc-section--lead');
   const contentHeight = (header?.offsetHeight ?? 0) + (lead?.offsetHeight ?? 0);
   const state = classifyStageHeroFit({
