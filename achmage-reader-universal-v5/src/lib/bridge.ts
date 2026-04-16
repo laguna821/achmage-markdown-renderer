@@ -2,7 +2,7 @@ import {invoke} from '@tauri-apps/api/core';
 import {open as openDialog} from '@tauri-apps/plugin-dialog';
 import {openUrl} from '@tauri-apps/plugin-opener';
 
-import type {VaultSnapshot, VaultState} from '../core/content';
+import type {VaultFileBatch, VaultLoadReport, VaultScan, VaultSnapshot, VaultState} from '../core/content';
 import {SAMPLE_APP_SETTINGS, SAMPLE_VAULT_SNAPSHOT} from '../mocks/sampleVault';
 
 export type LastOpenDoc = {
@@ -30,6 +30,11 @@ declare global {
 }
 
 const normalizePath = (value: string): string => value.replace(/\\/g, '/');
+
+const toSampleScan = (): VaultScan => ({
+  state: SAMPLE_VAULT_SNAPSHOT.state,
+  files: SAMPLE_VAULT_SNAPSHOT.files.map(({content: _content, ...file}) => file),
+});
 
 export const isTauriRuntime = (): boolean =>
   typeof window !== 'undefined' && typeof window.__TAURI_INTERNALS__ !== 'undefined';
@@ -75,12 +80,43 @@ export const getVaultState = async (rootPath: string): Promise<VaultState> => {
   return invoke<VaultState>('get_vault_state', {rootPath});
 };
 
+export const scanVault = async (rootPath: string): Promise<VaultScan> => {
+  if (!isTauriRuntime()) {
+    return toSampleScan();
+  }
+
+  return invoke<VaultScan>('scan_vault', {rootPath});
+};
+
+export const readVaultBatch = async (rootPath: string, relativePaths: string[]): Promise<VaultFileBatch> => {
+  if (!isTauriRuntime()) {
+    return {
+      files: SAMPLE_VAULT_SNAPSHOT.files
+        .filter((file) => relativePaths.includes(file.relativePath))
+        .map((file) => ({
+          relativePath: file.relativePath,
+          content: file.content,
+        })),
+    };
+  }
+
+  return invoke<VaultFileBatch>('read_vault_batch', {rootPath, relativePaths});
+};
+
 export const readVaultSnapshot = async (rootPath: string): Promise<VaultSnapshot> => {
   if (!isTauriRuntime()) {
     return SAMPLE_VAULT_SNAPSHOT;
   }
 
   return invoke<VaultSnapshot>('read_vault_snapshot', {rootPath});
+};
+
+export const saveVaultLoadReport = async (report: VaultLoadReport): Promise<void> => {
+  if (!isTauriRuntime()) {
+    return;
+  }
+
+  await invoke('save_vault_load_report', {report});
 };
 
 export const readAssetDataUrl = async (

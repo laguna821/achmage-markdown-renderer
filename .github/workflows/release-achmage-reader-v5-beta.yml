@@ -45,6 +45,10 @@ jobs:
         working-directory: achmage-reader-universal-v5
         run: npm ci
 
+      - name: Run frontend tests
+        working-directory: achmage-reader-universal-v5
+        run: npm test
+
       - name: Build Windows release assets
         working-directory: achmage-reader-universal-v5
         run: npm run package:windows
@@ -90,6 +94,10 @@ jobs:
       - name: Install frontend dependencies
         working-directory: achmage-reader-universal-v5
         run: npm ci
+
+      - name: Run frontend tests
+        working-directory: achmage-reader-universal-v5
+        run: npm test
 
       - name: Build macOS universal release assets
         working-directory: achmage-reader-universal-v5

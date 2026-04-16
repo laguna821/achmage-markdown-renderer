@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs,
     io::Read,
     path::{Component, Path, PathBuf},
@@ -47,6 +48,15 @@ struct VaultFileSnapshot {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct VaultScanFile {
+    file_path: String,
+    relative_path: String,
+    size: u64,
+    mtime_ms: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct VaultState {
     root_path: String,
     doc_count: usize,
@@ -62,6 +72,50 @@ struct VaultSnapshot {
     files: Vec<VaultFileSnapshot>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct VaultScan {
+    state: VaultState,
+    files: Vec<VaultScanFile>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct VaultBatchFile {
+    relative_path: String,
+    content: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct VaultFileBatch {
+    files: Vec<VaultBatchFile>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct VaultValidationError {
+    relative_path: String,
+    stage: String,
+    message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct VaultLoadReport {
+    generated_at: String,
+    phase: String,
+    vault_path: Option<String>,
+    total_files: usize,
+    validated_files: usize,
+    current_relative_path: Option<String>,
+    fatal_count: usize,
+    first_fatal_errors: Vec<VaultValidationError>,
+    error: Option<String>,
+    signature: Option<String>,
+    errors: Vec<VaultValidationError>,
+}
+
 fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     let app_dir = app
         .path()
@@ -69,6 +123,15 @@ fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|error| format!("failed to resolve app data dir: {error}"))?;
     fs::create_dir_all(&app_dir).map_err(|error| format!("failed to create app data dir: {error}"))?;
     Ok(app_dir.join("settings.json"))
+}
+
+fn load_report_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| format!("failed to resolve app data dir: {error}"))?;
+    fs::create_dir_all(&app_dir).map_err(|error| format!("failed to create app data dir: {error}"))?;
+    Ok(app_dir.join("vault-load-report.json"))
 }
 
 fn load_settings_internal(app: &AppHandle) -> Result<AppSettings, String> {
@@ -99,7 +162,7 @@ fn contains_markdown_files(entry: &Path) -> bool {
     )
 }
 
-fn compute_snapshot(root_path: &str, include_contents: bool) -> Result<VaultSnapshot, String> {
+fn compute_scan(root_path: &str) -> Result<VaultScan, String> {
     let root = PathBuf::from(root_path);
     if !root.exists() || !root.is_dir() {
         return Err(format!("vault path is not a directory: {root_path}"));
@@ -133,18 +196,11 @@ fn compute_snapshot(root_path: &str, include_contents: bool) -> Result<VaultSnap
         hash.update(metadata.len().to_string());
         hash.update(modified_ms.to_string());
 
-        let content = if include_contents {
-            fs::read_to_string(path).map_err(|error| format!("failed to read markdown file: {error}"))?
-        } else {
-            String::new()
-        };
-
-        files.push(VaultFileSnapshot {
+        files.push(VaultScanFile {
             file_path: normalize_path_string(path),
             relative_path: normalize_path_string(relative),
             size: metadata.len(),
             mtime_ms: modified_ms,
-            content,
         });
 
         last_indexed_at = Some(modified_ms.to_string());
@@ -152,7 +208,7 @@ fn compute_snapshot(root_path: &str, include_contents: bool) -> Result<VaultSnap
 
     files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
 
-    Ok(VaultSnapshot {
+    Ok(VaultScan {
         state: VaultState {
             root_path: normalize_path_string(&root),
             doc_count: files.len(),
@@ -161,6 +217,78 @@ fn compute_snapshot(root_path: &str, include_contents: bool) -> Result<VaultSnap
             signature: format!("{:x}", hash.finalize()),
         },
         files,
+    })
+}
+
+fn read_vault_batch_internal(root_path: &str, relative_paths: &[String]) -> Result<VaultFileBatch, String> {
+    let root = PathBuf::from(root_path);
+    if !root.exists() || !root.is_dir() {
+        return Err(format!("vault path is not a directory: {root_path}"));
+    }
+
+    let mut files = Vec::new();
+
+    for relative_path in relative_paths {
+        let sanitized = sanitize_relative_path(relative_path);
+        let resolved = root.join(&sanitized);
+
+        if !resolved.starts_with(&root) {
+            return Err(format!("resolved path escapes vault root: {relative_path}"));
+        }
+
+        if !resolved.exists() || !resolved.is_file() {
+            return Err(format!("markdown file does not exist: {relative_path}"));
+        }
+
+        if !contains_markdown_files(&resolved) {
+            return Err(format!("requested path is not a markdown file: {relative_path}"));
+        }
+
+        let content =
+            fs::read_to_string(&resolved).map_err(|error| format!("failed to read markdown file: {error}"))?;
+
+        files.push(VaultBatchFile {
+            relative_path: normalize_path_string(&sanitized),
+            content,
+        });
+    }
+
+    Ok(VaultFileBatch { files })
+}
+
+fn compute_snapshot(root_path: &str, include_contents: bool) -> Result<VaultSnapshot, String> {
+    let scan = compute_scan(root_path)?;
+    let content_by_relative_path = if include_contents {
+        let relative_paths = scan
+            .files
+            .iter()
+            .map(|file| file.relative_path.clone())
+            .collect::<Vec<_>>();
+        read_vault_batch_internal(root_path, &relative_paths)?
+            .files
+            .into_iter()
+            .map(|file| (file.relative_path, file.content))
+            .collect::<HashMap<_, _>>()
+    } else {
+        HashMap::new()
+    };
+
+    Ok(VaultSnapshot {
+        state: scan.state,
+        files: scan
+            .files
+            .into_iter()
+            .map(|file| VaultFileSnapshot {
+                file_path: file.file_path,
+                relative_path: file.relative_path.clone(),
+                size: file.size,
+                mtime_ms: file.mtime_ms,
+                content: content_by_relative_path
+                    .get(&file.relative_path)
+                    .cloned()
+                    .unwrap_or_default(),
+            })
+            .collect(),
     })
 }
 
@@ -246,8 +374,26 @@ fn save_app_settings(app: AppHandle, settings: AppSettings) -> Result<(), String
 }
 
 #[tauri::command]
+fn save_vault_load_report(app: AppHandle, report: VaultLoadReport) -> Result<(), String> {
+    let path = load_report_path(&app)?;
+    let raw =
+        serde_json::to_string_pretty(&report).map_err(|error| format!("failed to serialize load report: {error}"))?;
+    fs::write(path, raw).map_err(|error| format!("failed to write load report: {error}"))
+}
+
+#[tauri::command]
 fn get_vault_state(root_path: String) -> Result<VaultState, String> {
-    Ok(compute_snapshot(&root_path, false)?.state)
+    Ok(compute_scan(&root_path)?.state)
+}
+
+#[tauri::command]
+fn scan_vault(root_path: String) -> Result<VaultScan, String> {
+    compute_scan(&root_path)
+}
+
+#[tauri::command]
+fn read_vault_batch(root_path: String, relative_paths: Vec<String>) -> Result<VaultFileBatch, String> {
+    read_vault_batch_internal(&root_path, &relative_paths)
 }
 
 #[tauri::command]
@@ -275,10 +421,66 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             load_app_settings,
             save_app_settings,
+            save_vault_load_report,
             get_vault_state,
+            scan_vault,
+            read_vault_batch,
             read_vault_snapshot,
             read_asset_data_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{
+        env,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    fn create_temp_vault_dir(name: &str) -> PathBuf {
+        let mut path = env::temp_dir();
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock should be after unix epoch")
+            .as_nanos();
+        path.push(format!("achmage-reader-vault-test-{name}-{suffix}"));
+        fs::create_dir_all(&path).expect("temp vault dir should be created");
+        path
+    }
+
+    #[test]
+    fn scan_vault_returns_metadata_only_for_markdown_files() {
+        let vault_dir = create_temp_vault_dir("scan");
+        fs::write(vault_dir.join("alpha.md"), "# Alpha").expect("alpha markdown should be written");
+        fs::write(vault_dir.join("ignore.txt"), "nope").expect("txt file should be written");
+
+        let scan = compute_scan(vault_dir.to_str().expect("utf8 path")).expect("scan should succeed");
+
+        assert_eq!(scan.files.len(), 1);
+        assert_eq!(scan.files[0].relative_path, "alpha.md");
+        let serialized = serde_json::to_value(&scan).expect("scan should serialize");
+        assert!(serialized["files"][0].get("content").is_none());
+
+        fs::remove_dir_all(vault_dir).expect("temp vault dir should be cleaned up");
+    }
+
+    #[test]
+    fn read_vault_batch_preserves_requested_relative_path_order() {
+        let vault_dir = create_temp_vault_dir("batch");
+        fs::write(vault_dir.join("a.md"), "# A").expect("a markdown should be written");
+        fs::write(vault_dir.join("b.md"), "# B").expect("b markdown should be written");
+
+        let relative_paths = vec!["b.md".to_string(), "a.md".to_string()];
+        let batch = read_vault_batch_internal(vault_dir.to_str().expect("utf8 path"), &relative_paths)
+            .expect("batch read should succeed");
+
+        assert_eq!(batch.files.len(), 2);
+        assert_eq!(batch.files[0].relative_path, "b.md");
+        assert_eq!(batch.files[1].relative_path, "a.md");
+
+        fs::remove_dir_all(vault_dir).expect("temp vault dir should be cleaned up");
+    }
 }

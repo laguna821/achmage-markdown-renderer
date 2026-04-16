@@ -25,7 +25,7 @@ const parseRawFrontmatter = (file: VaultFileSnapshot): {data: Record<string, unk
   };
 };
 
-const parseSourceFile = (file: VaultFileSnapshot, sourceRoot: string): SourceDocument => {
+export const parseSourceFile = (file: VaultFileSnapshot, sourceRoot: string): SourceDocument => {
   const normalizedRoot = normalizePathSeparators(sourceRoot);
   const normalizedPath = normalizePathSeparators(file.filePath);
   const normalizedRelativePath = normalizePathSeparators(file.relativePath);
@@ -54,23 +54,50 @@ const parseSourceFile = (file: VaultFileSnapshot, sourceRoot: string): SourceDoc
   };
 };
 
-export const createSourceDocuments = (snapshot: VaultSnapshot): SourceDocument[] => {
-  const documents = snapshot.files.map((file) => parseSourceFile(file, snapshot.state.rootPath));
-  const slugSet = new Set<string>();
+export const findDuplicateSlugGroups = (
+  documents: readonly SourceDocument[],
+): Array<{slug: string; relativePaths: string[]; hasExplicitSlug: boolean}> => {
+  const grouped = new Map<string, {relativePaths: string[]; hasExplicitSlug: boolean}>();
 
   for (const document of documents) {
     const slug = document.meta.slug ?? '';
-    if (slugSet.has(slug)) {
-      throw new Error(`Duplicate slug detected: ${slug}`);
+    const existing = grouped.get(slug);
+    if (existing) {
+      existing.relativePaths.push(document.relativePath);
+      existing.hasExplicitSlug ||= typeof document.rawFrontmatter.slug === 'string' && document.rawFrontmatter.slug.trim().length > 0;
+      continue;
     }
 
-    slugSet.add(slug);
+    grouped.set(slug, {
+      relativePaths: [document.relativePath],
+      hasExplicitSlug: typeof document.rawFrontmatter.slug === 'string' && document.rawFrontmatter.slug.trim().length > 0,
+    });
   }
 
+  return [...grouped.entries()]
+    .filter(([, group]) => group.relativePaths.length > 1)
+    .map(([slug, group]) => ({
+      slug,
+      relativePaths: group.relativePaths,
+      hasExplicitSlug: group.hasExplicitSlug,
+    }));
+};
+
+export const applyObsidianPreprocessing = (documents: SourceDocument[]): SourceDocument[] => {
   const lookup = createObsidianLinkLookup(documents);
   for (const document of documents) {
     document.body = preprocessObsidianMarkdown(document.body, document, lookup);
   }
 
   return documents;
+};
+
+export const createSourceDocuments = (snapshot: VaultSnapshot): SourceDocument[] => {
+  const documents = snapshot.files.map((file) => parseSourceFile(file, snapshot.state.rootPath));
+  const duplicateGroups = findDuplicateSlugGroups(documents);
+  if (duplicateGroups.length > 0) {
+    throw new Error(`Duplicate slug detected: ${duplicateGroups[0]?.slug ?? 'unknown'}`);
+  }
+
+  return applyObsidianPreprocessing(documents);
 };

@@ -1,4 +1,4 @@
-import {useMemo} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 
 import {
   buildHomeSearchEntries,
@@ -35,13 +35,42 @@ export function HomeView({
   onSelectVault,
   onRescan,
 }: HomeViewProps) {
-  const entries = useMemo(() => buildHomeSearchEntries(sourceDocuments), [sourceDocuments]);
-  const preparedEntries = useMemo(() => prepareHomeSearchEntries(entries), [entries]);
+  const [searchIndex, setSearchIndex] = useState<{
+    entries: ReturnType<typeof buildHomeSearchEntries>;
+    preparedEntries: ReturnType<typeof prepareHomeSearchEntries>;
+    tagCounts: ReturnType<typeof buildHomeSearchTagCounts>;
+  } | null>(null);
+
+  const ensureSearchIndex = useCallback(() => {
+    setSearchIndex((current) => {
+      if (current) {
+        return current;
+      }
+
+      const entries = buildHomeSearchEntries(sourceDocuments);
+      return {
+        entries,
+        preparedEntries: prepareHomeSearchEntries(entries),
+        tagCounts: buildHomeSearchTagCounts(entries),
+      };
+    });
+  }, [sourceDocuments]);
+
+  useEffect(() => {
+    setSearchIndex(null);
+  }, [sourceDocuments]);
+
+  useEffect(() => {
+    if (searchState.query.trim().length > 0 || searchState.tags.length > 0) {
+      ensureSearchIndex();
+    }
+  }, [ensureSearchIndex, searchState.query, searchState.tags]);
+
   const results = useMemo(
-    () => searchPreparedHomeEntries(preparedEntries, searchState),
-    [preparedEntries, searchState],
+    () => (searchIndex ? searchPreparedHomeEntries(searchIndex.preparedEntries, searchState) : []),
+    [searchIndex, searchState],
   );
-  const tagCounts = useMemo(() => buildHomeSearchTagCounts(entries), [entries]);
+  const tagCounts = searchIndex?.tagCounts ?? [];
   const parsedQuery = useMemo(() => parseHomeSearchExpression(searchState.query), [searchState.query]);
   const active = searchState.query.trim().length > 0 || searchState.tags.length > 0;
   const resultMap = new Map(results.map((result) => [result.entry.slug, result]));
@@ -51,18 +80,17 @@ export function HomeView({
       <section className="home-hero" data-mega="ACHMAGE">
         <div className="home-hero__eyebrow">Markdown Source-of-Truth</div>
         <h1>
-          기록은 단순하게,
+          Record once,
           <br />
-          보여짐은 완벽하게.
+          render everywhere.
         </h1>
         <p className="home-hero__lede">
-          마크다운 하나면 충분합니다.
+          One markdown vault can drive reader, stage, and newsletter outputs
           <br />
-          코딩 없이도 모든 텍스트와 데이터가 제자리를 찾는 혁신적인 자동 정렬 시스템을 만나보세요.
+          without leaving the source-of-truth workflow.
         </p>
         <p className="home-hero__source">
-          Current source:{' '}
-          <code>{selectedVaultPath ?? 'No vault selected yet'}</code>
+          Current source: <code>{selectedVaultPath ?? 'No vault selected yet'}</code>
         </p>
         <div className="home-card__links">
           <button className="home-search__clear" type="button" onClick={onSelectVault}>
@@ -92,8 +120,12 @@ export function HomeView({
                 className="home-search__input"
                 type="search"
                 value={searchState.query}
-                placeholder="제목, 본문, YAML, #태그를 통합 검색"
-                onChange={(event) => onSearchStateChange({...searchState, query: event.currentTarget.value})}
+                placeholder="Search title, body, YAML, and #tags"
+                onFocus={ensureSearchIndex}
+                onChange={(event) => {
+                  ensureSearchIndex();
+                  onSearchStateChange({...searchState, query: event.currentTarget.value});
+                }}
               />
             </label>
             <div className="home-search__bar">
@@ -136,7 +168,7 @@ export function HomeView({
           </div>
         </div>
 
-        {selectedVaultPath ? (
+        {selectedVaultPath && searchIndex ? (
           <div className="home-search__feedback">
             <p className="home-search__feedback-copy">Top tags</p>
             <div className="home-search__feedback-chips">
@@ -145,14 +177,15 @@ export function HomeView({
                   key={tag.tag}
                   className={`home-search__feedback-chip${searchState.tags.includes(tag.tag) ? ' home-search__feedback-chip--query' : ''}`}
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
+                    ensureSearchIndex();
                     onSearchStateChange({
                       ...searchState,
                       tags: searchState.tags.includes(tag.tag)
                         ? searchState.tags.filter((entry) => entry !== tag.tag)
                         : [...searchState.tags, tag.tag],
-                    })
-                  }
+                    });
+                  }}
                 >
                   #{tag.tag} ({tag.count})
                 </button>
@@ -163,7 +196,7 @@ export function HomeView({
 
         {active && results.length === 0 ? (
           <div className="home-search__empty">
-            <p>현재 조건에 맞는 문서가 없습니다.</p>
+            <p>No documents matched the current filter.</p>
             <button type="button" onClick={() => onSearchStateChange({query: '', tags: []})}>
               Clear filters
             </button>
@@ -215,7 +248,7 @@ export function HomeView({
         </div>
       </section>
 
-      {loading ? <p className="home-search__hint">Vault snapshot을 다시 불러오는 중입니다...</p> : null}
+      {loading ? <p className="home-search__hint">Vault validation is still running...</p> : null}
     </main>
   );
 }

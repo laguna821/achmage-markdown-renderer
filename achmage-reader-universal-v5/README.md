@@ -1,4 +1,4 @@
-# Achmage Markdown Renderer v6 Desktop Beta 7
+# Achmage Markdown Renderer v6 Desktop Beta 12
 
 Achmage Markdown Renderer is the desktop packaging line for the Markdown renderer. It keeps the existing `reader`, `stage`, and `newsletter` views, removes the old "install dependencies on first launch" flow, and ships as a Tauri 2 desktop app.
 

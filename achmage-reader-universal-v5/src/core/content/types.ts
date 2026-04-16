@@ -12,6 +12,8 @@ export type VaultFileSnapshot = {
   content: string;
 };
 
+export type VaultScanFile = Omit<VaultFileSnapshot, 'content'>;
+
 export type VaultState = {
   rootPath: string;
   docCount: number;
@@ -23,6 +25,47 @@ export type VaultState = {
 export type VaultSnapshot = {
   state: VaultState;
   files: VaultFileSnapshot[];
+};
+
+export type VaultScan = {
+  state: VaultState;
+  files: VaultScanFile[];
+};
+
+export type VaultBatchFile = {
+  relativePath: string;
+  content: string;
+};
+
+export type VaultFileBatch = {
+  files: VaultBatchFile[];
+};
+
+export type VaultValidationStage = 'frontmatter' | 'slug' | 'markdown' | 'snapshot';
+
+export type VaultValidationError = {
+  relativePath: string;
+  stage: VaultValidationStage;
+  message: string;
+};
+
+export type VaultLoadPhase = 'idle' | 'scanning' | 'validating' | 'ready' | 'blocked' | 'failed';
+
+export type VaultLoadState = {
+  phase: VaultLoadPhase;
+  vaultPath: string | null;
+  totalFiles: number;
+  validatedFiles: number;
+  currentRelativePath?: string;
+  fatalCount: number;
+  firstFatalErrors: VaultValidationError[];
+  error: string | null;
+  signature: string | null;
+};
+
+export type VaultLoadReport = VaultLoadState & {
+  generatedAt: string;
+  errors: VaultValidationError[];
 };
 export type PretextDocumentOverrides = {
   disabled?: boolean;

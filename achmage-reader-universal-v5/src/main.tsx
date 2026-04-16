@@ -9,9 +9,12 @@ import './styles/stage.css';
 import './styles/app.css';
 
 import App from './App';
+import {AppErrorBoundary} from './components/AppErrorBoundary';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <AppErrorBoundary>
+      <App />
+    </AppErrorBoundary>
   </React.StrictMode>,
 );

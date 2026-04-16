@@ -9,3 +9,4 @@ export * from './obsidian';
 export * from './schema';
 export * from './slugs';
 export * from './types';
+export * from './vault-loader';

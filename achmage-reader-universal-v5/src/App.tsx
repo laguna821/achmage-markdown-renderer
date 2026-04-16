@@ -1,10 +1,11 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 
 import {parseHomeSearchState, type HomeSearchState, type OutputMode} from './core/content';
-import {SiteHeader} from './components/SiteHeader';
 import {DocumentView} from './components/DocumentView';
 import {HomeView} from './components/HomeView';
+import {SiteHeader} from './components/SiteHeader';
 import {StageDocumentView} from './components/StageDocumentView';
+import {VaultLoadPanel} from './components/VaultLoadPanel';
 import {useAchmageApp} from './hooks/useAchmageApp';
 import {APP_DISPLAY_NAME, clearLastOpenDoc, getInitialRestoreRoute, type AppRoute} from './lib/app-shell';
 
@@ -83,7 +84,8 @@ const applyRouteToLocation = (route: AppRoute, searchState: HomeSearchState, rep
 };
 
 function App() {
-  const {settings, documents, sourceDocuments, loading, error, selectVault, refreshVault, persistSettings} = useAchmageApp();
+  const {settings, documents, sourceDocuments, loadState, loadErrors, loading, error, selectVault, refreshVault, persistSettings} =
+    useAchmageApp();
   const [route, setRoute] = useState<AppRoute>(() =>
     typeof window === 'undefined' ? {screen: 'home'} : parseRouteFromLocation(),
   );
@@ -117,7 +119,7 @@ function App() {
   }, [documents, route]);
 
   useEffect(() => {
-    if (loading || hasAttemptedInitialRestore.current) {
+    if (loading || loadState.phase !== 'ready' || hasAttemptedInitialRestore.current) {
       return;
     }
 
@@ -136,7 +138,7 @@ function App() {
 
     setRoute(nextRoute);
     applyRouteToLocation(nextRoute, homeSearchState, true);
-  }, [documents, homeSearchState, loading, route, settings]);
+  }, [documents, homeSearchState, loadState.phase, loading, route, settings]);
 
   useEffect(() => {
     if (!activeDoc || !settings || route.screen !== 'doc') {
@@ -168,17 +170,18 @@ function App() {
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
+    const viewingDocument = loadState.phase === 'ready' && route.screen === 'doc' && Boolean(activeDoc);
 
     root.dataset.theme = effectiveTheme;
     root.dataset.themeDefault = effectiveTheme;
     root.dataset.themeLocked = String(themeLocked);
     root.style.colorScheme = effectiveTheme === 'dark' || effectiveTheme === 'cyber_sanctuary' ? 'dark' : 'light';
 
-    body.className = route.screen === 'doc' ? `mode-${route.output}` : 'mode-home';
-    body.dataset.outputMode = route.screen === 'doc' ? route.output : 'home';
-    body.dataset.docSlug = activeDoc?.slug ?? '';
-    body.dataset.pretextEnabled = route.screen === 'doc' ? 'true' : 'false';
-  }, [activeDoc?.slug, effectiveTheme, route, themeLocked]);
+    body.className = viewingDocument ? `mode-${route.output}` : 'mode-home';
+    body.dataset.outputMode = viewingDocument && route.screen === 'doc' ? route.output : 'home';
+    body.dataset.docSlug = viewingDocument ? activeDoc?.slug ?? '' : '';
+    body.dataset.pretextEnabled = viewingDocument ? 'true' : 'false';
+  }, [activeDoc?.slug, effectiveTheme, loadState.phase, route, themeLocked]);
 
   const themeState = themeMeta[effectiveTheme];
 
@@ -224,6 +227,9 @@ function App() {
   };
 
   const modeLabel = route.screen === 'doc' ? route.output.toUpperCase() : 'HOME';
+  const shouldShowVaultLoadPanel =
+    settings?.selectedVaultPath != null
+    && (loadState.phase === 'scanning' || loadState.phase === 'validating' || loadState.phase === 'blocked' || loadState.phase === 'failed');
 
   return (
     <>
@@ -241,24 +247,22 @@ function App() {
         onRescan={() => void refreshVault()}
         selectedVaultPath={settings?.selectedVaultPath ?? null}
       />
-      {error ? (
-        <main className="home-shell">
-          <section className="home-search__empty">
-            <p>{error}</p>
-            <button type="button" onClick={() => void refreshVault()}>
-              Retry
-            </button>
-          </section>
-        </main>
+      {shouldShowVaultLoadPanel ? (
+        <VaultLoadPanel
+          loadState={loadState}
+          loadErrors={loadErrors}
+          onRetry={() => void refreshVault()}
+          onSelectVault={selectVault}
+        />
       ) : null}
-      {!error && route.screen === 'doc' && activeDoc ? (
+      {!shouldShowVaultLoadPanel && !error && route.screen === 'doc' && activeDoc ? (
         route.output === 'stage' ? (
           <StageDocumentView doc={activeDoc} theme={effectiveTheme} onNavigateDoc={navigateDoc} />
         ) : (
           <DocumentView doc={activeDoc} output={route.output} onNavigateDoc={navigateDoc} />
         )
       ) : null}
-      {!error && (route.screen === 'home' || !activeDoc) ? (
+      {!shouldShowVaultLoadPanel && !error && (route.screen === 'home' || !activeDoc) ? (
         <HomeView
           docs={documents}
           sourceDocuments={sourceDocuments}
