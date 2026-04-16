@@ -24,6 +24,23 @@ type HomeViewProps = {
   onRescan: () => void;
 };
 
+const renderMatchedFieldLabel = (field: string): string => {
+  switch (field) {
+    case 'title':
+      return '제목';
+    case 'summary':
+      return '요약';
+    case 'yaml':
+      return 'YAML';
+    case 'body':
+      return '본문';
+    case 'tag':
+      return '태그';
+    default:
+      return field;
+  }
+};
+
 export function HomeView({
   docs,
   sourceDocuments,
@@ -78,27 +95,27 @@ export function HomeView({
   return (
     <main className="home-shell">
       <section className="home-hero" data-mega="ACHMAGE">
-        <div className="home-hero__eyebrow">Markdown Source-of-Truth</div>
+        <div className="home-hero__eyebrow">마크다운 소스 오브 트루스</div>
         <h1>
-          Record once,
+          기록은 단순하게,
           <br />
-          render everywhere.
+          보여짐은 완벽하게.
         </h1>
         <p className="home-hero__lede">
-          One markdown vault can drive reader, stage, and newsletter outputs
+          마크다운 하나면 충분합니다.
           <br />
-          without leaving the source-of-truth workflow.
+          코딩 없이도 모든 텍스트와 데이터가 제자리를 찾는 혁신적인 자동 정렬 시스템을 만나보세요.
         </p>
         <p className="home-hero__source">
-          Current source: <code>{selectedVaultPath ?? 'No vault selected yet'}</code>
+          현재 소스: <code>{selectedVaultPath ?? '아직 볼트를 선택하지 않았습니다'}</code>
         </p>
         <div className="home-card__links">
           <button className="home-search__clear" type="button" onClick={onSelectVault}>
-            {selectedVaultPath ? 'Switch vault' : 'Select vault'}
+            {selectedVaultPath ? '볼트 전환' : '볼트 선택'}
           </button>
           {selectedVaultPath ? (
             <button className="home-search__clear" type="button" onClick={onRescan}>
-              Rescan vault
+              볼트 다시 스캔
             </button>
           ) : null}
         </div>
@@ -107,20 +124,20 @@ export function HomeView({
       <section className="home-list">
         <div className="home-list__toolbar">
           <div className="home-list__heading">
-            <div className="home-list__eyebrow">Document Workbench</div>
-            <h2>{selectedVaultPath ? 'Vault Documents' : 'Bundled Preview Documents'}</h2>
+            <div className="home-list__eyebrow">문서 워크벤치</div>
+            <h2>{selectedVaultPath ? '볼트 문서' : '기본 미리보기 문서'}</h2>
           </div>
           <p className="home-list__status">
-            {docs.length} docs / {active ? results.length : docs.length} shown
+            {docs.length}개 문서 / {active ? results.length : docs.length}개 표시 중
           </p>
           <div className="home-search">
             <label className="home-search__field">
-              <span className="home-search__label">Omnisearch</span>
+              <span className="home-search__label">통합 검색</span>
               <input
                 className="home-search__input"
                 type="search"
                 value={searchState.query}
-                placeholder="Search title, body, YAML, and #tags"
+                placeholder="제목, 본문, YAML, #태그를 통합 검색"
                 onFocus={ensureSearchIndex}
                 onChange={(event) => {
                   ensureSearchIndex();
@@ -131,7 +148,7 @@ export function HomeView({
             <div className="home-search__bar">
               <div className="home-search__actions">
                 <p className="home-search__hint">
-                  Use <code>#tag</code>, <code>AND</code>, <code>OR</code>. Example: <code>AI AND #lecture</code>
+                  <code>#tag</code>, <code>AND</code>, <code>OR</code>를 사용할 수 있습니다. 예: <code>AI AND #lecture</code>
                 </p>
                 {active ? (
                   <button
@@ -139,7 +156,7 @@ export function HomeView({
                     type="button"
                     onClick={() => onSearchStateChange({query: '', tags: []})}
                   >
-                    Clear filters
+                    필터 지우기
                   </button>
                 ) : null}
               </div>
@@ -147,10 +164,10 @@ export function HomeView({
                 <div className="home-search__feedback">
                   <p className="home-search__feedback-copy">
                     {parsedQuery.hasOr
-                      ? 'OR groups active.'
+                      ? 'OR 그룹 검색이 활성화되었습니다.'
                       : parsedQuery.terms.length > 1
-                        ? 'AND search active.'
-                        : 'Single-term search active.'}
+                        ? 'AND 검색이 활성화되었습니다.'
+                        : '단일 검색어 검색이 활성화되었습니다.'}
                   </p>
                   <div className="home-search__feedback-chips">
                     {parsedQuery.terms.map((term, index) => (
@@ -170,7 +187,7 @@ export function HomeView({
 
         {selectedVaultPath && searchIndex ? (
           <div className="home-search__feedback">
-            <p className="home-search__feedback-copy">Top tags</p>
+            <p className="home-search__feedback-copy">상위 태그</p>
             <div className="home-search__feedback-chips">
               {tagCounts.slice(0, 10).map((tag) => (
                 <button
@@ -196,9 +213,9 @@ export function HomeView({
 
         {active && results.length === 0 ? (
           <div className="home-search__empty">
-            <p>No documents matched the current filter.</p>
+            <p>현재 조건에 맞는 문서가 없습니다.</p>
             <button type="button" onClick={() => onSearchStateChange({query: '', tags: []})}>
-              Clear filters
+              필터 지우기
             </button>
           </div>
         ) : null}
@@ -218,7 +235,11 @@ export function HomeView({
                   {doc.meta.date ? <span>{doc.meta.date}</span> : null}
                 </div>
                 <h3>{doc.meta.title}</h3>
-                {match ? <div className="home-card__match">Matched in: {match.matchedFields.join(' / ')}</div> : null}
+                {match ? (
+                  <div className="home-card__match">
+                    일치 위치: {match.matchedFields.map(renderMatchedFieldLabel).join(' / ')}
+                  </div>
+                ) : null}
                 {match?.matchedTags.length ? (
                   <div className="home-card__active-tags">
                     {match.matchedTags.map((tag) => (
@@ -248,7 +269,7 @@ export function HomeView({
         </div>
       </section>
 
-      {loading ? <p className="home-search__hint">Vault validation is still running...</p> : null}
+      {loading ? <p className="home-search__hint">볼트 검증이 아직 진행 중입니다...</p> : null}
     </main>
   );
 }

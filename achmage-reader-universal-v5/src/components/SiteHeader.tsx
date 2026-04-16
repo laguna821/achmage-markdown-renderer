@@ -23,7 +23,7 @@ type SiteHeaderProps = {
 
 const renderShortPath = (value: string | null): string => {
   if (!value) {
-    return 'No vault selected';
+    return '볼트 미선택';
   }
 
   const normalized = value.replace(/\\/g, '/');
@@ -86,11 +86,11 @@ export function SiteHeader({
           </span>
         </button>
         <button className="home-search__clear" type="button" onClick={onSelectVault}>
-          {selectedVaultPath ? 'Switch vault' : 'Select vault'}
+          {selectedVaultPath ? '볼트 전환' : '볼트 선택'}
         </button>
         {selectedVaultPath ? (
           <button className="home-search__clear" type="button" onClick={onRescan}>
-            Rescan
+            재스캔
           </button>
         ) : null}
       </div>

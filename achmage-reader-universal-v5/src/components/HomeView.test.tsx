@@ -136,6 +136,11 @@ describe('HomeView', () => {
       );
     });
 
+    expect(container.textContent).toContain('기록은 단순하게,');
+    expect(container.textContent).toContain('보여짐은 완벽하게.');
+    expect(container.textContent).toContain('볼트 전환');
+    expect(container.textContent).toContain('볼트 다시 스캔');
+
     expect(contentMocks.buildHomeSearchEntries).not.toHaveBeenCalled();
     expect(contentMocks.prepareHomeSearchEntries).not.toHaveBeenCalled();
 

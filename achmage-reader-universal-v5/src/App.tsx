@@ -226,7 +226,7 @@ function App() {
     }
   };
 
-  const modeLabel = route.screen === 'doc' ? route.output.toUpperCase() : 'HOME';
+  const modeLabel = route.screen === 'doc' ? route.output.toUpperCase() : '홈';
   const shouldShowVaultLoadPanel =
     settings?.selectedVaultPath != null
     && (loadState.phase === 'scanning' || loadState.phase === 'validating' || loadState.phase === 'blocked' || loadState.phase === 'failed');

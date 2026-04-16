@@ -1,4 +1,4 @@
-Achmage Markdown Renderer v6 Desktop Beta 12
+Achmage Markdown Renderer v6 Desktop Beta 13
 
 - Windows installer `.msi`
 - Windows portable `.zip`
@@ -19,5 +19,6 @@ Notes
 - Invalid YAML, slug collisions, markdown parsing failures, and snapshot read failures now block with an explicit diagnostic panel instead of degrading into a blank app surface.
 - Added a root error boundary plus lazy home-search indexing so large vault startup has clearer runtime failure handling and less eager work on first render.
 - Release CI now runs `npm test` before packaging on both Windows and macOS so prerelease artifacts cannot skip the desktop regression suite.
+- Restored the main home surface copy and controls to the Korean wording used in the desktop app instead of the accidental English fallback.
 - This beta release is unsigned on Windows and macOS.
 - The app is read-focused: it indexes and renders vault content but does not edit Markdown files.
